@@ -22,6 +22,7 @@ import { OPENAI_API_KEY } from '@env'; // Ensure this is set up correctly
 import { auth, db } from '../firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import SessionSummary from '../components/SessionSummary'; // Import the SessionSummary component
+import styles from './TherapyChatStyles'; // Import styles
 
 const TherapyChat = ({ navigation }) => {
   const [messages, setMessages] = useState([
@@ -175,23 +176,23 @@ const TherapyChat = ({ navigation }) => {
 
     // Prepare the conversation for summary
     const systemPrompt = {
-        role: 'system',
-        content: `You are an ADHD therapist tasked with summarizing a therapy session.
-        Analyze the following conversation to identify key takeaways, issues acknowledged, and action steps for managing ADHD symptoms.
-        Focus on macro patterns and overarching themes rather than individual messages.
-        Present the summary in three clearly labeled sections in this exact format:
-      
-        ### Key Takeaways
-        - List each key takeaway here, using "you" statements where possible.
-      
-        ### Issues Acknowledged
-        - List each issue here, keeping the language supportive and gentle.
-      
-        ### Action Steps
-        - List each action step here with practical, motivating language to encourage engagement.
-      
-        Use "###" for section headers and prefix each point with a dash ("-") to ensure consistent formatting.`
-      };
+      role: 'system',
+      content: `You are an ADHD therapist tasked with summarizing a therapy session.
+      Analyze the following conversation to identify key takeaways, issues acknowledged, and action steps for managing ADHD symptoms.
+      Focus on macro patterns and overarching themes rather than individual messages.
+      Present the summary in three clearly labeled sections in this exact format:
+    
+      ### Key Takeaways
+      - List each key takeaway here, using "you" statements where possible.
+    
+      ### Issues Acknowledged
+      - List each issue here, keeping the language supportive and gentle.
+    
+      ### Action Steps
+      - List each action step here with practical, motivating language to encourage engagement.
+    
+      Use "###" for section headers and prefix each point with a dash ("-") to ensure consistent formatting.`
+    };
 
     const userPrompt = {
       role: 'user',
@@ -237,20 +238,6 @@ const TherapyChat = ({ navigation }) => {
       Alert.alert('Error', 'An error occurred while fetching the summary. Please try again.');
       setIsSummaryVisible(false);
     }
-  
-    console.log("reached try-block")
-    // try {
-    //     // Reference to the current session document
-    //     const sessionRef = doc(db, 'users', auth.currentUser.uid, 'sessions', sessionId);
-        
-    //     // Save the summary to the session document
-    //     await updateDoc(sessionRef, { summary: summarySections });
-        
-    //     console.log('Summary saved successfully!');
-    // } catch (error) {
-    //     console.error('Error saving summary:', error);
-    //     Alert.alert('Error', 'Failed to save session summary. Please try again.');
-    // }
 
   };
 
@@ -297,7 +284,7 @@ const TherapyChat = ({ navigation }) => {
   );
 
   return (
-    <LinearGradient colors={['#e9d5ff', '#dbeafe']} style={styles.container}>
+    <LinearGradient colors={['#f0f4f8', '#d9e2ec']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
 
         <View style={styles.header}>
@@ -305,15 +292,15 @@ const TherapyChat = ({ navigation }) => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color="#7e22ce" />
+            <Ionicons name="arrow-back" size={24} color="#4B5563" />
           </TouchableOpacity>
-          <View>
+          <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>AI Therapist Chat</Text>
             <Text style={styles.headerSubtitle}>Your safe space to talk</Text>
           </View>
 
           <TouchableOpacity onPress={handleEndSession} style={styles.endSessionButton}>
-            <Ionicons name="exit-outline" size={24} color="#7e22ce" />
+            <Ionicons name="exit-outline" size={24} color="#4B5563" />
           </TouchableOpacity>
         </View>
 
@@ -331,7 +318,7 @@ const TherapyChat = ({ navigation }) => {
 
         {loading && (
           <View style={styles.loadingIndicator}>
-            <ActivityIndicator size="small" color="#9333ea" />
+            <ActivityIndicator size="small" color="#6D28D9" />
             <Text style={styles.loadingText}>AI is typing...</Text>
           </View>
         )}
@@ -347,18 +334,18 @@ const TherapyChat = ({ navigation }) => {
               value={input}
               onChangeText={setInput}
               placeholder="Type your message..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#9CA3AF"
               multiline
             />
             <TouchableOpacity
               onPress={handleSend}
               style={[
                 styles.sendButton,
-                { backgroundColor: input.trim() ? '#9333ea' : '#a78bfa' },
+                { backgroundColor: input.trim() ? '#6D28D9' : '#C4B5FD' },
               ]}
               disabled={!input.trim() || loading}
             >
-              <Ionicons name="send" size={20} color="#ffffff" />
+              <Ionicons name="send" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -380,108 +367,4 @@ const TherapyChat = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    marginRight: 16,
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#7e22ce',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#9333ea',
-  },
-  endSessionButton: {
-    padding: 8,
-  },
-  messageList: {
-    padding: 16,
-    paddingBottom: 0, // Adjust to prevent overlap with input
-  },
-  messageRow: {
-    marginBottom: 16,
-  },
-  aiRow: {
-    alignItems: 'flex-start',
-  },
-  userRow: {
-    alignItems: 'flex-end',
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
-  },
-  aiBubble: {
-    backgroundColor: '#ffffff',
-  },
-  userBubble: {
-    backgroundColor: '#9333ea',
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  aiText: {
-    color: '#7e22ce',
-  },
-  userText: {
-    color: '#ffffff',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#ffffff',
-    alignItems: 'flex-end',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 16,
-    padding: 12,
-    marginRight: 8,
-    maxHeight: 100,
-    color: '#1f2937',
-  },
-  sendButton: {
-    backgroundColor: '#9333ea',
-    padding: 12,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    paddingLeft: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-  loadingText: {
-    marginLeft: 8,
-    color: '#9333ea',
-  },
-});
-
-export default TherapyChat;
+export default TherapyChat

@@ -1,7 +1,18 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  StyleSheet,
+  Platform,
+  Dimensions,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// Get device width for responsive design
+const { width } = Dimensions.get('window');
 
 const HomePage = ({ navigation }) => {
   const handleAIChat = () => {
@@ -18,7 +29,7 @@ const HomePage = ({ navigation }) => {
 
   return (
     <LinearGradient
-      colors={['#e9d5ff', '#dbeafe']}
+      colors={['#1e3c72', '#2a5298']}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -28,69 +39,48 @@ const HomePage = ({ navigation }) => {
           <Text style={styles.subtitle}>What would you like to do today?</Text>
         </View>
 
-        {/* Main Action Buttons */}
-        <View style={styles.buttonContainer}>
-          {/* AI Chat Button */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleAIChat}
-            activeOpacity={0.8}
-          >
-            <View style={styles.buttonContent}>
-              <View style={[styles.iconContainer, { backgroundColor: '#dbeafe' }]}>
-              <Feather name="message-square" size={24} color="#2563eb" />
-              </View>
-              <View style={styles.buttonText}>
-                <Text style={styles.buttonTitle}>Chat with AI Therapist</Text>
-                <Text style={styles.buttonSubtitle}>
-                  Have a friendly conversation about what's on your mind
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          {/* Impulse Logger Button */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleImpulseLog}
-            activeOpacity={0.8}
-          >
-            <View style={styles.buttonContent}>
-              <View style={[styles.iconContainer, { backgroundColor: '#f3e8ff' }]}>
-              <Feather name="zap-off" size={24} color="#9333ea" />
-              </View>
-              <View style={styles.buttonText}>
-                <Text style={styles.buttonTitle}>Log an Impulse</Text>
-                <Text style={styles.buttonSubtitle}>
-                  Quick record of what you're feeling right now
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleTherapySessions}
-            activeOpacity={0.8}
-          >
-            <View style={styles.buttonContent}>
-              <View style={[styles.iconContainer, { backgroundColor: '#f3e8ff' }]}>
-              <Feather name="book" size={24} color="#9333ea" />
-              </View>
-              <View style={styles.buttonText}>
-                <Text style={styles.buttonTitle}>Review Past Sessions</Text>
-                <Text style={styles.buttonSubtitle}>
-                  Look at past sessions and key-takeaways
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
+        {/* Main Content Placeholder */}
+        <View style={styles.mainContent}>
+          {/* You can add more content here if needed */}
         </View>
 
         {/* Encouraging Message */}
         <Text style={styles.encouragingText}>
           "Small steps lead to big changes! 🌟"
         </Text>
+
+        {/* Bottom Tab Bar */}
+        <View style={styles.tabBar}>
+          {/* AI Chat Tab */}
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={handleAIChat}
+            activeOpacity={0.7}
+          >
+            <Feather name="message-square" size={24} color="#4f46e5" />
+            <Text style={styles.tabText}>Chat</Text>
+          </TouchableOpacity>
+
+          {/* Impulse Logger Tab */}
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={handleImpulseLog}
+            activeOpacity={0.7}
+          >
+            <Feather name="zap-off" size={24} color="#4f46e5" />
+            <Text style={styles.tabText}>Impulse</Text>
+          </TouchableOpacity>
+
+          {/* Therapy Sessions Tab */}
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={handleTherapySessions}
+            activeOpacity={0.7}
+          >
+            <Feather name="book" size={24} color="#4f46e5" />
+            <Text style={styles.tabText}>Sessions</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -103,69 +93,64 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     paddingHorizontal: 16,
+    justifyContent: 'space-between',
   },
   welcomeContainer: {
     alignItems: 'center',
     marginTop: 40,
-    marginBottom: 32,
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#6b21a8',
+    fontWeight: '800',
+    color: 'white', // Delve-like Purple
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#7e22ce',
+    color: 'white', // Complementary Purple
   },
-  buttonContainer: {
-    gap: 16,
-  },
-  button: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconContainer: {
-    padding: 12,
-    borderRadius: 12,
-  },
-  buttonText: {
+  mainContent: {
     flex: 1,
-  },
-  buttonTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1e40af',
-    marginBottom: 4,
-  },
-  buttonSubtitle: {
-    fontSize: 14,
-    color: '#3b82f6',
+    // Add any additional styling or content here
   },
   encouragingText: {
     textAlign: 'center',
     fontSize: 14,
-    color: '#7e22ce',
+    color: 'white',
     fontStyle: 'italic',
-    marginTop: 32,
+    marginBottom: 16,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    // iOS shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  tabButton: {
+    alignItems: 'center',
+    width: width / 3 - 32, // Adjust width based on number of tabs
+  },
+  tabText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: 'black',
+    fontWeight: '600',
   },
 });
 
