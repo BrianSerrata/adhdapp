@@ -143,6 +143,50 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 14,
   },
+
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        width: '80%',
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: '#1F2937',
+    },
+    modalSubtitle: {
+        fontSize: 16,
+        color: '#4B5563',
+        marginBottom: 20,
+    },
+    durationButton: {
+        backgroundColor: '#6D28D9',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 10,
+        marginVertical: 8,
+        width: '100%',
+    },
+    durationButtonText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    headerTimer: {
+        fontSize: 14,
+        color: '#6D28D9',
+        fontWeight: '600',
+    },
 });
 
 export default styles;

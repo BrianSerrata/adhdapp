@@ -22,7 +22,7 @@ import { OPENAI_API_KEY } from '@env'; // Ensure this is set up correctly
 import { auth, db } from '../firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import SessionSummary from '../components/SessionSummary'; // Import the SessionSummary component
-import styles from './TherapyChatStyles'; // Import styles
+import styles from '../styles/TherapyChatStyles';
 
 const TherapyChat = ({ navigation }) => {
   const [messages, setMessages] = useState([
@@ -34,28 +34,95 @@ const TherapyChat = ({ navigation }) => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const flatListRef = useRef(null);
   const [sessionId, setSessionId] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
+  const [sessionDuration, setSessionDuration] = useState(null);
+  const [isSessionSetupVisible, setIsSessionSetupVisible] = useState(true);
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [hasSessionStarted, setHasSessionStarted] = useState(false);
+  const flatListRef = useRef(null);
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    // Start a new session when the component mounts
-    const startSession = async () => {
-      try {
-        const docRef = await addDoc(collection(db, 'users', auth.currentUser.uid, 'sessions'), {
-          createdAt: serverTimestamp(),
-          messages: [], // Initially empty
-        });
-        setSessionId(docRef.id);
-      } catch (error) {
-        console.error('Error starting session:', error);
-        Alert.alert('Error', 'Could not start a new session.');
+    // Cleanup timer on component unmount
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
     };
-
-    startSession();
   }, []);
+
+  const startSession = async (duration) => {
+    try {
+      const docRef = await addDoc(collection(db, 'users', auth.currentUser.uid, 'sessions'), {
+        createdAt: serverTimestamp(),
+        duration: duration,
+        messages: [],
+      });
+      setSessionId(docRef.id);
+      setSessionDuration(duration);
+      setTimeRemaining(duration * 60); // Convert minutes to seconds
+      setIsSessionSetupVisible(false);
+      setHasSessionStarted(true);
+
+      // Start the timer
+      timerRef.current = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            handleEndSession();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Set initial AI message
+      setMessages([
+        {
+          id: '1',
+          text: "Hi! I'm here to chat and help you process your thoughts. How are you feeling today?",
+          isAI: true,
+        },
+      ]);
+    } catch (error) {
+      console.error('Error starting session:', error);
+      Alert.alert('Error', 'Could not start a new session.');
+    }
+  };
+
+  const formatTimeRemaining = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Session Setup Modal Component
+  const SessionSetupModal = () => (
+    <Modal
+      visible={isSessionSetupVisible}
+      animationType="slide"
+      transparent={true}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Choose Session Duration</Text>
+          <Text style={styles.modalSubtitle}>How long would you like to chat?</Text>
+          
+          {[15, 30, 45].map((duration) => (
+            <TouchableOpacity
+              key={duration}
+              style={styles.durationButton}
+              onPress={() => startSession(duration)}
+            >
+              <Text style={styles.durationButtonText}>{duration} minutes</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </Modal>
+  );
 
   const handleSend = async () => {
     if (input.trim()) {
@@ -167,8 +234,16 @@ const TherapyChat = ({ navigation }) => {
   };
 
   const handleEndSession = async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
     if (messages.length === 0) {
       Alert.alert('No Messages', 'There are no messages to summarize.');
+      setMessages([]);
+      setInput('');
+      setLoading(false);
+      navigation.goBack();
       return;
     }
 
@@ -285,24 +360,28 @@ const TherapyChat = ({ navigation }) => {
 
   return (
     <LinearGradient colors={['#f0f4f8', '#d9e2ec']} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
+      <SessionSetupModal />
 
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#4B5563" />
-          </TouchableOpacity>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>AI Therapist Chat</Text>
-            <Text style={styles.headerSubtitle}>Your safe space to talk</Text>
-          </View>
-
-          <TouchableOpacity onPress={handleEndSession} style={styles.endSessionButton}>
-            <Ionicons name="exit-outline" size={24} color="#4B5563" />
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="#6D28D9" />
+        </TouchableOpacity>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.headerTitle}>AI Therapist Chat</Text>
+          {hasSessionStarted && timeRemaining !== null && (
+            <Text style={styles.headerTimer}>
+              Time remaining: {formatTimeRemaining(timeRemaining)}
+            </Text>
+          )}
         </View>
+        <TouchableOpacity onPress={handleEndSession} style={styles.endSessionButton}>
+          <Ionicons name="exit-outline" size={24} color="#6D28D9" />
+        </TouchableOpacity>
+      </View>
 
 
         <FlatList
@@ -355,11 +434,17 @@ const TherapyChat = ({ navigation }) => {
           visible={isSummaryVisible && summaryData !== null}
           animationType="slide"
           transparent={true}
-          onRequestClose={() => setIsSummaryVisible(false)}
+          onRequestClose={() => {
+            setIsSummaryVisible(false);
+            navigation.goBack();
+          }}
         >
           <SessionSummary
             summaryData={summaryData}
-            onClose={() => setIsSummaryVisible(false)}
+            onClose={() => {
+              setIsSummaryVisible(false);
+              navigation.goBack();
+            }}
           />
         </Modal>
       </SafeAreaView>
@@ -367,4 +452,53 @@ const TherapyChat = ({ navigation }) => {
   );
 };
 
-export default TherapyChat
+const additionalStyles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#1F2937',
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: '#4B5563',
+    marginBottom: 20,
+  },
+  durationButton: {
+    backgroundColor: '#6D28D9',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginVertical: 8,
+    width: '100%',
+  },
+  durationButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  headerTimer: {
+    fontSize: 14,
+    color: '#6D28D9',
+    fontWeight: '600',
+  },
+});
+
+// Merge the additional styles with the existing styles
+Object.assign(styles, additionalStyles);
+
+export default TherapyChat;

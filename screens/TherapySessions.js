@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  ScrollView,
   Platform,
 } from 'react-native';
 import { auth, db } from '../firebase';
@@ -23,13 +24,12 @@ const TherapySessions = ({ navigation }) => {
   const [selectedSummary, setSelectedSummary] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Fetch all sessions from Firestore
   const fetchSessions = async () => {
     try {
       const sessionsRef = collection(db, 'users', auth.currentUser.uid, 'sessions');
       const q = query(sessionsRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
-      const sessionsData = querySnapshot.docs.map(doc => ({
+      const sessionsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
@@ -51,7 +51,6 @@ const TherapySessions = ({ navigation }) => {
     setModalVisible(true);
   };
 
-  // Render each session item
   const renderSession = ({ item }) => {
     const createdAt = item.createdAt?.toDate();
     const formattedDate = createdAt ? format(createdAt, 'MMMM dd, yyyy hh:mm a') : 'Unknown Date';
@@ -62,11 +61,9 @@ const TherapySessions = ({ navigation }) => {
         onPress={() => navigation.navigate('Session', { sessionId: item.id })}
       >
         <Text style={styles.sessionDate}>{formattedDate}</Text>
-        
-        {/* Conditionally render book icon if summary exists */}
         {item.summary && (
           <TouchableOpacity onPress={() => handleSummaryPress(item.summary)} style={styles.iconButton}>
-            <Feather name="book" size={20} color="#9333ea" />
+            <Feather name="book" size={20} color="#6D28D9" />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -76,7 +73,7 @@ const TherapySessions = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#9333ea" />
+        <ActivityIndicator size="large" color="#6D28D9" />
       </SafeAreaView>
     );
   }
@@ -91,17 +88,22 @@ const TherapySessions = ({ navigation }) => {
         <FlatList
           data={sessions}
           renderItem={renderSession}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
         />
       )}
 
-      {/* Modal for Session Summary */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <SessionSummary 
-          summaryData={selectedSummary} 
-          onClose={() => setModalVisible(false)} 
-        />
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView contentContainerStyle={styles.modalScrollContent}>
+              <SessionSummary summaryData={selectedSummary} onClose={() => setModalVisible(false)} />
+            </ScrollView>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -110,35 +112,29 @@ const TherapySessions = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#e9d5ff',
+    paddingHorizontal: 16,
+    backgroundColor: '#F0F4F8',
   },
   listContainer: {
     paddingBottom: 16,
   },
   sessionItem: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 20,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 2,
   },
   sessionDate: {
     fontSize: 16,
-    color: '#9333ea',
+    color: '#1F2937',
   },
   iconButton: {
     padding: 8,
@@ -155,7 +151,42 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#7e22ce',
+    color: '#7E22CE',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+    alignItems: 'center',
+  },
+  modalScrollContent: {
+    alignItems: 'center',
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: '#6D28D9',
+    borderRadius: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  closeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

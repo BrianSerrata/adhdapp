@@ -1,5 +1,3 @@
-// src/screens/LoginScreen.js
-
 import React, { useState } from 'react';
 import {
   View,
@@ -8,15 +6,22 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import styles from '../styles/LoginPageStyles';
 
 const LoginPage = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = () => {
@@ -27,14 +32,11 @@ const LoginPage = ({ navigation }) => {
 
     setLoading(true);
     signInWithEmailAndPassword(auth, email, password)
-      .then(userCredential => {
-        // Login successful
-        const user = userCredential.user;
-        console.log('Logged in with:', user.email);
-        // Navigate to Home or other screen
+      .then((userCredential) => {
+        console.log('Logged in with:', userCredential.user.email);
         navigation.navigate('Home Page');
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Login Error:', error);
         Alert.alert('Login Error', error.message);
       })
@@ -42,80 +44,80 @@ const LoginPage = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Log In</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#9ca3af"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#9ca3af"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.buttonText}>Log In</Text>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Register Page')}>
-        <Text style={styles.linkText}>Don't have an account? Register</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <Animated.View entering={FadeInDown.duration(500)} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.description}>
+              Enter your email and password to access your account
+            </Text>
+          </View>
+
+          <View style={styles.cardContent}>
+            <View style={styles.inputContainer}>
+              <Feather name="mail" size={20} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#666"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Feather name="lock" size={20} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#666"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Log In</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.cardFooter}>
+            <Text style={styles.footerText}>
+              Don't have an account?{' '}
+              <Text
+                style={styles.linkText}
+                onPress={() => navigation.navigate('Register Page')}
+              >
+                Register
+              </Text>
+            </Text>
+            <Text style={styles.linkText} onPress={() => Alert.alert('Forgot Password')}>
+              Forgot your password?
+            </Text>
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'center',
-    backgroundColor: '#e9d5ff',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#7e22ce',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderColor: '#9333ea',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: '#ffffff',
-    color: '#1f2937',
-  },
-  button: {
-    backgroundColor: '#9333ea',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  linkText: {
-    color: '#7e22ce',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
 
 export default LoginPage;

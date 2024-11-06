@@ -6,15 +6,22 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { auth } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import styles from '../styles/RegisterPageStyles';
 
 const RegisterPage = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = () => {
@@ -25,14 +32,11 @@ const RegisterPage = ({ navigation }) => {
 
     setLoading(true);
     createUserWithEmailAndPassword(auth, email, password)
-      .then(userCredential => {
-        // Registration successful
-        const user = userCredential.user;
-        console.log('Registered with:', user.email);
-        // Navigate to Home or other screen
+      .then((userCredential) => {
+        console.log('Registered with:', userCredential.user.email);
         navigation.navigate('Home Page');
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Registration Error:', error);
         Alert.alert('Registration Error', error.message);
       })
@@ -40,80 +44,77 @@ const RegisterPage = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Register</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#9ca3af"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#9ca3af"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.buttonText}>Register</Text>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Login Page')}>
-        <Text style={styles.linkText}>Already have an account? Log In</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <Animated.View entering={FadeInDown.duration(500)} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.title}>Create an Account</Text>
+            <Text style={styles.description}>
+              Enter your email and password to register
+            </Text>
+          </View>
+
+          <View style={styles.cardContent}>
+            <View style={styles.inputContainer}>
+              <Feather name="mail" size={20} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#666"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Feather name="lock" size={20} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#666"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Register</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.cardFooter}>
+            <Text style={styles.footerText}>
+              Already have an account?{' '}
+              <Text
+                style={styles.linkText}
+                onPress={() => navigation.navigate('Login Page')}
+              >
+                Log In
+              </Text>
+            </Text>
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'center',
-    backgroundColor: '#e9d5ff',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#7e22ce',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderColor: '#9333ea',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: '#ffffff',
-    color: '#1f2937',
-  },
-  button: {
-    backgroundColor: '#9333ea',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  linkText: {
-    color: '#7e22ce',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
 
 export default RegisterPage;

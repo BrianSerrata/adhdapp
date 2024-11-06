@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,151 +7,150 @@ import {
   StyleSheet,
   Platform,
   Dimensions,
+  ScrollView,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import styles from '../styles/HomePageStyles';
 
-// Get device width for responsive design
 const { width } = Dimensions.get('window');
 
 const HomePage = ({ navigation }) => {
-  const handleAIChat = () => {
-    navigation.navigate('Therapy Chat');
+  const [greeting, setGreeting] = useState('');
+  const [quote, setQuote] = useState('');
+  const [reflectionModalVisible, setReflectionModalVisible] = useState(false);
+  const [reflection, setReflection] = useState('');
+  const [question, setQuestion] = useState('');
+
+  useEffect(() => {
+    setGreeting(getGreeting());
+    setQuote(getRandomQuote());
+    setQuestion(getRandomQuestion());
+  }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
-  const handleImpulseLog = () => {
-    navigation.navigate('Impulse Logger');
+  const getRandomQuote = () => {
+    const quotes = [
+      "Small steps lead to big changes! 🌟",
+      "You've got this! One task at a time. 💪",
+      "Focus on progress, not perfection. 🎯",
+      "Your effort today is shaping your future. 🌈",
+      "Embrace the journey, celebrate small wins! 🎉",
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
   };
 
-  const handleTherapySessions = () => {
-    navigation.navigate('Therapy Sessions');
+  const getRandomQuestion = () => {
+    const questions = [
+      "What was the highlight of your day?",
+      "What’s one thing you learned today?",
+      "What are you most grateful for today?",
+      "What challenged you today, and how did you overcome it?",
+      "How did you take care of yourself today?",
+    ];
+    return questions[Math.floor(Math.random() * questions.length)];
   };
+
+  const handleReflectionSubmit = () => {
+    if (reflection.trim()) {
+      Alert.alert("Reflection Submitted", "Thank you for reflecting today!");
+      setReflection('');
+      setReflectionModalVisible(false);
+    } else {
+      Alert.alert("Empty Reflection", "Please enter your reflection before submitting.");
+    }
+  };
+
+  const handleNavigation = (screen) => {
+    navigation.navigate(screen);
+  };
+
+  const renderFeatureCard = (title, icon, screen) => (
+    <TouchableOpacity
+      style={styles.featureCard}
+      onPress={() => handleNavigation(screen)}
+      activeOpacity={0.7}
+    >
+      <Feather name={icon} size={32} color="#4f46e5" />
+      <Text style={styles.featureTitle}>{title}</Text>
+    </TouchableOpacity>
+  );
 
   return (
-    <LinearGradient
-      colors={['#1e3c72', '#2a5298']}
-      style={styles.container}
-    >
+    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Welcome Message */}
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.title}>Hey there! 👋</Text>
-          <Text style={styles.subtitle}>What would you like to do today?</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Header Section */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.greeting}>{greeting}</Text>
+            </View>
+          </View>
 
-        {/* Main Content Placeholder */}
-        <View style={styles.mainContent}>
-          {/* You can add more content here if needed */}
-        </View>
+          {/* Quote Card */}
+          <View style={styles.quoteContainer}>
+            <Text style={styles.quote}>{quote}</Text>
+          </View>
 
-        {/* Encouraging Message */}
-        <Text style={styles.encouragingText}>
-          "Small steps lead to big changes! 🌟"
-        </Text>
+          {/* Features Grid */}
+          <View style={styles.featuresGrid}>
+            {renderFeatureCard("AI Chat", "message-square", "Therapy Chat")}
+            {renderFeatureCard("Impulse Log", "zap-off", "Impulse Logger")}
+            {renderFeatureCard("Sessions", "book", "Therapy Sessions")}
+          </View>
 
-        {/* Bottom Tab Bar */}
-        <View style={styles.tabBar}>
-          {/* AI Chat Tab */}
-          <TouchableOpacity
-            style={styles.tabButton}
-            onPress={handleAIChat}
-            activeOpacity={0.7}
-          >
-            <Feather name="message-square" size={24} color="#4f46e5" />
-            <Text style={styles.tabText}>Chat</Text>
-          </TouchableOpacity>
+          {/* Daily Reflection */}
+          <Text style={styles.sectionTitle}>Daily Reflection</Text>
+          <View style={styles.reflectionCard}>
+            <Text style={styles.reflectionTitle}>Reflect on the question of the day</Text>
+            <Text style={styles.reflectionDescription}>
+              Take a moment to answer today’s question and reflect on your journey.
+            </Text>
+            <TouchableOpacity
+              style={styles.reflectionButton}
+              onPress={() => setReflectionModalVisible(true)}
+            >
+              <Text style={styles.reflectionButtonText}>Take a moment to reflect</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
 
-          {/* Impulse Logger Tab */}
-          <TouchableOpacity
-            style={styles.tabButton}
-            onPress={handleImpulseLog}
-            activeOpacity={0.7}
-          >
-            <Feather name="zap-off" size={24} color="#4f46e5" />
-            <Text style={styles.tabText}>Impulse</Text>
-          </TouchableOpacity>
-
-          {/* Therapy Sessions Tab */}
-          <TouchableOpacity
-            style={styles.tabButton}
-            onPress={handleTherapySessions}
-            activeOpacity={0.7}
-          >
-            <Feather name="book" size={24} color="#4f46e5" />
-            <Text style={styles.tabText}>Sessions</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Reflection Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={reflectionModalVisible}
+          onRequestClose={() => setReflectionModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalQuestion}>{question}</Text>
+              <TextInput
+                style={styles.reflectionInput}
+                placeholder="Type your reflection here..."
+                placeholderTextColor="#6B7280"
+                value={reflection}
+                onChangeText={setReflection}
+                multiline
+              />
+              <TouchableOpacity style={styles.submitButton} onPress={handleReflectionSubmit}>
+                <Text style={styles.submitButtonText}>Submit Reflection</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: 16,
-    justifyContent: 'space-between',
-  },
-  welcomeContainer: {
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: 'white', // Delve-like Purple
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'white', // Complementary Purple
-  },
-  mainContent: {
-    flex: 1,
-    // Add any additional styling or content here
-  },
-  encouragingText: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: 'white',
-    fontStyle: 'italic',
-    marginBottom: 16,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    paddingVertical: 12,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    // iOS shadow
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  tabButton: {
-    alignItems: 'center',
-    width: width / 3 - 32, // Adjust width based on number of tabs
-  },
-  tabText: {
-    marginTop: 4,
-    fontSize: 12,
-    color: 'black',
-    fontWeight: '600',
-  },
-});
 
 export default HomePage;
