@@ -15,6 +15,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from '../styles/HomePageStyles';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 
 const { width } = Dimensions.get('window');
 
@@ -60,11 +62,33 @@ const HomePage = ({ navigation }) => {
     return questions[Math.floor(Math.random() * questions.length)];
   };
 
-  const handleReflectionSubmit = () => {
+  const handleReflectionSubmit = async () => {
     if (reflection.trim()) {
-      Alert.alert("Reflection Submitted", "Thank you for reflecting today!");
-      setReflection('');
-      setReflectionModalVisible(false);
+      try {
+        // Construct reflection data
+        const reflectionData = {
+          question: question,
+          answer: reflection.trim(),
+          date: new Date(),
+          createdAt: Timestamp.now(),
+          userId: auth.currentUser.uid, // Optional, for user-specific data
+        };
+  
+        // Reference the Firestore collection for the current user
+        const reflectionsRef = collection(db, 'users', auth.currentUser.uid, 'reflections');
+  
+        // Add the reflection to Firestore
+        await addDoc(reflectionsRef, reflectionData);
+  
+        Alert.alert("Reflection Submitted", "Thank you for reflecting today!");
+        setReflection('');
+        setReflectionModalVisible(false);
+  
+        // Optional: Refresh data or trigger state update if needed
+      } catch (error) {
+        console.error('Error submitting reflection:', error);
+        Alert.alert('Error', 'Failed to submit your reflection. Please try again later.');
+      }
     } else {
       Alert.alert("Empty Reflection", "Please enter your reflection before submitting.");
     }
@@ -104,8 +128,9 @@ const HomePage = ({ navigation }) => {
           {/* Features Grid */}
           <View style={styles.featuresGrid}>
             {renderFeatureCard("AI Chat", "message-square", "Therapy Chat")}
-            {renderFeatureCard("Impulse Log", "zap-off", "Impulse Logger")}
+            {renderFeatureCard("Journal", "edit", "Journal Entries")}
             {renderFeatureCard("Sessions", "book", "Therapy Sessions")}
+            {renderFeatureCard("Past Reflections", "edit-3", "Reflections")}
           </View>
 
           {/* Daily Reflection */}
@@ -133,6 +158,14 @@ const HomePage = ({ navigation }) => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
+              {/* Close Button */}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setReflectionModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+              
               <Text style={styles.modalQuestion}>{question}</Text>
               <TextInput
                 style={styles.reflectionInput}
@@ -148,6 +181,7 @@ const HomePage = ({ navigation }) => {
             </View>
           </View>
         </Modal>
+
       </SafeAreaView>
     </LinearGradient>
   );

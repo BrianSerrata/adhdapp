@@ -7,11 +7,10 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
-  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { auth, db } from '../firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
@@ -57,15 +56,17 @@ const TherapySessions = ({ navigation }) => {
 
     return (
       <TouchableOpacity
-        style={styles.sessionItem}
+        style={styles.sessionCard}
         onPress={() => navigation.navigate('Session', { sessionId: item.id })}
       >
-        <Text style={styles.sessionDate}>{formattedDate}</Text>
-        {item.summary && (
-          <TouchableOpacity onPress={() => handleSummaryPress(item.summary)} style={styles.iconButton}>
-            <Feather name="book" size={20} color="#6D28D9" />
-          </TouchableOpacity>
-        )}
+        <View style={styles.sessionContent}>
+          <Text style={styles.sessionDate}>{formattedDate}</Text>
+          {item.summary && (
+            <TouchableOpacity onPress={() => handleSummaryPress(item.summary)} style={styles.iconButton}>
+              <Feather name="book" size={20} color="#4F46E5" />
+            </TouchableOpacity>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -73,64 +74,85 @@ const TherapySessions = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6D28D9" />
+        <ActivityIndicator size="large" color="#4F46E5" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {sessions.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No past sessions found.</Text>
+    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.gradient}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>Therapy Sessions</Text>
         </View>
-      ) : (
-        <FlatList
-          data={sessions}
-          renderItem={renderSession}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-        />
-      )}
-
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView contentContainerStyle={styles.modalScrollContent}>
-              <SessionSummary summaryData={selectedSummary} onClose={() => setModalVisible(false)} />
-            </ScrollView>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
+        {sessions.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No past sessions found.</Text>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        ) : (
+          <FlatList
+            data={sessions}
+            renderItem={renderSession}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
+
+        <Modal visible={modalVisible} animationType="slide" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ScrollView contentContainerStyle={styles.modalScrollContent}>
+                <SessionSummary summaryData={selectedSummary} onClose={() => setModalVisible(false)} />
+              </ScrollView>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: '#F0F4F8',
+  },
+  header: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   listContainer: {
     paddingBottom: 16,
   },
-  sessionItem: {
+  sessionCard: {
     backgroundColor: '#FFFFFF',
     padding: 16,
-    borderRadius: 20,
+    borderRadius: 16,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 2,
+  },
+  sessionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sessionDate: {
     fontSize: 16,
@@ -151,7 +173,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#7E22CE',
+    color: '#D1D5DB',
     textAlign: 'center',
   },
   modalOverlay: {
@@ -166,11 +188,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
     alignItems: 'center',
   },
   modalScrollContent: {
@@ -178,7 +195,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 20,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#4F46E5',
     borderRadius: 25,
     paddingVertical: 10,
     paddingHorizontal: 20,

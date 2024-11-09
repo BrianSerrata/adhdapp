@@ -11,18 +11,16 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { auth, db } from '../firebase';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import axios from 'axios';
-import styles from '../styles/JournalEntriesStyles';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const JournalEntries = ({ navigation }) => {
   const [entryText, setEntryText] = useState('');
-  const [title, setTitle] = useState('');
-  const [entryType, setEntryType] = useState('journal'); // "journal" or "impulse"
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -50,22 +48,17 @@ const JournalEntries = ({ navigation }) => {
   }, [navigation]);
 
   const handleAddEntry = async () => {
-    if (entryText.trim() === '' && title.trim() === '') {
-      Alert.alert('Validation Error', 'Please enter a title and content for your entry.');
+    if (entryText.trim() === '') {
       return;
     }
 
     try {
       const entriesRef = collection(db, 'users', auth.currentUser.uid, 'entries');
       await addDoc(entriesRef, {
-        title: title.trim() || (entryType === 'impulse' ? 'Impulse Log' : 'Journal Entry'),
         content: entryText.trim(),
-        type: entryType,
         timestamp: serverTimestamp(),
       });
-      setTitle('');
       setEntryText('');
-      setEntryType('journal');
     } catch (error) {
       console.error('Error adding entry:', error);
       Alert.alert('Error', 'Failed to add entry. Please try again.');
@@ -89,25 +82,6 @@ const JournalEntries = ({ navigation }) => {
         },
       },
     ]);
-  };
-
-  const renderEntryItem = ({ item }) => {
-    const formattedTimestamp = item.timestamp
-      ? format(item.timestamp.toDate(), 'MMMM dd, yyyy hh:mm a')
-      : 'Just now';
-
-    return (
-      <View style={styles.entryItem}>
-        <View style={styles.entryTextContainer}>
-          <Text style={styles.entryTitle}>{item.title}</Text>
-          <Text style={styles.entryContent}>{item.content}</Text>
-          <Text style={styles.entryTimestamp}>{formattedTimestamp}</Text>
-        </View>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteEntry(item.id)}>
-          <Feather name="x" size={18} color="#6D28D9" />
-        </TouchableOpacity>
-      </View>
-    );
   };
 
   const handleGetInsights = async () => {
@@ -171,43 +145,43 @@ const JournalEntries = ({ navigation }) => {
     }
   };    
 
-  return (
-    <LinearGradient colors={['#f0f4f8', '#d9e2ec']} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={24} color="#6D28D9" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Journal & Impulses</Text>
-          <TouchableOpacity onPress={handleGetInsights}>
-            <MaterialIcons name="insights" size={24} color="#6D28D9" />
+  const renderEntryItem = ({ item }) => {
+    const formattedDate = item.timestamp
+      ? format(item.timestamp.toDate(), 'MMM dd, yyyy')
+      : 'Just now';
+
+    return (
+      <View style={styles.messageRow}>
+        <View style={styles.messageBubble}>
+          <Text style={styles.messageText}>{item.content}</Text>
+          <Text style={styles.timestamp}>{formattedDate}</Text>
+          <TouchableOpacity 
+            style={styles.deleteButton} 
+            onPress={() => handleDeleteEntry(item.id)}
+          >
+            <Ionicons name="trash-outline" size={16} color="#9CA3AF" />
           </TouchableOpacity>
         </View>
+      </View>
+    );
+  };
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Title"
-            value={title}
-            onChangeText={setTitle}
-            placeholderTextColor="#9CA3AF"
-          />
-          <TextInput
-            style={styles.entryInput}
-            placeholder="What's on your mind?"
-            value={entryText}
-            onChangeText={setEntryText}
-            placeholderTextColor="#9CA3AF"
-            multiline
-            maxLength={500}
-          />
+  return (
+    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
           <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: entryText.trim() ? '#6D28D9' : '#C4B5FD' }]}
-            onPress={handleAddEntry}
-            activeOpacity={0.8}
-            disabled={!entryText.trim()}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Feather name="plus" size={24} color="#FFFFFF" />
+            <Ionicons name="arrow-back" size={24} color="#4B5563" />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Journal</Text>
+            <Text style={styles.headerSubtitle}>Record your thoughts</Text>
+          </View>
+          <TouchableOpacity onPress={handleGetInsights}>
+            <MaterialIcons name="insights" size={24} color="#6D28D9" />
           </TouchableOpacity>
         </View>
 
@@ -220,13 +194,18 @@ const JournalEntries = ({ navigation }) => {
             data={entries}
             renderItem={renderEntryItem}
             keyExtractor={(item) => item.id}
-            style={styles.list}
+            style={styles.messageList}
             contentContainerStyle={styles.listContent}
-            ListEmptyComponent={<Text style={styles.emptyText}>No entries logged yet.</Text>}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No entries yet</Text>
+                <Text style={styles.emptySubtext}>Start journaling your thoughts</Text>
+              </View>
+            }
           />
         )}
 
-        <Modal
+<Modal
           visible={isModalVisible}
           animationType="slide"
           transparent={true}
@@ -234,23 +213,240 @@ const JournalEntries = ({ navigation }) => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Insights & Advice</Text>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Insights & Advice</Text>
+                <TouchableOpacity
+                  style={styles.closeButtonTop}
+                  onPress={() => setIsModalVisible(false)}
+                >
+                  <Ionicons name="close" size={24} color="#4B5563" />
+                </TouchableOpacity>
+              </View>
+              
               {isLoadingInsights ? (
-                <ActivityIndicator size="large" color="#6D28D9" />
+                <View style={styles.modalLoadingContainer}>
+                  <ActivityIndicator size="large" color="#6D28D9" />
+                </View>
               ) : (
-                <ScrollView>
+                <ScrollView
+                  style={styles.modalScrollView}
+                  contentContainerStyle={styles.modalScrollContent}
+                >
                   <Text style={styles.modalText}>{insights}</Text>
                 </ScrollView>
               )}
-              <TouchableOpacity style={styles.closeButton} onPress={() => setIsModalVisible(false)}>
+              
+              <TouchableOpacity
+                style={styles.closeButtonBottom}
+                onPress={() => setIsModalVisible(false)}
+              >
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={entryText}
+            onChangeText={setEntryText}
+            placeholder="Write your thoughts..."
+            placeholderTextColor="#9CA3AF"
+            multiline
+          />
+          <TouchableOpacity
+            onPress={handleAddEntry}
+            style={[
+              styles.sendButton,
+              { backgroundColor: entryText.trim() ? '#6D28D9' : '#C4B5FD' },
+            ]}
+            disabled={!entryText.trim()}
+          >
+            <Ionicons name="send" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </LinearGradient>
   );
 };
+
+const styles = {
+  container: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: 'white',
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  messageList: {
+    flex: 1,
+  },
+  listContent: {
+    padding: 16,
+  },
+  messageRow: {
+    marginBottom: 16,
+  },
+  messageBubble: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  messageText: {
+    fontSize: 16,
+    color: '#1F2937',
+    lineHeight: 24,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    padding: 4,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    maxHeight: 100,
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#4B5563',
+    fontWeight: '600',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  
+    // Modal Styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      width: '90%',
+      maxHeight: '80%',
+      backgroundColor: 'white',
+      borderRadius: 20,
+      padding: 20,
+      elevation: 5, // For Android shadow
+      shadowColor: '#000', // For iOS shadow
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: '#1F2937',
+    },
+    closeButtonTop: {
+      padding: 4,
+    },
+    modalLoadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: 200, // Adjust as needed
+    },
+    modalScrollView: {
+      flex: 1,
+      marginBottom: 20,
+    },
+    modalScrollContent: {
+      paddingBottom: 20,
+    },
+    modalText: {
+      fontSize: 16,
+      color: '#1F2937',
+      lineHeight: 24,
+    },
+    closeButtonBottom: {
+      alignSelf: 'flex-end',
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      backgroundColor: '#6D28D9',
+      borderRadius: 20,
+    },
+    closeButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  };
 
 export default JournalEntries;

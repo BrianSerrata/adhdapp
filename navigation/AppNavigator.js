@@ -9,6 +9,7 @@ import TherapySessions from '../screens/TherapySessions';
 import Session from '../screens/Session';
 import JournalEntries from '../screens/JournalEntries';
 import SessionSummary from '../components/SessionSummary';
+import Reflections from '../screens/Reflections';
 
 const Stack = createStackNavigator();
 
@@ -21,8 +22,9 @@ const AppNavigator = () => {
       <Stack.Screen name="Therapy Chat" component={TherapyChat} />
       <Stack.Screen name="Therapy Sessions" component={TherapySessions} />
       <Stack.Screen name="Session" component={Session} />
-      <Stack.Screen name="Impulse Logger" component={JournalEntries} />
+      <Stack.Screen name="Journal Entries" component={JournalEntries} />
       <Stack.Screen name="Session Summary" component={SessionSummary} />
+      <Stack.Screen name="Reflections" component={Reflections} />
       {/* Add other screens here */}
     </Stack.Navigator>
   );

@@ -179,8 +179,7 @@ const TherapyChat = ({ navigation }) => {
 
     const systemPrompt = {
       role: 'system',
-      content: `I want you to act as a licensed therapist with expertise in mental health counseling, specializing in ADHD and related challenges. 
-                Begin by asking for my name, and then use it to create a warm, personalized experience throughout our session. 
+      content: `I want you to act as a licensed therapist with expertise in mental health counseling, specializing in ADHD and related challenges.  
                 Conduct this conversation as a real therapy session, using an empathetic, ADHD-informed, patient-centered approach. 
                 Recognize and validate the unique struggles associated with ADHD, such as difficulty with focus, organization, 
                 impulsivity, emotional regulation, and feeling misunderstood. Acknowledge the strengths and resilience often present in individuals with ADHD.
@@ -451,54 +450,5 @@ const TherapyChat = ({ navigation }) => {
     </LinearGradient>
   );
 };
-
-const additionalStyles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#1F2937',
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    color: '#4B5563',
-    marginBottom: 20,
-  },
-  durationButton: {
-    backgroundColor: '#6D28D9',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    marginVertical: 8,
-    width: '100%',
-  },
-  durationButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  headerTimer: {
-    fontSize: 14,
-    color: '#6D28D9',
-    fontWeight: '600',
-  },
-});
-
-// Merge the additional styles with the existing styles
-Object.assign(styles, additionalStyles);
 
 export default TherapyChat;
