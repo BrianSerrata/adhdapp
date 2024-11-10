@@ -241,6 +241,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  resourcesContainer: {
+    marginTop: 20,
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+  resourceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  resourceButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+    flex: 1,
+    marginLeft: 8,
   },    
 });
 

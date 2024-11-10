@@ -147,6 +147,19 @@ const HomePage = ({ navigation }) => {
               <Text style={styles.reflectionButtonText}>Take a moment to reflect</Text>
             </TouchableOpacity>
           </View>
+
+        <View style={styles.resourcesContainer}>
+            <TouchableOpacity
+              style={styles.resourceButton}
+              onPress={() => navigation.navigate('Resources')}
+            >
+              <Feather name="book-open" size={20} color="#FFFFFF" />
+              <Text style={styles.resourceButtonText}>
+                ADHD Resources
+              </Text>
+              <Feather name="chevron-right" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         </ScrollView>
 
         {/* Reflection Modal */}
