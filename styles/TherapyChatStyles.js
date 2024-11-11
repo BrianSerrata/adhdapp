@@ -1,4 +1,6 @@
-import { StyleSheet } from 'react-native';
+// src/styles/TherapyChatStyles.js
+
+import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
@@ -34,18 +36,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F2937',
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
-  },
   endSessionButton: {
     padding: 8,
+  },
+  headerTimer: {
+    fontSize: 14,
+    color: '#6D28D9',
+    fontWeight: '600',
+  },
+  chatContainer: {
+    flex: 1,
   },
   messageList: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   messageRow: {
     marginBottom: 12,
@@ -88,18 +93,17 @@ const styles = StyleSheet.create({
   userText: {
     color: '#FFFFFF',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    padding: 12,
+  bottomContainer: {
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3.84,
-    elevation: 2,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    alignItems: 'center',
   },
   input: {
     flex: 1,
@@ -117,7 +121,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#6D28D9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -143,93 +146,72 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 14,
   },
-
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 20,
-        width: '80%',
-        alignItems: 'center',
-    },
-    modalTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        color: '#1F2937',
-    },
-    modalSubtitle: {
-        fontSize: 16,
-        color: '#4B5563',
-        marginBottom: 20,
-    },
-    durationButton: {
-        backgroundColor: '#6D28D9',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 10,
-        marginVertical: 8,
-        width: '100%',
-    },
-    durationButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
-    headerTimer: {
-        fontSize: 14,
-        color: '#6D28D9',
-        fontWeight: '600',
-    },
-    modalContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-      backgroundColor: 'white',
-      borderRadius: 20,
-      padding: 20,
-      width: '80%',
-      alignItems: 'center',
-    },
-    modalTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 10,
-      color: '#1F2937',
-    },
-    modalSubtitle: {
-      fontSize: 16,
-      color: '#4B5563',
-      marginBottom: 20,
-    },
-    durationButton: {
-      backgroundColor: '#6D28D9',
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: 10,
-      marginVertical: 8,
-      width: '100%',
-    },
-    durationButtonText: {
-      color: 'white',
-      fontSize: 18,
-      fontWeight: '600',
-      textAlign: 'center',
-    },
-    headerTimer: {
-      fontSize: 14,
-      color: '#6D28D9',
-      fontWeight: '600',
-    },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#1F2937',
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: '#4B5563',
+    marginBottom: 20,
+  },
+  durationButton: {
+    backgroundColor: '#6D28D9',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginVertical: 8,
+    width: '100%',
+  },
+  durationButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  suggestionCard: {
+    backgroundColor: '#6D28D9', // Purple background
+    paddingVertical: 6, // Slightly increased height for better touch area
+    paddingHorizontal: 16, // Adjusted padding for better spacing
+    borderRadius: 20, // More rounded corners
+    marginRight: 8, // Space between cards
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+    minWidth: 80, // Ensure the cards are wide enough
+    height: 35, // Increased height for better visibility
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  suggestionText: {
+    fontSize: 14, // Slightly larger font size for readability
+    color: '#ffffff', // White text for contrast
+    textAlign: 'center', // Center the text
+  },
+  suggestionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  suggestionsWrapper: {
+    marginBottom: 8, // Space between suggestions and input
+  },
 });
 
 export default styles;

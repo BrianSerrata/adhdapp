@@ -16,6 +16,7 @@ import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Feather } from '@expo/vector-icons';
 import SessionSummary from '../components/SessionSummary';
+import styles from '../styles/TherapySessionsStyles';
 
 const TherapySessions = ({ navigation }) => {
   const [sessions, setSessions] = useState([]);
@@ -83,8 +84,15 @@ const TherapySessions = ({ navigation }) => {
     <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.gradient}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Therapy Sessions</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Feather name="arrow-left" size={24} color="#4F46E5" />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Therapy Sessions</Text>
+            <Text style={styles.headerSubtitle}>Review your past sessions</Text>
+          </View>
         </View>
+
         {sessions.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No past sessions found.</Text>
@@ -114,97 +122,5 @@ const TherapySessions = ({ navigation }) => {
     </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  header: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  listContainer: {
-    paddingBottom: 16,
-  },
-  sessionCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 2,
-  },
-  sessionContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sessionDate: {
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  iconButton: {
-    padding: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#D1D5DB',
-    textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '90%',
-    maxHeight: '80%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalScrollContent: {
-    alignItems: 'center',
-  },
-  closeButton: {
-    marginTop: 20,
-    backgroundColor: '#4F46E5',
-    borderRadius: 25,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
 
 export default TherapySessions;

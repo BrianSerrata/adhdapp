@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,34 +25,68 @@ import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/fi
 import SessionSummary from '../components/SessionSummary'; // Import the SessionSummary component
 import styles from '../styles/TherapyChatStyles';
 
-const TherapyChat = ({ navigation }) => {
+const TherapyChat = ({ navigation, route }) => {
+
+  const resource = route.params?.resource;
+  const isResourceChat = !!resource;
+
   const [messages, setMessages] = useState([
     {
       id: '1',
-      text: "Hi! I'm here to chat and help you process your thoughts. How are you feeling today?",
+      text: isResourceChat
+        ? `Hi! I'm here to chat about the resource "${resource.title}". What would you like to know?`
+        : "Hi! I'm here to chat and help you process your thoughts. How are you feeling today?",
       isAI: true,
     },
   ]);
+
+  const SuggestionCard = ({ topic, onSelect }) => {
+    return (
+      <TouchableOpacity style={styles.suggestionCard} onPress={() => onSelect(topic)}>
+        <Text style={styles.suggestionText}>{topic}</Text>
+      </TouchableOpacity>
+    );
+  };
+  
+
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
-  const [sessionDuration, setSessionDuration] = useState(null);
-  const [isSessionSetupVisible, setIsSessionSetupVisible] = useState(true);
+  const [isSessionSetupVisible, setIsSessionSetupVisible] = useState(!isResourceChat);
   const [timeRemaining, setTimeRemaining] = useState(null);
-  const [hasSessionStarted, setHasSessionStarted] = useState(false);
+  const [hasSessionStarted, setHasSessionStarted] = useState(isResourceChat);
+  const [sessionDuration, setSessionDuration] = useState(null);
   const flatListRef = useRef(null);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    // Cleanup timer on component unmount
+    if (isResourceChat) {
+      startResourceChat();
+    }
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
     };
   }, []);
+
+  const startResourceChat = async () => {
+    try {
+      // TODO: probably going to have to create a dedicated collection for resource-specific convos
+      const docRef = await addDoc(collection(db, 'users', auth.currentUser.uid, 'sessions'), {
+        createdAt: serverTimestamp(),
+        resourceTitle: resource.title,
+        resourceUrl: resource.url,
+        messages: [],
+      });
+      setSessionId(docRef.id);
+    } catch (error) {
+      console.error('Error starting resource chat:', error);
+      Alert.alert('Error', 'Could not start a new chat session.');
+    }
+  };
 
   const startSession = async (duration) => {
     try {
@@ -179,7 +214,10 @@ const TherapyChat = ({ navigation }) => {
 
     const systemPrompt = {
       role: 'system',
-      content: `I want you to act as a licensed therapist with expertise in mental health counseling, specializing in ADHD and related challenges.  
+      content: isResourceChat
+        ? `You are an AI assistant specializing in ADHD resources. The user wants to discuss the resource "${resource.url}". Before proceeding, make sure to parse the article by accessing the url.
+           Provide information, answer questions, and offer insights related to this specific resource. If asked about other topics, gently redirect the conversation back to the resource. Be empathetic, informative, and supportive in your responses.`
+        : `I want you to act as a licensed therapist with expertise in mental health counseling, specializing in ADHD and related challenges.  
                 Conduct this conversation as a real therapy session, using an empathetic, ADHD-informed, patient-centered approach. 
                 Recognize and validate the unique struggles associated with ADHD, such as difficulty with focus, organization, 
                 impulsivity, emotional regulation, and feeling misunderstood. Acknowledge the strengths and resilience often present in individuals with ADHD.
@@ -359,75 +397,91 @@ const TherapyChat = ({ navigation }) => {
 
   return (
     <LinearGradient colors={['#f0f4f8', '#d9e2ec']} style={styles.container}>
-    <SafeAreaView style={styles.safeArea}>
-      <SessionSetupModal />
-
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#6D28D9" />
-        </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>AI Therapist Chat</Text>
-          {hasSessionStarted && timeRemaining !== null && (
-            <Text style={styles.headerTimer}>
-              Time remaining: {formatTimeRemaining(timeRemaining)}
+      <SafeAreaView style={styles.safeArea}>
+        {!isResourceChat && <SessionSetupModal />}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#6D28D9" />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>
+              {isResourceChat ? `Chat about ${resource.title}` : 'AI Therapist Chat'}
             </Text>
+            {!isResourceChat && hasSessionStarted && timeRemaining !== null && (
+              <Text style={styles.headerTimer}>
+                Time remaining: {formatTimeRemaining(timeRemaining)}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity onPress={handleEndSession} style={styles.endSessionButton}>
+            <Ionicons name="exit-outline" size={24} color="#6D28D9" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.chatContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.messageList}
+            onContentSizeChange={scrollToEnd}
+            onLayout={scrollToEnd}
+          />
+
+          {loading && (
+            <View style={styles.loadingIndicator}>
+              <ActivityIndicator size="small" color="#6D28D9" />
+              <Text style={styles.loadingText}>AI is typing...</Text>
+            </View>
           )}
         </View>
-        <TouchableOpacity onPress={handleEndSession} style={styles.endSessionButton}>
-          <Ionicons name="exit-outline" size={24} color="#6D28D9" />
-        </TouchableOpacity>
-      </View>
 
-
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.messageList}
-          onContentSizeChange={scrollToEnd}
-          onLayout={scrollToEnd}
-        />
-
-
-        {loading && (
-          <View style={styles.loadingIndicator}>
-            <ActivityIndicator size="small" color="#6D28D9" />
-            <Text style={styles.loadingText}>AI is typing...</Text>
-          </View>
-        )}
-
-
+        {/* KeyboardAvoidingView wraps the suggestions and input */}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder="Type your message..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-            />
-            <TouchableOpacity
-              onPress={handleSend}
-              style={[
-                styles.sendButton,
-                { backgroundColor: input.trim() ? '#6D28D9' : '#C4B5FD' },
-              ]}
-              disabled={!input.trim() || loading}
+          <View style={styles.bottomContainer}>
+            {/* Suggestion Cards */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.suggestionsWrapper}
+              contentContainerStyle={styles.suggestionsContainer}
+              keyboardShouldPersistTaps="handled" // **Added this line**
             >
-              <Ionicons name="send" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+              {['Topic 1', 'Topic 2', 'Topic 3', 'Topic 4'].map((topic, index) => (
+                <SuggestionCard key={index} topic={topic} onSelect={(selectedTopic) => {
+                  setInput(selectedTopic);
+                  scrollToEnd();
+                }} />
+              ))}
+            </ScrollView>
+
+            {/* Input Box */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Type your message..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+              />
+              <TouchableOpacity
+                onPress={handleSend}
+                style={[
+                  styles.sendButton,
+                  { backgroundColor: input.trim() ? '#6D28D9' : '#C4B5FD' },
+                ]}
+                disabled={!input.trim() || loading}
+              >
+                <Ionicons name="send" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
           </View>
         </KeyboardAvoidingView>
-
 
         <Modal
           visible={isSummaryVisible && summaryData !== null}

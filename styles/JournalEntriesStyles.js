@@ -1,189 +1,223 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
+  // Container and Background Styles
   container: {
-    flex: 1,
-  },
-  gradientBackground: {
     flex: 1,
   },
   safeArea: {
     flex: 1,
     paddingHorizontal: 16,
   },
+  gradientBackground: {
+    flex: 1,
+  },
+
+  // Header Styles
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 20,
-    paddingHorizontal: 4,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: 'white',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
+  backButton: {
+    marginRight: 12,
   },
-  list: {
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+
+  // List and Entry Styles
+  messageList: {
     flex: 1,
   },
   listContent: {
-    paddingBottom: 20,
-  },
-  entryItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     padding: 16,
+  },
+  messageRow: {
     marginBottom: 16,
+  },
+  messageBubble: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  entryTextContainer: {
-    flex: 1,
-  },
-  entryTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
-  },
-  entryContent: {
+  messageText: {
     fontSize: 16,
-    color: '#4B5563',
-    marginBottom: 12,
+    color: '#1F2937',
     lineHeight: 24,
   },
-  entryTimestamp: {
-    fontSize: 13,
+  timestamp: {
+    fontSize: 12,
     color: '#6B7280',
-    fontWeight: '500',
+    marginTop: 8,
   },
   deleteButton: {
     position: 'absolute',
-    right: 12,
     top: 12,
-    padding: 8,
+    right: 12,
+    padding: 4,
+  },
+
+  // Input Container Styles
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Loading and Empty States
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginTop: 40,
-    opacity: 0.8,
+    fontSize: 18,
+    color: '#4B5563',
+    fontWeight: '600',
   },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     width: '90%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'stretch',
     maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    // Added to support proper layout structure
+    flexDirection: 'column',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#4338CA',
-    marginBottom: 20,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  modalLoadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 200,
+  },
+  modalScrollView: {
+    maxHeight: '70%',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
   },
   modalText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#1F2937',
     lineHeight: 24,
-    marginBottom: 16,
+    padding: 10,
   },
-  modalScrollView: {
-    maxHeight: Dimensions.get('window').height * 0.4,
-    marginVertical: 16,
-  },
-  input: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#1F2937',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  entryInput: {
-    height: 150,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#1F2937',
-    textAlignVertical: 'top',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  addButton: {
-    backgroundColor: '#4338CA',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    width: '100%',
-    shadowColor: '#4338CA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  closeButton: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 12,
+  // Updated button styles
+  closeButtonBottom: {
+    marginTop: 15, // Add space between scroll content and button
+    width: '100%', // Take full width to ensure consistent positioning
+    backgroundColor: '#6D28D9',
+    borderRadius: 20,
+    padding: 15,
+    alignItems: 'center', // Center the text horizontally
+    justifyContent: 'center',
   },
   closeButtonText: {
-    color: '#4338CA',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.5,
+    textAlign: 'center',
   },
-  typeIcon: {
-    marginRight: 8,
+  closeButtonTop: {
+    padding: 4,
   },
-  headerButton: {
-    padding: 8,
-  },
-  headerButtonText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-  },
-  entryTypeTag: {
-    position: 'absolute',
-    right: 12,
-    top: 12,
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  entryTypeText: {
-    color: '#4338CA',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+    container: {
+      flex: 1,
+    },
+    keyboardAvoidingView: {
+      flex: 1,
+    },
+    contentContainer: {
+      flex: 1,
+    },
+    safeArea: {
+      flex: 1,
+    },
+    messageList: {
+      flex: 1,
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: '#FFFFFF',
+      borderTopWidth: 1,
+      borderTopColor: '#E5E7EB',
+    },
+    input: {
+      flex: 1,
+      minHeight: 40,
+      maxHeight: 100,
+      backgroundColor: '#F3F4F6',
+      borderRadius: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      marginRight: 8,
+      fontSize: 16,
+      color: '#1F2937',
+    },
 });
 
 export default styles;

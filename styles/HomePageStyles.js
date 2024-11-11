@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   resourcesContainer: {
     marginTop: 20,
-    marginHorizontal: 16,
+    width: width-32,
     marginBottom: 20,
   },
   resourceButton: {

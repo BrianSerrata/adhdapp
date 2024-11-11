@@ -11,6 +11,9 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,6 +29,11 @@ const HomePage = ({ navigation }) => {
   const [reflectionModalVisible, setReflectionModalVisible] = useState(false);
   const [reflection, setReflection] = useState('');
   const [question, setQuestion] = useState('');
+  
+  const closeModal = () => {
+    setReflectionModalVisible(false);
+    setReflection('');
+  };
 
   useEffect(() => {
     setGreeting(getGreeting());
@@ -129,16 +137,15 @@ const HomePage = ({ navigation }) => {
           <View style={styles.featuresGrid}>
             {renderFeatureCard("AI Chat", "message-square", "Therapy Chat")}
             {renderFeatureCard("Journal", "edit", "Journal Entries")}
-            {renderFeatureCard("Sessions", "book", "Therapy Sessions")}
+            {renderFeatureCard("Past Sessions", "book", "Therapy Sessions")}
             {renderFeatureCard("Past Reflections", "edit-3", "Reflections")}
           </View>
 
           {/* Daily Reflection */}
-          <Text style={styles.sectionTitle}>Daily Reflection</Text>
           <View style={styles.reflectionCard}>
             <Text style={styles.reflectionTitle}>Reflect on the question of the day</Text>
             <Text style={styles.reflectionDescription}>
-              Take a moment to answer today’s question and reflect on your journey.
+              Take a moment to answer today’s question and focus on the present.
             </Text>
             <TouchableOpacity
               style={styles.reflectionButton}
@@ -167,32 +174,50 @@ const HomePage = ({ navigation }) => {
           animationType="slide"
           transparent={true}
           visible={reflectionModalVisible}
-          onRequestClose={() => setReflectionModalVisible(false)}
+          onRequestClose={closeModal}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              {/* Close Button */}
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setReflectionModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-              
-              <Text style={styles.modalQuestion}>{question}</Text>
-              <TextInput
-                style={styles.reflectionInput}
-                placeholder="Type your reflection here..."
-                placeholderTextColor="#6B7280"
-                value={reflection}
-                onChangeText={setReflection}
-                multiline
-              />
-              <TouchableOpacity style={styles.submitButton} onPress={handleReflectionSubmit}>
-                <Text style={styles.submitButtonText}>Submit Reflection</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={styles.modalOverlay}
+            >
+              <TouchableWithoutFeedback>
+                <View style={styles.modalContent}>
+                  <View style={styles.modalHeader}>
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={closeModal}
+                    >
+                      <Feather name="x" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={styles.modalQuestion}>{question}</Text>
+                  
+                  <TextInput
+                    style={styles.reflectionInput}
+                    placeholder="Type your reflection here..."
+                    placeholderTextColor="#6B7280"
+                    value={reflection}
+                    onChangeText={setReflection}
+                    multiline
+                    textAlignVertical="top"
+                  />
+
+                  <TouchableOpacity 
+                    style={[
+                      styles.submitButton,
+                      !reflection.trim() && styles.submitButtonDisabled
+                    ]} 
+                    onPress={handleReflectionSubmit}
+                    disabled={!reflection.trim()}
+                  >
+                    <Text style={styles.submitButtonText}>Submit Reflection</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
         </Modal>
 
       </SafeAreaView>

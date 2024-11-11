@@ -4,32 +4,23 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
   Alert,
   ScrollView,
-} from 'react-native';
-import {
-  Card,
-  Title,
-  Paragraph,
-  Button,
+  ActivityIndicator,
   Modal,
-  Portal,
-  Provider as PaperProvider,
-} from 'react-native-paper';
-import Icon from 'react-native-vector-icons/Feather';
-import RNPickerSelect from 'react-native-picker-select';
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../firebase'; // Adjust this import based on your project
-import { LinearGradient } from 'expo-linear-gradient';
+import { db, auth } from '../firebase';
+import { StyleSheet } from 'react-native';
 
-
-const Reflections = () => {
+const Reflections = ({ navigation }) => {
   const [reflections, setReflections] = useState([]);
   const [selectedReflection, setSelectedReflection] = useState(null);
-  const [isDialogVisible, setIsDialogVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +32,7 @@ const Reflections = () => {
           const data = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            date: doc.data().date.toDate(), // Convert Firestore timestamp to JS date
+            date: doc.data().date.toDate(),
           }));
           setReflections(data);
           setLoading(false);
@@ -58,193 +49,202 @@ const Reflections = () => {
     fetchReflections();
   }, []);
 
-  const openReflectionDialog = (reflection) => {
+  const handleReflectionPress = (reflection) => {
     setSelectedReflection(reflection);
-    setIsDialogVisible(true);
-  };
-
-  const closeReflectionDialog = () => {
-    setSelectedReflection(null);
-    setIsDialogVisible(false);
+    setModalVisible(true);
   };
 
   const renderReflectionItem = ({ item }) => (
-    <TouchableOpacity onPress={() => openReflectionDialog(item)} style={styles.cardWrapper}>
-      <Card style={styles.card}>
-        <Card.Content style={styles.cardContent}>
-          <Icon name="calendar" size={20} color="#4f46e5" style={styles.icon} />
-          <View style={styles.cardText}>
-            <Text style={styles.dateText}>{format(item.date, 'MMMM d, yyyy')}</Text>
-            <Text style={styles.questionText} numberOfLines={1}>
-              {item.question}
-            </Text>
-          </View>
-          <Icon name="chevron-right" size={20} color="#4f46e5" />
-        </Card.Content>
-      </Card>
+    <TouchableOpacity onPress={() => handleReflectionPress(item)} style={styles.sessionCard}>
+      <View style={styles.sessionContent}>
+        <Text style={styles.sessionDate}>{format(item.date, 'MMMM dd, yyyy')}</Text>
+        <TouchableOpacity style={styles.iconButton}>
+          <Feather name="book" size={20} color="#4F46E5" />
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.container}>
-    <PaperProvider>
+    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.gradient}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Past Reflections</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Feather name="arrow-left" size={24} color="#4F46E5" />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Reflections</Text>
+            <Text style={styles.headerSubtitle}>Review your past reflections</Text>
+          </View>
         </View>
-        <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.container}>
-        <ScrollView style={styles.scrollArea}>
-          {loading ? (
-            <Text style={styles.loadingText}>Loading reflections...</Text>
-          ) : reflections.length === 0 ? (
-            <Text style={styles.emptyText}>No reflections found. Try adjusting your filter.</Text>
-          ) : (
-            
-            <FlatList
-              data={reflections}
-              keyExtractor={(item) => item.id}
-              renderItem={renderReflectionItem}
-              contentContainerStyle={styles.listContainer}
-            />
-          )}
-        </ScrollView>
-</LinearGradient>
-        <Portal>
-          <Modal visible={isDialogVisible} onDismiss={closeReflectionDialog} contentContainerStyle={styles.modalContainer}>
-            {selectedReflection && (
-              <Card>
-                <Card.Content>
-                  <Text style={styles.modalDate}>{format(selectedReflection.date, 'MMMM d, yyyy')}</Text>
-                  <Text style={styles.modalQuestion}>{selectedReflection.question}</Text>
-                  <Text style={styles.modalAnswer}>{selectedReflection.answer}</Text>
-                  <Button mode="contained" onPress={closeReflectionDialog} style={styles.closeButton}>
-                    Close
-                  </Button>
-                </Card.Content>
-              </Card>
-            )}
-          </Modal>
-        </Portal>
+
+        {reflections.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No reflections found.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={reflections}
+            renderItem={renderReflectionItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
+
+        <Modal visible={modalVisible} animationType="slide" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ScrollView contentContainerStyle={styles.modalScrollContent}>
+                {selectedReflection && (
+                  <>
+                    <Text style={styles.sessionDate}>
+                      {format(selectedReflection.date, 'MMMM dd, yyyy')}
+                    </Text>
+                    <Text style={[styles.sessionDate, { marginTop: 10 }]}>
+                      {selectedReflection.question}
+                    </Text>
+                    <Text style={[styles.sessionDate, { marginTop: 10, color: '#6B7280' }]}>
+                      {selectedReflection.answer}
+                    </Text>
+                  </>
+                )}
+              </ScrollView>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
-    </PaperProvider>
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: 'linear-gradient(to bottom, #4f46e5, #9333ea)', // Gradient background
-    padding: 16,
+    paddingHorizontal: 16,
   },
-  header: {
-    paddingVertical: 16,
-    paddingHorizontal: 10,
-    backgroundColor: 'transparent',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-  filterContainer: {
-    marginBottom: 16,
-  },
-  cardWrapper: {
-    marginBottom: 12,
-  },
-  card: {
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    elevation: 3,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  icon: {
+  backButton: {
     marginRight: 12,
   },
-  cardText: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: 'white',
+  },
+  headerTextContainer: {
     flex: 1,
   },
-  dateText: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '600',
     color: '#1F2937',
   },
-  questionText: {
+  headerSubtitle: {
     fontSize: 14,
     color: '#6B7280',
   },
-  scrollArea: {
-    borderRadius: 8,
-    backgroundColor: 'linear-gradient(to bottom, #4f46e5, #9333ea)', // Gradient background
-    padding: 8,
-    marginTop: 8,
-  },
   listContainer: {
-    paddingBottom: 16,
+    padding: 16,
   },
-  loadingText: {
+  sessionCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 2,
+  },
+  sessionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flex: 1,
+  },
+  sessionDate: {
     fontSize: 16,
-    color: '#ffffff',
-    textAlign: 'center',
-    marginTop: 20,
+    color: '#1F2937',
+  },
+  iconButton: {
+    padding: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#ffffff',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  modalContainer: {
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 20,
-  },
-  modalDate: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  modalQuestion: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  modalAnswer: {
-    fontSize: 16,
     color: '#4B5563',
-    marginBottom: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    width: '100%',
   },
   closeButton: {
-    alignSelf: 'center',
-    backgroundColor: '#4f46e5',
+    marginTop: 15,
+    backgroundColor: '#4F46E5',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-});
-
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
+  closeButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    color: '#1F2937',
-    paddingRight: 30, // To ensure the text is never behind the icon
-  },
-  inputAndroid: {
-    fontSize: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    color: '#1F2937',
-    paddingRight: 30, // To ensure the text is never behind the icon
-  },
-  iconContainer: {
-    top: 12,
-    right: 10,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
