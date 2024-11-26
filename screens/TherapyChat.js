@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   FlatList,
   ActivityIndicator,
@@ -58,6 +59,8 @@ const TherapyChat = ({ navigation, route }) => {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [hasSessionStarted, setHasSessionStarted] = useState(isResourceChat);
   const [sessionDuration, setSessionDuration] = useState(null);
+  const [isEntryModalVisible, setIsEntryModalVisible] = useState(false);
+  const [entryText, setEntryText] = useState('');
   const flatListRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -133,6 +136,12 @@ const TherapyChat = ({ navigation, route }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const handleAIResponse = (aiResponse) => {
+    const isJournalPrompt = aiResponse.includes("journal");
+    return { text: aiResponse, isJournalPrompt };
+  };
+  
+
   // Session Setup Modal Component
   const SessionSetupModal = () => (
     <Modal
@@ -161,6 +170,7 @@ const TherapyChat = ({ navigation, route }) => {
 
   const handleSend = async () => {
     if (input.trim()) {
+      Keyboard.dismiss()
       const userMessage = { id: Date.now().toString(), text: input, isAI: false };
       setMessages(prev => [...prev, userMessage]);
       setInput('');
@@ -170,10 +180,14 @@ const TherapyChat = ({ navigation, route }) => {
 
       try {
         const aiResponse = await getAIResponse([...messages, userMessage]);
+
+        const responseData = handleAIResponse(aiResponse);
+
         const aiMessage = {
           id: (Date.now() + 1).toString(),
           text: aiResponse,
           isAI: true,
+          isJournalPrompt: responseData.isJournalPrompt,
         };
         setMessages(prev => [...prev, aiMessage]);
 
@@ -217,19 +231,10 @@ const TherapyChat = ({ navigation, route }) => {
       content: isResourceChat
         ? `You are an AI assistant specializing in ADHD resources. The user wants to discuss the resource "${resource.url}". Before proceeding, make sure to parse the article by accessing the url.
            Provide information, answer questions, and offer insights related to this specific resource. If asked about other topics, gently redirect the conversation back to the resource. Be empathetic, informative, and supportive in your responses.`
-        : `I want you to act as a licensed therapist with expertise in mental health counseling, specializing in ADHD and related challenges.  
-                Conduct this conversation as a real therapy session, using an empathetic, ADHD-informed, patient-centered approach. 
-                Recognize and validate the unique struggles associated with ADHD, such as difficulty with focus, organization, 
-                impulsivity, emotional regulation, and feeling misunderstood. Acknowledge the strengths and resilience often present in individuals with ADHD.
-                
-                Offer active listening and validation for my experiences, and provide constructive feedback grounded in therapeutic frameworks 
-                such as cognitive-behavioral therapy, mindfulness, acceptance and commitment therapy, and ADHD-specific coaching strategies where appropriate. 
-                
-                Help me explore my thoughts and feelings, offering insights and coping strategies that can support my needs with ADHD. 
-                Emphasize practical, actionable steps for managing symptoms, improving focus, and reducing overwhelm, and encourage positive self-reflection on personal strengths.
-                
-                At the end of each session, summarize key takeaways or next steps based on our conversation, highlighting specific strategies that might be helpful. 
-                Focus on creating a safe, supportive, and confidential environment that prioritizes my emotional well-being and acknowledges the complexities of living with ADHD.`
+        : `Act as a licensed therapist specializing in ADHD. Conduct a therapy session with empathy, recognizing struggles like focus and impulsivity.
+           Offer active listening, validation, and practical coping strategies.
+           Summarize key takeaways at the end, creating a safe environment for discussion. Be warm, genuine, and human, without being overbearing.
+           Make sure to limit your responses to 300 completion_tokens or less.`
     };
 
     // Format the conversation for OpenAI's API
@@ -391,13 +396,81 @@ const TherapyChat = ({ navigation, route }) => {
         <Text style={[styles.messageText, item.isAI ? styles.aiText : styles.userText]}>
           {item.text}
         </Text>
+        {item.isJournalPrompt && (
+          <TouchableOpacity
+            style={styles.journalButton}
+            onPress={() => setIsEntryModalVisible(true)}
+          >
+            <Text style={styles.journalButtonText}>Journal</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
+  
 
   return (
     <LinearGradient colors={['#f0f4f8', '#d9e2ec']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+     
+        <Modal
+        visible={isEntryModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsEntryModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.centeredView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0} // Adjust as needed
+        >
+          <ScrollView
+            contentContainerStyle={styles.modalScrollView}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.modalView}>
+              <Text style={styles.modalTitle}>Journal Your Thoughts</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Write your thoughts here..."
+                value={entryText}
+                onChangeText={setEntryText}
+                multiline
+                numberOfLines={4}
+              />
+              <View style={styles.modalButtonContainer}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => setIsEntryModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSave]}
+                  onPress={async () => {
+                    try {
+                      const entriesRef = collection(db, 'users', auth.currentUser.uid, 'entries');
+                      await addDoc(entriesRef, {
+                        content: entryText.trim(),
+                        timestamp: serverTimestamp(),
+                      });
+                      setEntryText('');
+                      setIsEntryModalVisible(false);
+                    } catch (error) {
+                      console.error('Error adding entry:', error);
+                      Alert.alert('Error', 'Failed to add entry. Please try again.');
+                    }
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+
         {!isResourceChat && <SessionSetupModal />}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

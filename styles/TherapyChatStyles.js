@@ -212,6 +212,77 @@ const styles = StyleSheet.create({
   suggestionsWrapper: {
     marginBottom: 8, // Space between suggestions and input
   },
+  journalButton: {
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "#6D28D9",
+    borderRadius: 5,
+  },
+  journalButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+
+  centeredView: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalScrollView: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalView: {
+    width: '85%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalInput: {
+    width: '100%',
+    height: 100,
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 15,
+    textAlignVertical: 'top',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    borderRadius: 10,
+    padding: 10,
+    elevation: 2,
+    width: '45%',
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: '#F3F4F6',
+  },
+  modalButtonSave: {
+    backgroundColor: '#6D28D9',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },  
 });
 
 export default styles;

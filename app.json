@@ -4,6 +4,7 @@
     "slug": "adhdapp",
     "version": "1.0.0",
     "orientation": "portrait",
+    "newArchEnabled":"true",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -22,6 +23,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "44e601d0-bab4-4e49-bce2-38dbda7bdd81"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/44e601d0-bab4-4e49-bce2-38dbda7bdd81"
+    }  
   }
 }
