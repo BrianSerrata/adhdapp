@@ -11,6 +11,9 @@ import JournalEntries from '../screens/JournalEntries';
 import SessionSummary from '../components/SessionSummary';
 import Reflections from '../screens/Reflections';
 import ResourcesPage from '../screens/Resources';
+import RoutineBuilder from '../screens/RoutineBuilder';
+import SavedRoutines from '../screens/SavedRoutines';
+import RoutineViewer from '../components/RoutineViewer';
 
 const Stack = createStackNavigator();
 
@@ -24,6 +27,9 @@ const AppNavigator = () => {
       <Stack.Screen name="Therapy Sessions" component={TherapySessions} />
       <Stack.Screen name="Session" component={Session} />
       <Stack.Screen name="Journal Entries" component={JournalEntries} />
+      <Stack.Screen name="Routine Builder" component={RoutineBuilder} />
+      <Stack.Screen name="Saved Routines" component={SavedRoutines} />
+      <Stack.Screen name="View Routines" component={RoutineViewer} />
       <Stack.Screen name="Session Summary" component={SessionSummary} />
       <Stack.Screen name="Reflections" component={Reflections} />
       <Stack.Screen name="Resources" component={ResourcesPage} />

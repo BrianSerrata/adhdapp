@@ -139,6 +139,8 @@ const HomePage = ({ navigation }) => {
             {renderFeatureCard("Journal", "edit", "Journal Entries")}
             {renderFeatureCard("Past Sessions", "book", "Therapy Sessions")}
             {renderFeatureCard("Past Reflections", "edit-3", "Reflections")}
+            {renderFeatureCard("Routine Builder", "tool", "Routine Builder")}
+            {renderFeatureCard("Routines", "clock", "Saved Routines")}
           </View>
 
           {/* Daily Reflection */}
@@ -160,11 +162,11 @@ const HomePage = ({ navigation }) => {
               style={styles.resourceButton}
               onPress={() => navigation.navigate('Resources')}
             >
-              <Feather name="book-open" size={20} color="#FFFFFF" />
+              <Feather name="book-open" size={20} color="#4f46e5" />
               <Text style={styles.resourceButtonText}>
                 ADHD Resources
               </Text>
-              <Feather name="chevron-right" size={20} color="#FFFFFF" />
+              <Feather name="chevron-right" size={20} color="#4f46e5" />
             </TouchableOpacity>
           </View>
         </ScrollView>
