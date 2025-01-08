@@ -71,7 +71,9 @@ export default function RoutineBuilder({ route }) {
                             "description": "string",
                             "isCompleted": false
                           }
-                        ].`
+                        ].
+                        Do not include any additional text, characters, or formatting such as \`\`\`json. 
+                        Return only the raw JSON array.`
             },
             {
               role: "user",
@@ -91,6 +93,7 @@ export default function RoutineBuilder({ route }) {
       );
 
       const rawContent = response.data.choices[0].message.content;
+      console.log("raw:",rawContent)
       const parsedTasks = JSON.parse(rawContent).map(task => ({
         id: generateId(),
         ...task,
