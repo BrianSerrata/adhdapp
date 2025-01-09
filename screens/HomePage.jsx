@@ -141,6 +141,7 @@ const HomePage = ({ navigation }) => {
             {renderFeatureCard("Past Reflections", "edit-3", "Reflections")}
             {renderFeatureCard("Routine Builder", "tool", "Routine Builder")}
             {renderFeatureCard("Routines", "clock", "Saved Routines")}
+            {renderFeatureCard("Routine Calendar", "clock", "Routine Calendar")}
           </View>
 
           {/* Daily Reflection */}

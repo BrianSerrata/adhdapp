@@ -9,56 +9,82 @@ import {
   ScrollView,
   SafeAreaView,
   Animated,
-  Platform
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback
 } from "react-native";
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase'; // Ensure you have firebase configured properly
 import DraggableFlatList from "react-native-draggable-flatlist";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import styles from "../styles/RoutineBuilderStyles";
-import { OPENAI_API_KEY } from '@env';
 import axios from "axios";
 
+import { OPENAI_API_KEY } from '@env';
+import styles from "../styles/RoutineBuilderStyles";
+
+// Helper to dismiss keyboard
 const dismissKeyboard = () => {
   Keyboard.dismiss();
 };
 
+console.log(OPENAI_API_KEY)
+
+// Days of week labels (0=Sunday, 6=Saturday)
+const DAYS_OF_WEEK = [
+  { label: "Sun", value: 0 },
+  { label: "Mon", value: 1 },
+  { label: "Tue", value: 2 },
+  { label: "Wed", value: 3 },
+  { label: "Thu", value: 4 },
+  { label: "Fri", value: 5 },
+  { label: "Sat", value: 6 },
+];
+
 export default function RoutineBuilder({ route }) {
-    const { routine } = route.params || {};
+  const { routine } = route.params || {};
   
-    useEffect(() => {
-      if (routine) {
-        setTasks(routine.tasks);
+  // If a routine is provided (edit mode), load its tasks
+  useEffect(() => {
+    if (routine) {
+      setTasks(routine.tasks);
+      // If the routine has daysOfWeek, set that too
+      if (routine.daysOfWeek) {
+        setSelectedDays(routine.daysOfWeek);
       }
-    }, [routine]);
+    }
+  }, [routine]);
 
   const [userInput, setUserInput] = useState("");
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Time picker state
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [timeField, setTimeField] = useState("");
-  const [expandedTaskId, setExpandedTaskId] = useState(null);
   const [selectedTime, setSelectedTime] = useState(new Date());
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
 
+  // **New**: State for days of the week selection
+  const [selectedDays, setSelectedDays] = useState([]); 
+
+  // Generate a random ID for tasks
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  // Fetch tasks from LLM backend
+  // --------------- LLM Routine Generation ---------------
   const handleGenerateRoutine = async () => {
     if (!userInput.trim()) {
       Alert.alert("Error", "Please provide a description of your goals.");
       return;
     }
-
     setLoading(true);
 
     try {
       const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         {
-          model: "gpt-4o-mini",
+          model: "gpt-4o-mini", // or your desired model
           messages: [
             {
               role: "system",
@@ -87,19 +113,20 @@ export default function RoutineBuilder({ route }) {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            Authorization: `Bearer ${ OPENAI_API_KEY }`,
           },
         }
       );
 
       const rawContent = response.data.choices[0].message.content;
-      console.log("raw:",rawContent)
+      console.log("raw:", rawContent);
+
       const parsedTasks = JSON.parse(rawContent).map(task => ({
         id: generateId(),
         ...task,
       }));
-
       setTasks(parsedTasks);
+
     } catch (error) {
       console.error("Error generating routine:", error);
       Alert.alert("Error", "Failed to generate routine. Please try again.");
@@ -108,7 +135,7 @@ export default function RoutineBuilder({ route }) {
     }
   };
 
-  // Toggle task completion
+  // --------------- Task Functions ---------------
   const toggleTaskCompletion = (taskId) => {
     setTasks((prev) =>
       prev.map((task) =>
@@ -119,12 +146,10 @@ export default function RoutineBuilder({ route }) {
     );
   };
 
-  // Handle drag-and-drop reordering
   const handleDragEnd = ({ data }) => {
     setTasks(data);
   };
 
-  // Add a new task
   const handleAddTask = () => {
     const newTask = {
       id: generateId(),
@@ -136,16 +161,14 @@ export default function RoutineBuilder({ route }) {
     setTasks([...tasks, newTask]);
   };
 
-  // Remove a task
   const handleRemoveTask = (taskId) => {
     setTasks(tasks.filter(task => task.id !== taskId));
   };
 
-  // Show time picker
+  // --------------- Time Picker ---------------
   const showTimePicker = (taskId, field) => {
     const task = tasks.find(t => t.id === taskId);
     if (task && task.timeRange[field]) {
-      // Parse the existing time string to Date
       const [hours, minutes] = task.timeRange[field].split(':').map(Number);
       const time = new Date();
       time.setHours(hours);
@@ -160,35 +183,11 @@ export default function RoutineBuilder({ route }) {
   };
 
   const hideTimePicker = () => {
-        setTimePickerVisible(false);
-        setSelectedTaskId(null);
-        setTimeField("");
+    setTimePickerVisible(false);
+    setSelectedTaskId(null);
+    setTimeField("");
   };
 
-  const handleSaveRoutine = async () => {
-    if (!tasks.length) {
-      Alert.alert("Error", "No tasks to save.");
-      return;
-    }
-  
-    try {
-      const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
-      const routineData = {
-        name: `Routine - ${new Date().toLocaleDateString()}`, // You can allow users to name routines
-        tasks,
-        timestamp: serverTimestamp(),
-      };
-  
-      await addDoc(routinesRef, routineData);
-  
-      Alert.alert("Routine Saved", "Your routine has been saved successfully!");
-    } catch (error) {
-      console.error('Error saving routine:', error);
-      Alert.alert("Error", "Failed to save routine. Please try again.");
-    }
-  };
-
-  // Update handleConfirm to use 24-hour format for storage
   const handleConfirm = (time) => {
     const hours = String(time.getHours()).padStart(2, '0');
     const minutes = String(time.getMinutes()).padStart(2, '0');
@@ -204,7 +203,6 @@ export default function RoutineBuilder({ route }) {
     hideTimePicker();
   };
 
-  // Add a function to format time for display
   const formatTimeForDisplay = (timeString) => {
     if (!timeString) return '';
     
@@ -220,15 +218,59 @@ export default function RoutineBuilder({ route }) {
     });
   };
 
-  // Update the renderItem to use the new time formatting
+  // --------------- Days of the Week Selection ---------------
+  const toggleDaySelection = (dayValue) => {
+    setSelectedDays((prev) => {
+      if (prev.includes(dayValue)) {
+        // Remove if already selected
+        return prev.filter((val) => val !== dayValue);
+      } else {
+        // Add if not in the list
+        return [...prev, dayValue];
+      }
+    });
+  };
+
+  // --------------- Save Routine ---------------
+  const handleSaveRoutine = async () => {
+    if (!tasks.length) {
+      Alert.alert("Error", "No tasks to save.");
+      return;
+    }
+
+    if (!selectedDays.length) {
+      Alert.alert("Days Not Selected", "Please select at least one day of the week.");
+      return;
+    }
+    
+    try {
+      const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
+      const routineData = {
+        name: `Routine - ${new Date().toLocaleDateString()}`, 
+        tasks,
+        timestamp: serverTimestamp(),
+        // Include the days of week
+        daysOfWeek: selectedDays,  
+      };
+  
+      await addDoc(routinesRef, routineData);
+      Alert.alert("Routine Saved", "Your routine has been saved successfully!");
+    } catch (error) {
+      console.error('Error saving routine:', error);
+      Alert.alert("Error", "Failed to save routine. Please try again.");
+    }
+  };
+
+  // --------------- Draggable List Render ---------------
   const renderItem = ({ item, drag, isActive }) => {
     const isExpanded = expandedTaskId === item.id;
-    
     return (
-      <Animated.View style={[
-        styles.taskItem,
-        isActive && styles.draggingTask
-      ]}>
+      <Animated.View
+        style={[
+          styles.taskItem,
+          isActive && styles.draggingTask
+        ]}
+      >
         <TouchableOpacity 
           style={styles.taskHeader}
           onPress={() => setExpandedTaskId(isExpanded ? null : item.id)}
@@ -242,10 +284,12 @@ export default function RoutineBuilder({ route }) {
           </TouchableOpacity>
           
           <View style={styles.taskTitleContainer}>
-            <Text style={[
-              styles.taskTitle,
-              item.isCompleted && styles.completedText
-            ]}>
+            <Text 
+              style={[
+                styles.taskTitle,
+                item.isCompleted && styles.completedText
+              ]}
+            >
               {item.title}
             </Text>
             <Text style={styles.taskTime}>
@@ -266,9 +310,13 @@ export default function RoutineBuilder({ route }) {
               style={styles.titleInput}
               value={item.title}
               placeholder="Task title"
-              onChangeText={(text) => setTasks(tasks.map(task => 
-                task.id === item.id ? { ...task, title: text } : task
-              ))}
+              onChangeText={(text) =>
+                setTasks((prev) =>
+                  prev.map((t) =>
+                    t.id === item.id ? { ...t, title: text } : t
+                  )
+                )
+              }
             />
             
             <View style={styles.timeInputsContainer}>
@@ -299,9 +347,13 @@ export default function RoutineBuilder({ route }) {
               placeholder="Task description"
               multiline
               numberOfLines={3}
-              onChangeText={(text) => setTasks(tasks.map(task =>
-                task.id === item.id ? { ...task, description: text } : task
-              ))}
+              onChangeText={(text) =>
+                setTasks((prev) =>
+                  prev.map((t) =>
+                    t.id === item.id ? { ...t, description: text } : t
+                  )
+                )
+              }
             />
 
             <TouchableOpacity 
@@ -315,8 +367,9 @@ export default function RoutineBuilder({ route }) {
         )}
       </Animated.View>
     );
-};
+  };
 
+  // --------------- Main Render ---------------
   return (
     <SafeAreaView style={styles.safeArea}>
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
@@ -327,6 +380,7 @@ export default function RoutineBuilder({ route }) {
         >
           <Text style={styles.header}>Routine Builder</Text>
           
+          {/* Collect user's routine goals */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.goalInput}
@@ -353,6 +407,31 @@ export default function RoutineBuilder({ route }) {
             </TouchableOpacity>
           </View>
 
+          {/* Days of the Week Selection */}
+          <Text style={styles.subHeader}>Select Days of the Week</Text>
+          <View style={styles.daysContainer}>
+            {DAYS_OF_WEEK.map((day) => {
+              const isSelected = selectedDays.includes(day.value);
+              return (
+                <TouchableOpacity
+                  key={day.value}
+                  style={[
+                    styles.dayButton,
+                    isSelected && styles.dayButtonSelected
+                  ]}
+                  onPress={() => toggleDaySelection(day.value)}
+                >
+                  <Text style={[
+                    styles.dayButtonText,
+                    isSelected && styles.dayButtonTextSelected
+                  ]}>
+                    {day.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <View style={styles.taskListHeader}>
             <Text style={styles.taskListTitle}>Tasks</Text>
             <TouchableOpacity 
@@ -363,6 +442,7 @@ export default function RoutineBuilder({ route }) {
             </TouchableOpacity>
           </View>
 
+          {/* Draggable list of tasks */}
           <View style={styles.taskListContainer}>
             <DraggableFlatList
               data={tasks}
@@ -370,12 +450,13 @@ export default function RoutineBuilder({ route }) {
               keyExtractor={(item) => item.id}
               renderItem={renderItem}
               contentContainerStyle={styles.taskList}
-              scrollEnabled={false} // Disable scrolling of DraggableFlatList
+              scrollEnabled={false} // disable DraggableFlatList scrolling
             />
           </View>
 
           <View style={styles.bottomSpacing} />
 
+          {/* Time picker modal */}
           <DateTimePickerModal
             isVisible={isTimePickerVisible}
             mode="time"
@@ -390,7 +471,7 @@ export default function RoutineBuilder({ route }) {
         </ScrollView>
       </TouchableWithoutFeedback>
 
-      {/* Save button outside ScrollView to keep it fixed */}
+      {/* Save button pinned at bottom */}
       <View style={styles.saveButtonContainer}>
         <TouchableOpacity 
           style={styles.saveButton}

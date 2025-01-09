@@ -216,6 +216,28 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3
       },
+      // Pseudocode for styles
+daysContainer: {
+  flexDirection: "row",
+  justifyContent: "space-around",
+  marginVertical: 12,
+},
+dayButton: {
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  borderRadius: 20,
+  backgroundColor: "#eee",
+},
+dayButtonSelected: {
+  backgroundColor: "#6D28D9",
+},
+dayButtonText: {
+  fontSize: 16,
+  color: "#666",
+},
+dayButtonTextSelected: {
+  color: "#fff",
+},
   });
 
 export default styles
