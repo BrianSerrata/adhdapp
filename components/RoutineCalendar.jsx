@@ -3,12 +3,13 @@ import {
   View, 
   Text, 
   TouchableOpacity, 
-  Alert, 
-  StyleSheet, 
+  Alert,  
   ScrollView,
+  SafeAreaView
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { collection, query, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { collection, query, onSnapshot, doc, updateDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import ConfettiCannon from 'react-native-confetti-cannon';
 import styles from "../styles/RoutineCalendarStyles";
@@ -19,10 +20,49 @@ const STATUS_COLORS = {
   FAILED: '#FF5252',     // Red
 };
 
+const getGreeting = () => {
+  const hours = new Date().getHours();
+  if (hours < 12) return 'Good Morning';
+  if (hours < 18) return 'Good Afternoon';
+  return 'Good Evening';
+};
+
 export default function RoutineCalendar() {
   const [routines, setRoutines] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [showConfetti, setShowConfetti] = useState(false);
+  const [greeting, setGreeting] = useState('');
+  const [name, setName] = useState('');
+
+  // Function to fetch the user's name
+  const fetchUserName = async () => {
+    try {
+      const userId = auth.currentUser?.uid; // Ensure a user is logged in
+      if (!userId) return;
+
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        setName(userDoc.data().name || 'User'); // Fallback to 'User' if name is not present
+      } else {
+        console.log('No user document found.');
+        setName('User'); // Fallback if no document exists
+      }
+    } catch (error) {
+      console.error('Error fetching user name:', error);
+      setName('User'); // Fallback in case of an error
+    }
+  };
+
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchUserName(); // Await the name fetch
+    };
+    fetchData(); // Invoke the async function
+  }, []);
   
   // Initialize selectedDate with today's date
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -251,15 +291,33 @@ export default function RoutineCalendar() {
     textDayHeaderFontSize: 14
   };
 
-  return (
+// Wrap your main container
+return (
+  <SafeAreaView style={styles.safeContainer}>
     <View style={styles.container}>
-      <Text style={styles.header}>Focus Routines</Text>
-      <ScrollView 
+      <Animated.View 
+        entering={FadeInDown.duration(1000).delay(200)}
+        style={styles.greetingContainer}
+      >
+        <Text style={styles.greeting}>{`${greeting}, ${name || 'User'}`}</Text>
+        <Text style={styles.subGreeting}>Let's make today productive</Text>
+      </Animated.View>
+
+      <Animated.Text 
+        entering={FadeInDown.duration(1000).delay(400)}
+        style={styles.header}
+      >
+      </Animated.Text>
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.calendarContainer}>
+        <Animated.View 
+          entering={FadeInDown.duration(1000).delay(600)}
+          style={styles.calendarContainer}
+        >
           <Calendar
             onDayPress={handleDayPress}
             markedDates={{
@@ -272,35 +330,39 @@ export default function RoutineCalendar() {
             markingType="dot"
             theme={calendarTheme}
           />
-        </View>
+        </Animated.View>
 
         {selectedDate && (
-          <View style={styles.routinesSection}>
+          <Animated.View 
+            entering={FadeInDown.duration(1000).delay(800)}
+            style={styles.routinesSection}
+          >
             <Text style={styles.dateHeader}>
               {new Date(selectedDate).toLocaleDateString('en-US', {
                 weekday: 'long',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
               })}
             </Text>
             {routinesForSelectedDate.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
-                  No routines scheduled
-                </Text>
+              <Animated.View 
+                entering={FadeInDown.duration(1000).delay(1000)}
+                style={styles.emptyState}
+              >
+                <Text style={styles.emptyStateText}>No routines scheduled</Text>
                 <Text style={styles.emptyStateSubtext}>
                   Take a moment to reflect or plan ahead
                 </Text>
-              </View>
+              </Animated.View>
             ) : (
               <View style={styles.routinesList}>
                 <RoutinesList />
               </View>
             )}
-          </View>
+          </Animated.View>
         )}
       </ScrollView>
-      
+
       {showConfetti && (
         <ConfettiCannon
           count={50}
@@ -311,5 +373,6 @@ export default function RoutineCalendar() {
         />
       )}
     </View>
-  );
+  </SafeAreaView>
+);
 }

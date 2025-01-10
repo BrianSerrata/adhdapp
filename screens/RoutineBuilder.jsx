@@ -41,8 +41,8 @@ const DAYS_OF_WEEK = [
   { label: "Sat", value: 6 },
 ];
 
-export default function RoutineBuilder({ route }) {
-  const { routine } = route.params || {};
+export default function RoutineBuilder({ route, navigation }) {
+  const routine = route?.params?.routine;
   
   // If a routine is provided (edit mode), load its tasks
   useEffect(() => {
@@ -74,6 +74,7 @@ export default function RoutineBuilder({ route }) {
 
   // --------------- LLM Routine Generation ---------------
   const handleGenerateRoutine = async () => {
+    Keyboard.dismiss()
     if (!userInput.trim()) {
       Alert.alert("Error", "Please provide a description of your goals.");
       return;
@@ -88,18 +89,58 @@ export default function RoutineBuilder({ route }) {
           messages: [
             {
               role: "system",
-              content: `You are a helpful assistant that generates structured routines based on user goals. 
-                        Always respond with a JSON array of tasks following this format:
-                        [
-                          {
-                            "title": "string",
-                            "timeRange": { "start": "string", "end": "string" },
-                            "description": "string",
-                            "isCompleted": false
-                          }
-                        ].
-                        Limit responses to 1000 tokens. Do not include any additional text, characters, or formatting such as \`\`\`json. 
-                        Return only the raw JSON array.`
+              content: `
+                      You are a helpful assistant that generates structured, single-day routines based on user goals. 
+                      The routine must adhere to the following rules:
+
+                      1. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
+                      2. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
+                        - If the goal is fitness-related, the routine should include complementary exercises (e.g., warm-up, workout, cool-down).
+                        - If the goal involves study or productivity, the routine should include time blocks for focused work, breaks, and review.
+                      3. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
+                      4. **Valid Time Range**: Task times must use the 24-hour format ("HH:mm"), fit within a single calendar day (e.g., 06:00 to 22:00), and have appropriate durations.
+                      5. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
+                      6. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
+                      7. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
+                      8. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
+                      9. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
+                      10. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
+                      11. Avoid overscheduling. Include buffer times or flexibility in the routine.
+
+                      Return a JSON array with this format, adhering strictly to the format:
+                      [
+                        {
+                          "title": "string",
+                          "timeRange": { "start": "HH:mm", "end": "HH:mm" },
+                          "description": "string",
+                          "isCompleted": false
+                        }
+                      ].
+
+                      Example for the goal "I want to become muscular":
+                      [
+                        {
+                          "title": "Warm-Up",
+                          "timeRange": { "start": "08:00", "end": "08:15" },
+                          "description": "Light cardio and stretching to prepare for the workout.",
+                          "isCompleted": false
+                        },
+                        {
+                          "title": "Strength Training (Upper Body)",
+                          "timeRange": { "start": "08:15", "end": "09:00" },
+                          "description": "Focus on compound movements like bench press, pull-ups, and shoulder press.",
+                          "isCompleted": false
+                        },
+                        {
+                          "title": "Cool-Down",
+                          "timeRange": { "start": "09:00", "end": "09:15" },
+                          "description": "Stretching and light foam rolling to recover from the workout.",
+                          "isCompleted": false
+                        }
+                      ]
+
+                      Here is the user's goal: ${userInput}.
+                      `
             },
             {
               role: "user",

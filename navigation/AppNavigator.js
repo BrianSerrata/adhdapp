@@ -1,43 +1,97 @@
 // navigation/AppNavigator.js
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import HomePage from '../screens/HomePage';
-import TherapyChat from '../screens/TherapyChat';
-import RegisterPage from '../screens/RegisterPage';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MaterialIcons } from '@expo/vector-icons';
+
+// Import your screens
 import LoginPage from '../screens/LoginPage';
-import TherapySessions from '../screens/TherapySessions';
-import Session from '../screens/Session';
-import JournalEntries from '../screens/JournalEntries';
-import SessionSummary from '../components/SessionSummary';
-import Reflections from '../screens/Reflections';
-import ResourcesPage from '../screens/Resources';
-import RoutineBuilder from '../screens/RoutineBuilder';
-import SavedRoutines from '../screens/SavedRoutines';
-import RoutineViewer from '../components/RoutineViewer';
+import RegisterPage from '../screens/RegisterPage';
 import RoutineCalendar from '../components/RoutineCalendar';
-import SMARTBuilder from '../screens/SMARTBuilder';
+import Routines from '../screens/RoutinesPage';
+import TherapyChat from '../screens/TherapyChat';
+import Resources from '../screens/Resources';
 
-const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
+// Create TabNavigator separately
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarStyle: {
+          backgroundColor: '#1a1a1a',
+          borderTopWidth: 1,
+          borderTopColor: '#242424',
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: '#3d5afe',
+        tabBarInactiveTintColor: '#848484',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+        },
+        headerShown: false,
+        tabBarHideOnKeyboard: true,
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={RoutineCalendar}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Routines"
+        component={Routines}
+        options={{
+          tabBarLabel: 'Routines',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="schedule" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ADHD Life Coach"
+        component={TherapyChat}
+        options={{
+          tabBarLabel: 'AI Coach',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="chat" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Resources"
+        component={Resources}
+        options={{
+          tabBarLabel: 'Resources',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="library-books" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+// Root Navigator
 const AppNavigator = () => {
   return (
-    <Stack.Navigator initialRouteName="Home Page">
-      <Stack.Screen name="Home Page" component={HomePage} />
-      <Stack.Screen name="Register Page" component={RegisterPage} />
+    <Stack.Navigator 
+      initialRouteName="Login Page"
+      screenOptions={{ headerShown: false }}
+    >
       <Stack.Screen name="Login Page" component={LoginPage} />
-      <Stack.Screen name="Therapy Chat" component={TherapyChat} />
-      <Stack.Screen name="Therapy Sessions" component={TherapySessions} />
-      <Stack.Screen name="Session" component={Session} />
-      <Stack.Screen name="Journal Entries" component={JournalEntries} />
-      <Stack.Screen name="Routine Builder" component={RoutineBuilder} />
-      <Stack.Screen name="SMART Builder" component={SMARTBuilder} />
-      <Stack.Screen name="Saved Routines" component={SavedRoutines} />
-      <Stack.Screen name="View Routines" component={RoutineViewer} />
-      <Stack.Screen name="Routine Calendar" component={RoutineCalendar} />
-      <Stack.Screen name="Session Summary" component={SessionSummary} />
-      <Stack.Screen name="Reflections" component={Reflections} />
-      <Stack.Screen name="Resources" component={ResourcesPage} />
-      {/* Add other screens here */}
+      <Stack.Screen name="Register Page" component={RegisterPage} />
+      <Stack.Screen name="MainApp" component={TabNavigator} />
     </Stack.Navigator>
   );
 };

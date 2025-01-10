@@ -1,15 +1,41 @@
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#121212',
-    },
     scrollView: {
       flex: 1,
     },
     scrollContent: {
       paddingBottom: 20,
+    },
+    safeContainer: {
+      flex: 1,
+      backgroundColor: '#121212', // Match your app's background color
+    },
+    container: {
+      flex: 1,
+      backgroundColor: '#121212',
+      paddingBottom: 60, // Space for the tab bar
+    },
+    greetingContainer: {
+      paddingTop: 40, // Space for the header
+      paddingBottom: 20,
+      paddingHorizontal: 16,
+      backgroundColor: '#1a1a1a',
+      borderBottomWidth: 1,
+      borderBottomColor: '#242424',
+      alignItems: 'center',
+    },
+    greeting: {
+      fontSize: 24,
+      fontWeight: '600',
+      color: '#ffffff',
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    subGreeting: {
+      fontSize: 16,
+      color: '#848484',
+      textAlign: 'center',
     },
     header: {
       fontSize: 28,
@@ -114,7 +140,7 @@ const styles = StyleSheet.create({
       fontSize: 14,
       color: '#616161',
       textAlign: 'center',
-    },
+    },   
   });
 
 export default styles

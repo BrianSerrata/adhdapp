@@ -78,13 +78,48 @@ const SMARTBuilder = ({ navigation }) => {
           messages: [
             {
               role: "system",
-              content: "Generate a phased training plan with routines. Return JSON in this format: {\"phases\": [{\"name\": \"Phase 1 - Foundation\",\"duration\": \"2 weeks\",\"routine\": {\"tasks\": [{\"title\": \"string\",\"timeRange\": {\"start\": \"string\",\"end\": \"string\"},\"description\": \"string\",\"isCompleted\": false}],\"daysOfWeek\": [0,1,2,3,4,5,6]},\"metrics\": {\"targetValue\": \"number\",\"description\": \"string\"}}]}"
+              content: `You are a helpful assistant that generates structured, phased training plans.
+                Return JSON in this format:
+          
+                {
+                  "phases": [
+                    {
+                      "name": "string", 
+                      "dateRange": { "start": "string (ISO 8601)", "end": "string (ISO 8601)" },
+                      "routine": {
+                        "tasks": [
+                          {
+                            "title": "string",
+                            "timeRange": { "start": "string", "end": "string" },
+                            "description": "string",
+                            "isCompleted": false
+                          }
+                        ],
+                        "daysOfWeek": [0,1,2,3,4,5,6]
+                      },
+                      "metrics": { 
+                        "targetValue": "number", 
+                        "description": "string" 
+                      }
+                    }
+                  ]
+                }
+          
+                Do NOT include any triple backticks (\`\`\`).
+                Only return valid JSON—no extra commentary.`
             },
             {
               role: "user",
-              content: `Generate a training plan for: ${goal.specific}. Schedule for days: ${selectedDays.map(day => DAYS_OF_WEEK[day].label).join(', ')}`
+              content: `Generate a training plan for the following SMART goal:
+              Specific: ${goal.specific}
+              Measurable: ${goal.measurable}
+              Achievable: ${goal.achievable}
+              Relevant: ${goal.relevant}
+              Time-based: ${goal.timeBased}
+              Use these user-selected days: ${selectedDays.map(day => DAYS_OF_WEEK[day].label).join(', ')}`
             }
           ]
+          
         },
         {
           headers: {
@@ -95,9 +130,13 @@ const SMARTBuilder = ({ navigation }) => {
       );
   
       console.log("OpenAI raw response:", response.data.choices[0].message.content);
-      let plan = JSON.parse(response.data.choices[0].message.content);
-      
-      if (!plan.phases || !Array.isArray(plan.phases)) {
+      let rawResponse = response.data.choices[0].message.content || "";
+    // 1. Remove code fences
+      rawResponse = rawResponse.replace(/```(\w+)?/g, "");
+    
+    // 2. Parse
+      let plan = JSON.parse(rawResponse);
+            if (!plan.phases || !Array.isArray(plan.phases)) {
         throw new Error("Invalid response format from AI");
       }
       

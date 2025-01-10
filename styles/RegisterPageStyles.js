@@ -1,85 +1,102 @@
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      paddingHorizontal: 16,
-    },
-    card: {
-      width: '100%',
-      maxWidth: 400,
-      alignSelf: 'center',
-      backgroundColor: '#FFFFFF',
-      borderRadius: 20,
-      padding: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
-      elevation: 5,
-    },
-    cardHeader: {
-      alignItems: 'center',
-      marginBottom: 20,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#4f46e5',
-      textAlign: 'center',
-    },
-    description: {
-      fontSize: 14,
-      color: '#666',
-      textAlign: 'center',
-    },
-    cardContent: {
-      marginBottom: 20,
-    },
-    inputContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#F3F4F6',
-      borderRadius: 12,
-      paddingHorizontal: 16,
-      marginBottom: 16,
-    },
-    icon: {
-      marginRight: 8,
-    },
-    input: {
-      flex: 1,
-      height: 50,
-      color: '#1F2937',
-    },
-    eyeIcon: {
-      padding: 4,
-    },
-    button: {
-      backgroundColor: '#4f46e5',
-      borderRadius: 12,
-      paddingVertical: 14,
-      alignItems: 'center',
-    },
-    buttonText: {
-      color: '#FFFFFF',
-      fontSize: 18,
-      fontWeight: '600',
-    },
-    cardFooter: {
-      alignItems: 'center',
-      marginTop: 10,
-    },
-    footerText: {
-      color: '#666',
-      fontSize: 14,
-    },
-    linkText: {
-      color: '#4f46e5',
-      fontWeight: '600',
-      textDecorationLine: 'underline',
-    },
-  });
+  container: {
+    flex: 1,
+    backgroundColor: '#121212',
+    alignItems: 'center',      // Centers horizontally
+    justifyContent: 'center',  // Centers vertically
+  },
+  kbContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    width: '90%',           // Use percentage instead of margin for centering
+    backgroundColor: '#1a1a1a',
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cardHeader: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: '#848484',
+  },
+  cardContent: {
+    gap: 15,
+  },
+  inputContainer: {
+    backgroundColor: '#242424',
+    borderRadius: 12,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2.84,
+    elevation: 3,
+  },
+  icon: {
+    marginRight: 12,
+    color: '#848484',
+  },
+  input: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 16,
+    height: 24,
+  },
+  eyeIcon: {
+    padding: 4,
+    color: '#848484',
+  },
+  button: {
+    backgroundColor: '#3d5afe',
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2.84,
+    elevation: 3,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  cardFooter: {
+    alignItems: 'center',
+    marginTop: 24,
+    gap: 12,
+  },
+  footerText: {
+    color: '#848484',
+    fontSize: 14,
+  },
+  linkText: {
+    color: '#3d5afe',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+});
 
-  export default styles
+export default styles;
