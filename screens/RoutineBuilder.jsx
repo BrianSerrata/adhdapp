@@ -28,7 +28,7 @@ const dismissKeyboard = () => {
   Keyboard.dismiss();
 };
 
-console.log(OPENAI_API_KEY)
+// console.log(OPENAI_API_KEY)
 
 // Days of week labels (0=Sunday, 6=Saturday)
 const DAYS_OF_WEEK = [
@@ -98,7 +98,7 @@ export default function RoutineBuilder({ route }) {
                             "isCompleted": false
                           }
                         ].
-                        Do not include any additional text, characters, or formatting such as \`\`\`json. 
+                        Limit responses to 1000 tokens. Do not include any additional text, characters, or formatting such as \`\`\`json. 
                         Return only the raw JSON array.`
             },
             {
@@ -106,7 +106,6 @@ export default function RoutineBuilder({ route }) {
               content: `Here is my goal: ${userInput}`
             }
           ],
-          max_tokens: 1000,
           temperature: 0.7,
           n: 1,
         },

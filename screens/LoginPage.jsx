@@ -44,10 +44,10 @@ const LoginPage = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient colors={['#4f46e5', '#7c3aed']} style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+        style={{ flex: 1 }}
       >
         <Animated.View entering={FadeInDown.duration(500)} style={styles.card}>
           <View style={styles.cardHeader}>
@@ -114,9 +114,9 @@ const LoginPage = ({ navigation }) => {
               Forgot your password?
             </Text>
           </View>
-        </Animated.View>
+          </Animated.View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 };
 

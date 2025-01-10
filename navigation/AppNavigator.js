@@ -15,12 +15,13 @@ import RoutineBuilder from '../screens/RoutineBuilder';
 import SavedRoutines from '../screens/SavedRoutines';
 import RoutineViewer from '../components/RoutineViewer';
 import RoutineCalendar from '../components/RoutineCalendar';
+import SMARTBuilder from '../screens/SMARTBuilder';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
-    <Stack.Navigator initialRouteName="Login Page">
+    <Stack.Navigator initialRouteName="Home Page">
       <Stack.Screen name="Home Page" component={HomePage} />
       <Stack.Screen name="Register Page" component={RegisterPage} />
       <Stack.Screen name="Login Page" component={LoginPage} />
@@ -29,6 +30,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Session" component={Session} />
       <Stack.Screen name="Journal Entries" component={JournalEntries} />
       <Stack.Screen name="Routine Builder" component={RoutineBuilder} />
+      <Stack.Screen name="SMART Builder" component={SMARTBuilder} />
       <Stack.Screen name="Saved Routines" component={SavedRoutines} />
       <Stack.Screen name="View Routines" component={RoutineViewer} />
       <Stack.Screen name="Routine Calendar" component={RoutineCalendar} />
