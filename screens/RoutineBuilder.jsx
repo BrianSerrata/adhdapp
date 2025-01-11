@@ -85,85 +85,85 @@ export default function RoutineBuilder({ route, navigation }) {
       const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         {
-          model: "gpt-4o-mini", // or your desired model
+          model: "gpt-4o-mini", // Use a model that supports function calling
           messages: [
             {
               role: "system",
-              content: `
-                      You are a helpful assistant that generates structured, single-day routines based on user goals. 
-                      The routine must adhere to the following rules:
+              content: `You are a helpful assistant that generates structured, single-day routines based on user goals. 
+              The routine must adhere to the following rules:
 
-                      1. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
-                      2. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
-                        - If the goal is fitness-related, the routine should include complementary exercises (e.g., warm-up, workout, cool-down).
-                        - If the goal involves study or productivity, the routine should include time blocks for focused work, breaks, and review.
-                      3. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
-                      4. **Valid Time Range**: Task times must use the 24-hour format ("HH:mm"), fit within a single calendar day (e.g., 06:00 to 22:00), and have appropriate durations.
-                      5. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
-                      6. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
-                      7. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
-                      8. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
-                      9. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
-                      10. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
-                      11. Avoid overscheduling. Include buffer times or flexibility in the routine.
+              1. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
+              2. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
+                - If the goal is fitness-related, the routine should include complementary exercises (e.g., warm-up, workout, cool-down).
+                - If the goal involves study or productivity, the routine should include time blocks for focused work, breaks, and review.
+              3. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
+              4. **Valid Time Range**: Task times must use the 24-hour format ("HH:mm"), fit within a single calendar day (e.g., 06:00 to 22:00), and have appropriate durations.
+              5. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
+              6. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
+              7. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
+              8. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
+              9. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
+              10. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
+              11. Avoid overscheduling. Include buffer times or flexibility in the routine.`
 
-                      Return a JSON array with this format, adhering strictly to the format:
-                      [
-                        {
-                          "title": "string",
-                          "timeRange": { "start": "HH:mm", "end": "HH:mm" },
-                          "description": "string",
-                          "isCompleted": false
-                        }
-                      ].
-
-                      Example for the goal "I want to become muscular":
-                      [
-                        {
-                          "title": "Warm-Up",
-                          "timeRange": { "start": "08:00", "end": "08:15" },
-                          "description": "Light cardio and stretching to prepare for the workout.",
-                          "isCompleted": false
-                        },
-                        {
-                          "title": "Strength Training (Upper Body)",
-                          "timeRange": { "start": "08:15", "end": "09:00" },
-                          "description": "Focus on compound movements like bench press, pull-ups, and shoulder press.",
-                          "isCompleted": false
-                        },
-                        {
-                          "title": "Cool-Down",
-                          "timeRange": { "start": "09:00", "end": "09:15" },
-                          "description": "Stretching and light foam rolling to recover from the workout.",
-                          "isCompleted": false
-                        }
-                      ]
-
-                      Here is the user's goal: ${userInput}.
-                      `
             },
             {
               role: "user",
               content: `Here is my goal: ${userInput}`
             }
           ],
-          temperature: 0.7,
-          n: 1,
+          functions: [
+            {
+              name: "generate_routine",
+              description: "Generate a structured, single-day routine based on the user's goal",
+              parameters: {
+                type: "object",
+                properties: {
+                  routine: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string" },
+                        timeRange: {
+                          type: "object",
+                          properties: {
+                            start: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+                            end: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" }
+                          },
+                          required: ["start", "end"]
+                        },
+                        description: { type: "string" },
+                        isCompleted: { type: "boolean" }
+                      },
+                      required: ["title", "timeRange", "description", "isCompleted"]
+                    }
+                  }
+                },
+                required: ["routine"]
+              }
+            }
+          ],
+          function_call: { name: "generate_routine" },
+          temperature: 0.7
         },
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${ OPENAI_API_KEY }`,
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
           },
         }
       );
-
-      const rawContent = response.data.choices[0].message.content;
-      console.log("raw:", rawContent);
-
-      const parsedTasks = JSON.parse(rawContent).map(task => ({
+      
+      // Parse the response
+      const functionCall = response.data.choices[0].message.function_call;
+      const routineData = JSON.parse(functionCall.arguments);
+      const routine = routineData.routine;
+      
+      // Add IDs to each task
+      const parsedTasks = routine.map(task => ({
         id: generateId(),
-        ...task,
+        ...task
       }));
       setTasks(parsedTasks);
 

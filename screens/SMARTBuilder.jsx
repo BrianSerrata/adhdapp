@@ -51,6 +51,7 @@ const SMARTBuilder = ({ navigation }) => {
   const [selectedDays, setSelectedDays] = useState([]);
 
   const [loading, setLoading] = useState(false);
+  const [generatedPhases, setGeneratedPhases] = useState(null);
 
   const toggleDaySelection = (dayValue) => {
     setSelectedDays((prev) => {
@@ -71,73 +72,140 @@ const SMARTBuilder = ({ navigation }) => {
   
     setLoading(true);
     try {
-      const response = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: "gpt-4o-mini",
-          messages: [
+        const response = await axios.post(
+            "https://api.openai.com/v1/chat/completions",
             {
-              role: "system",
-              content: `You are a helpful assistant that generates structured, phased training plans.
-                Return JSON in this format:
-          
+              model: "gpt-4-1106-preview", // Use a model that supports function calling
+              messages: [
                 {
-                  "phases": [
-                    {
-                      "name": "string", 
-                      "dateRange": { "start": "string (ISO 8601)", "end": "string (ISO 8601)" },
-                      "routine": {
-                        "tasks": [
-                          {
-                            "title": "string",
-                            "timeRange": { "start": "string", "end": "string" },
-                            "description": "string",
-                            "isCompleted": false
-                          }
-                        ],
-                        "daysOfWeek": [0,1,2,3,4,5,6]
-                      },
-                      "metrics": { 
-                        "targetValue": "number", 
-                        "description": "string" 
-                      }
-                    }
-                  ]
+                  role: "system",
+                  content: `You are a helpful assistant that generates structured, phased training plans with daily routines.
+                  Each phase must follow these rules:
+                  
+                  1. Phase Structure:
+                     - Each phase should have a clear focus and progression
+                     - Phases should have appropriate durations (e.g., 2-4 weeks)
+                     - Phase date ranges must fit within the user's specified start and end dates
+                     - Phases should progress logically (e.g., Foundation → Building → Mastery)
+                  
+                  2. Daily Routine Rules for Each Phase:
+                     - Tasks must be completable within a single day
+                     - Include 6-8 hours max of activities per day
+                     - Ensure 15-30 minute breaks between tasks
+                     - Limit intense tasks to 1-2 hours
+                     - Use realistic times (5 AM - 10 PM)
+                     - Time format must be "HH:mm"
+                     - Tasks should flow logically within the day
+                  
+                  3. Progress Tracking:
+                     - Each phase needs clear, measurable metrics
+                     - Metrics should show progression across phases
+                     - Include specific target values for measurement`
+                },
+                {
+                  role: "user",
+                  content: `Generate a training plan for the following SMART goal:
+                  Specific: ${goal.specific}
+                  Measurable: ${goal.measurable}
+                  Achievable: ${goal.achievable}
+                  Relevant: ${goal.relevant}
+                  Time-based: ${goal.timeBased}
+                  Use these user-selected days: ${selectedDays.map(day => DAYS_OF_WEEK[day].label).join(', ')}
+                  
+                  Time Constraints:
+                  - Start Date: ${dateRange.start.toISOString()}
+                  - End Date: ${dateRange.end.toISOString()}
+                  - Total Duration: ${Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24))} days
+                  
+                  Schedule on these days: ${selectedDays.map(day => DAYS_OF_WEEK[day].label).join(', ')}
+                  
+                  Important: All phases MUST fit within the given date range. No phase can start before ${dateRange.start.toLocaleDateString()} or end after ${dateRange.end.toLocaleDateString()}.`
                 }
-          
-                Do NOT include any triple backticks (\`\`\`).
-                Only return valid JSON—no extra commentary.`
+              ],
+              functions: [
+                {
+                  name: "generate_training_plan",
+                  description: "Generate a structured, phased training plan with daily routines",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      phases: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            name: { type: "string" },
+                            duration: { type: "string" },
+                            dateRange: {
+                              type: "object",
+                              properties: {
+                                start: { type: "string", format: "date-time" },
+                                end: { type: "string", format: "date-time" }
+                              },
+                              required: ["start", "end"]
+                            },
+                            routine: {
+                              type: "object",
+                              properties: {
+                                tasks: {
+                                  type: "array",
+                                  items: {
+                                    type: "object",
+                                    properties: {
+                                      title: { type: "string" },
+                                      timeRange: {
+                                        type: "object",
+                                        properties: {
+                                          start: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+                                          end: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" }
+                                        },
+                                        required: ["start", "end"]
+                                      },
+                                      description: { type: "string" },
+                                      isCompleted: { type: "boolean" }
+                                    },
+                                    required: ["title", "timeRange", "description", "isCompleted"]
+                                  }
+                                },
+                                daysOfWeek: { type: "array", items: { type: "string" } }
+                              },
+                              required: ["tasks", "daysOfWeek"]
+                            },
+                            metrics: {
+                              type: "object",
+                              properties: {
+                                targetValue: { type: "number" },
+                                description: { type: "string" }
+                              },
+                              required: ["targetValue", "description"]
+                            }
+                          },
+                          required: ["name", "duration", "dateRange", "routine", "metrics"]
+                        }
+                      }
+                    },
+                    required: ["phases"]
+                  }
+                }
+              ],
+              function_call: { name: "generate_training_plan" },
+              temperature: 0.7
             },
             {
-              role: "user",
-              content: `Generate a training plan for the following SMART goal:
-              Specific: ${goal.specific}
-              Measurable: ${goal.measurable}
-              Achievable: ${goal.achievable}
-              Relevant: ${goal.relevant}
-              Time-based: ${goal.timeBased}
-              Use these user-selected days: ${selectedDays.map(day => DAYS_OF_WEEK[day].label).join(', ')}`
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+              },
             }
-          ]
+          );
           
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-        }
-      );
-  
-      console.log("OpenAI raw response:", response.data.choices[0].message.content);
-      let rawResponse = response.data.choices[0].message.content || "";
-    // 1. Remove code fences
-      rawResponse = rawResponse.replace(/```(\w+)?/g, "");
+          // Parse the response
+          const functionCall = response.data.choices[0].message.function_call;
+          const plan = JSON.parse(functionCall.arguments);    
+          console.log("Parsed training plan:", plan);   
     
-    // 2. Parse
-      let plan = JSON.parse(rawResponse);
-            if (!plan.phases || !Array.isArray(plan.phases)) {
-        throw new Error("Invalid response format from AI");
+        if (!plan.phases || !Array.isArray(plan.phases)) {
+            throw new Error("Invalid response format from AI");
       }
       
       // Update each phase's routine to use the selected days
@@ -148,6 +216,9 @@ const SMARTBuilder = ({ navigation }) => {
           daysOfWeek: selectedDays // Override with user-selected days
         }
       }));
+
+      // After parsing the response and before saving to Firebase:
+      setGeneratedPhases(plan.phases);
   
       const dynamicGoalRef = collection(db, 'users', auth.currentUser.uid, 'dynamicGoals');
       const goalData = {

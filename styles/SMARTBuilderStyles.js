@@ -98,6 +98,106 @@ const styles = StyleSheet.create({
   dayButtonTextSelected: {
     color: '#ffffff',
   },
+  phaseContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  phaseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  phaseTitleContainer: {
+    flex: 1,
+  },
+  phaseTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  phaseDuration: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  phaseDate: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  phaseContent: {
+    padding: 16,
+  },
+  metricsContainer: {
+    backgroundColor: '#f5f9ff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  metricsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  metricsValue: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  metricsDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  tasksContainer: {
+    marginTop: 16,
+  },
+  tasksTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#3d5afe',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3d5afe',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#ffffff',
+  }
   });
 
   export default styles
