@@ -23,7 +23,7 @@ import { OPENAI_API_KEY } from '@env';
 import DraggableFlatList from "react-native-draggable-flatlist";
 
 import styles from '../styles/SMARTBuilderStyles';
-import routineBuilderStyles from '../styles/RoutineBuilderStyles';
+import { styles as PhaseBuilderStyles } from '../styles/PhaseBuilderStyles';
 
 // -------------------------------------
 // Constants
@@ -181,19 +181,19 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
       return (
         <Animated.View
           style={[
-            routineBuilderStyles.taskItem,
-            isActive && routineBuilderStyles.draggingTask
+            PhaseBuilderStyles.taskItem,
+            isActive && PhaseBuilderStyles.draggingTask
           ]}
         >
           <TouchableOpacity
-            style={routineBuilderStyles.taskHeader}
+            style={PhaseBuilderStyles.taskHeader}
             onPress={() => setExpandedTaskId(isExpanded ? null : item.id)}
             onLongPress={drag}
           >
             <TouchableOpacity
               style={[
-                routineBuilderStyles.checkbox,
-                item.isCompleted && routineBuilderStyles.checkboxCompleted
+                PhaseBuilderStyles.checkbox,
+                item.isCompleted && PhaseBuilderStyles.checkboxCompleted
               ]}
               onPress={() => toggleTaskCompletion(item.id)}
             >
@@ -202,16 +202,16 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
               )}
             </TouchableOpacity>
   
-            <View style={routineBuilderStyles.taskTitleContainer}>
+            <View style={PhaseBuilderStyles.taskTitleContainer}>
               <Text
                 style={[
-                  routineBuilderStyles.taskTitle,
-                  item.isCompleted && routineBuilderStyles.completedText
+                  PhaseBuilderStyles.taskTitle,
+                  item.isCompleted && PhaseBuilderStyles.completedText
                 ]}
               >
                 {item.title}
               </Text>
-              <Text style={routineBuilderStyles.taskTime}>
+              <Text style={PhaseBuilderStyles.taskTime}>
                 {formatTimeForDisplay(item.timeRange.start)} - {formatTimeForDisplay(item.timeRange.end)}
               </Text>
             </View>
@@ -224,9 +224,9 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
           </TouchableOpacity>
   
           {isExpanded && (
-            <View style={routineBuilderStyles.expandedContent}>
+            <View style={PhaseBuilderStyles.expandedContent}>
               <TextInput
-                style={routineBuilderStyles.titleInput}
+                style={PhaseBuilderStyles.titleInput}
                 value={item.title}
                 placeholder="Task title"
                 onChangeText={(text) => {
@@ -239,30 +239,30 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
                 }}
               />
   
-              <View style={routineBuilderStyles.timeInputsContainer}>
+              <View style={PhaseBuilderStyles.timeInputsContainer}>
                 <TouchableOpacity
-                  style={routineBuilderStyles.timeButton}
+                  style={PhaseBuilderStyles.timeButton}
                   onPress={() => showTimePicker(item.id, "start")}
                 >
                   <MaterialIcons name="access-time" size={20} color="#007AFF" />
-                  <Text style={routineBuilderStyles.timeButtonText}>
+                  <Text style={PhaseBuilderStyles.timeButtonText}>
                     {formatTimeForDisplay(item.timeRange.start) || "Start Time"}
                   </Text>
                 </TouchableOpacity>
   
                 <TouchableOpacity
-                  style={routineBuilderStyles.timeButton}
+                  style={PhaseBuilderStyles.timeButton}
                   onPress={() => showTimePicker(item.id, "end")}
                 >
                   <MaterialIcons name="access-time" size={20} color="#007AFF" />
-                  <Text style={routineBuilderStyles.timeButtonText}>
+                  <Text style={PhaseBuilderStyles.timeButtonText}>
                     {formatTimeForDisplay(item.timeRange.end) || "End Time"}
                   </Text>
                 </TouchableOpacity>
               </View>
   
               <TextInput
-                style={routineBuilderStyles.descriptionInput}
+                style={PhaseBuilderStyles.descriptionInput}
                 value={item.description}
                 placeholder="Task description"
                 multiline
@@ -278,11 +278,11 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
               />
   
               <TouchableOpacity
-                style={routineBuilderStyles.removeButton}
+                style={PhaseBuilderStyles.removeButton}
                 onPress={() => handleRemoveTask(item.id)}
               >
                 <MaterialIcons name="delete-outline" size={20} color="#FF3B30" />
-                <Text style={routineBuilderStyles.removeButtonText}>
+                <Text style={PhaseBuilderStyles.removeButtonText}>
                   Remove Task
                 </Text>
               </TouchableOpacity>
@@ -296,11 +296,11 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
       <View style={{ marginTop: 10, marginBottom: 10 }}>
         {/* "Add Task" Button */}
         <TouchableOpacity
-          style={[routineBuilderStyles.addButton, { alignSelf: 'flex-end' }]}
+          style={[PhaseBuilderStyles.addButton, { alignSelf: 'flex-end' }]}
           onPress={handleAddTask}
         >
           <MaterialIcons name="add" size={24} color="#fff" />
-          <Text style={routineBuilderStyles.addButtonText}>Add Task</Text>
+          <Text style={PhaseBuilderStyles.addButtonText}>Add Task</Text>
         </TouchableOpacity>
   
         {/* Draggable List */}
@@ -428,7 +428,7 @@ export default function SMARTBuilder({ navigation }) {
       const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         {
-          model: "gpt-4-1106-preview",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
@@ -572,7 +572,7 @@ export default function SMARTBuilder({ navigation }) {
           }))
         }
       }));
-      
+
       setGeneratedPhases(updatedPhases);
       setExpandedPhaseIndex(null);
 
@@ -606,7 +606,7 @@ export default function SMARTBuilder({ navigation }) {
       };
       await addDoc(dynamicGoalRef, goalData);
       Alert.alert("Plan Saved", "Your entire plan has been saved!");
-      navigation.navigate('Calendar');
+    //   navigation.navigate('Calendar');
     } catch (err) {
       console.error("Error saving plan:", err);
       Alert.alert("Error", "Failed to save plan. Please try again.");
@@ -744,14 +744,15 @@ export default function SMARTBuilder({ navigation }) {
               <Text style={styles.header}>Generated Phases</Text>
 
               {generatedPhases.map((phase, index) => {
+                console.log("this is the key:", index)
                 const isExpanded = expandedPhaseIndex === index;
                 return (
-                  <View key={index} style={styles.phaseContainer}>
+                  <View key={index} style={PhaseBuilderStyles.phaseContainer}>
                     <TouchableOpacity
-                      style={styles.phaseHeader}
+                      style={PhaseBuilderStyles.phaseHeader}
                       onPress={() => togglePhase(index)}
                     >
-                      <Text style={styles.phaseHeaderText}>
+                      <Text style={PhaseBuilderStyles.phaseHeaderText}>
                         {phase.name} ({phase.duration})
                       </Text>
                       <MaterialIcons
@@ -761,28 +762,33 @@ export default function SMARTBuilder({ navigation }) {
                       />
                     </TouchableOpacity>
 
-                    {isExpanded && (
-                      <View style={styles.phaseContent}>
-                        <Text style={styles.phaseSubHeader}>
-                          Date Range:{" "}
-                          {new Date(phase.dateRange.start).toLocaleDateString()} -{" "}
-                          {new Date(phase.dateRange.end).toLocaleDateString()}
-                        </Text>
-                        <Text style={styles.phaseSubHeader}>
-                          Metrics: {phase.metrics.description} | Target:{" "}
-                          {phase.metrics.targetValue}
-                        </Text>
+                {isExpanded && (
+                    <View style={PhaseBuilderStyles.phaseContent}>
+                        {/* Highlighted Section for Date Range and Goal */}
+                        <View style={PhaseBuilderStyles.highlightContainer}>
+                        <View style={PhaseBuilderStyles.highlightBox}>
+                            <MaterialIcons name="date-range" size={20} color="#ffffff" />
+                            <Text style={PhaseBuilderStyles.highlightText}>
+                            {new Date(phase.dateRange.start).toLocaleDateString()} -{" "}
+                            {new Date(phase.dateRange.end).toLocaleDateString()}
+                            </Text>
+                        </View>
+                        <View style={PhaseBuilderStyles.highlightBox}>
+                            <MaterialIcons name="flag" size={20} color="#ffffff" />
+                            <Text style={PhaseBuilderStyles.highlightText}>
+                            {"\n"}
+                            {phase.metrics.description}
+                            </Text>
+                        </View>
+                        </View>
 
-                        {/* 
-                          The routine editor for tasks
-                          We pass a callback to update parent's phases array 
-                        */}
+                        {/* Routine Editor for Tasks */}
                         <PhaseRoutineView
-                          phaseIndex={index}
-                          routine={phase.routine}
-                          onUpdateRoutine={handleUpdateRoutine}
+                        phaseIndex={index}
+                        routine={phase.routine}
+                        onUpdateRoutine={handleUpdateRoutine}
                         />
-                      </View>
+                    </View>
                     )}
                   </View>
                 );

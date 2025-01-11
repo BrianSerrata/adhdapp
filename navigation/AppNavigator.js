@@ -9,7 +9,7 @@ import LoginPage from '../screens/LoginPage';
 import RegisterPage from '../screens/RegisterPage';
 import RoutineCalendar from '../components/RoutineCalendar';
 import Routines from '../screens/RoutinesPage';
-import TherapyChat from '../screens/TherapyChat';
+import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
 
 const Tab = createBottomTabNavigator();
@@ -60,7 +60,7 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="ADHD Life Coach"
-        component={TherapyChat}
+        component={LifeCoach}
         options={{
           tabBarLabel: 'AI Coach',
           tabBarIcon: ({ color, size }) => (

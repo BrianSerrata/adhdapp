@@ -8,12 +8,12 @@ import {
   ActivityIndicator,
   ScrollView,
   SafeAreaView,
-  Animated,
   Platform,
   Keyboard,
   TouchableWithoutFeedback
 } from "react-native";
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import   Animated, { FadeInDown } from 'react-native-reanimated';
 import { auth, db } from '../firebase'; // Ensure you have firebase configured properly
 import DraggableFlatList from "react-native-draggable-flatlist";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -198,7 +198,7 @@ export default function RoutineBuilder({ route, navigation }) {
       description: "Description of the task.",
       isCompleted: false,
     };
-    setTasks([...tasks, newTask]);
+    setTasks([newTask, ...tasks]);
   };
 
   const handleRemoveTask = (taskId) => {
@@ -310,6 +310,7 @@ export default function RoutineBuilder({ route, navigation }) {
           styles.taskItem,
           isActive && styles.draggingTask
         ]}
+        entering={FadeInDown.duration(1000).delay(200)}
       >
         <TouchableOpacity 
           style={styles.taskHeader}
@@ -417,6 +418,7 @@ export default function RoutineBuilder({ route, navigation }) {
           style={styles.container}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}  // allow inner list to scroll
         >
           <Text style={styles.header}>Routine Builder</Text>
           
@@ -482,15 +484,16 @@ export default function RoutineBuilder({ route, navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Draggable list of tasks */}
-          <View style={styles.taskListContainer}>
+          {/* Draggable list of 3tasks */}
+          <View style={{ maxHeight: 400 }}>
             <DraggableFlatList
               data={tasks}
               onDragEnd={handleDragEnd}
               keyExtractor={(item) => item.id}
               renderItem={renderItem}
               contentContainerStyle={styles.taskList}
-              scrollEnabled={false} // disable DraggableFlatList scrolling
+              nestedScrollEnabled={true} // child can scroll within parent
+              scrollEnabled={true} // disable DraggableFlatList scrolling
             />
           </View>
 
