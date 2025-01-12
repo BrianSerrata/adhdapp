@@ -138,32 +138,42 @@ export default function RoutineCalendar() {
       // Transform each goal's phases into routine-like objects
       const goalRoutines = [];
       fetchedGoals.forEach((goal) => {
-        console.log(goal)
         if (goal.phases && Array.isArray(goal.phases)) {
           goal.phases.forEach((phase, index) => {
             // Convert string days (["Mon", "Wed"]) -> numeric ([1, 3])
-            console.log(phase.routine.daysOfWeek, "day of week")
             const numericDays = phase.routine.daysOfWeek
-            console.log(numericDays, "numeric")
 
             // Build routine-like object
             goalRoutines.push({
-              id: `${goal.id}_${index}`,   // unique ID
+              id: `${goal.id}_${phase.id}`, // Add `phase.name` or another unique field
               name: phase.name,            // e.g., "Phase A"
               tasks: phase.routine.tasks,  // array of tasks
               daysOfWeek: numericDays,
               dateRange: phase.dateRange,  // from the phase
               completedDates: {},          // or fetch from sub-collection if needed
             });
-            console.log("goal routine:", goalRoutines)
           });
         }
       });
 
       // Merge these new "goal routines" into existing routines
       setRoutines((prevRoutines) => {
-        return [...prevRoutines, ...goalRoutines];
+        const routineMap = new Map();
+      
+        // Add existing routines to the map
+        prevRoutines.forEach((routine) => {
+          routineMap.set(routine.id, routine);
+        });
+      
+        // Add new routines, overwriting duplicates based on `id`
+        goalRoutines.forEach((routine) => {
+          routineMap.set(routine.id, routine);
+        });
+      
+        // Convert map back to array
+        return Array.from(routineMap.values());
       });
+      
     });
 
     return () => unsubscribeGoals();
@@ -454,13 +464,13 @@ export default function RoutineCalendar() {
               entering={FadeInDown.duration(1000).delay(800)}
               style={styles.routinesSection}
             >
-              <Text style={styles.dateHeader}>
-                {new Date(selectedDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </Text>
+                <Text style={styles.dateHeader}>
+                  {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </Text>
               {routinesForSelectedDate.length === 0 ? (
                 <Animated.View
                   entering={FadeInDown.duration(1000).delay(1000)}
@@ -483,11 +493,13 @@ export default function RoutineCalendar() {
         {/* Confetti */}
         {showConfetti && (
           <ConfettiCannon
-            count={50}
-            origin={{ x: -10, y: 0 }}
-            autoStart={true}
-            fadeOut={true}
-            colors={['#3d5afe', '#4CAF50', '#FFF']}
+            count={100} // Number of confetti pieces
+            origin={{ x: 0.5, y: 0 }} // Start at the top center
+            autoStart={true} // Auto-launch confetti
+            fadeOut={true} // Fade out confetti as they fall
+            fallAngle={180} // Make confetti fall downward
+            explosionSpeed={500} // Optional: Adjust the speed of the explosion
+            colors={['#3d5afe', '#4CAF50', '#FFF']} // Confetti colors
           />
         )}
       </View>

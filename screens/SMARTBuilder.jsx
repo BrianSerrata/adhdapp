@@ -561,17 +561,17 @@ export default function SMARTBuilder({ navigation }) {
       // Insert selectedDays into each phase's routine (just in case)
       const updatedPhases = plan.phases.map(phase => ({
         ...phase,
+        id: generateId(), // Generate unique id for each phase
         routine: {
           ...phase.routine,
-          // override with user-selected days
           daysOfWeek: selectedDays,
-          // give each task a unique 'id'
           tasks: phase.routine.tasks.map(task => ({
             ...task,
-            id: generateId() // <-- unique ID per task
+            id: generateId() // Unique id for each task
           }))
         }
       }));
+      
 
       setGeneratedPhases(updatedPhases);
       setExpandedPhaseIndex(null);
@@ -744,10 +744,9 @@ export default function SMARTBuilder({ navigation }) {
               <Text style={styles.header}>Generated Phases</Text>
 
               {generatedPhases.map((phase, index) => {
-                console.log("this is the key:", index)
                 const isExpanded = expandedPhaseIndex === index;
                 return (
-                  <View key={index} style={PhaseBuilderStyles.phaseContainer}>
+                  <View key={phase.id} style={PhaseBuilderStyles.phaseContainer}>
                     <TouchableOpacity
                       style={PhaseBuilderStyles.phaseHeader}
                       onPress={() => togglePhase(index)}
