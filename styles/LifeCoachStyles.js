@@ -206,6 +206,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 8,
   },
+  markdown: {
+    body: { color: '#ffffff', fontSize: 16 },
+    heading1: { fontSize: 24, fontWeight: 'bold', color: '#4f46e5' },
+    heading2: { fontSize: 20, fontWeight: 'bold', color: '#7c3aed' },
+    link: { color: '#3d5afe', textDecorationLine: 'underline' },
+    list_item: { color: '#ffffff', fontSize: 16 },
+    blockquote: { borderLeftWidth: 4, borderLeftColor: '#7c3aed', paddingLeft: 8, color: '#ffffff' },
+  },
 });
 
 export default styles;

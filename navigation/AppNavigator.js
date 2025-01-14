@@ -11,6 +11,7 @@ import RoutineCalendar from '../components/RoutineCalendar';
 import Routines from '../screens/RoutinesPage';
 import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
+import RoutineManager from '../screens/RoutineManager';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -27,6 +28,7 @@ const TabNavigator = () => {
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
+          marginBottom: 7, // Adjust this value to raise the tab bar
         },
         tabBarActiveTintColor: '#3d5afe',
         tabBarInactiveTintColor: '#848484',
@@ -73,6 +75,16 @@ const TabNavigator = () => {
         component={Resources}
         options={{
           tabBarLabel: 'Resources',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="library-books" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Routine Manager"
+        component={RoutineManager}
+        options={{
+          tabBarLabel: 'Routine Manager',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="library-books" size={size} color={color} />
           ),

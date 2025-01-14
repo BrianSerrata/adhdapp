@@ -63,6 +63,7 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
     const [selectedTime, setSelectedTime] = useState(new Date());
   
     useEffect(() => {
+      console.log("Routine in PhaseRoutineView:", routine);
       if (routine && routine.tasks) {
         setTasks(routine.tasks);
       }
@@ -82,15 +83,13 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
         description: "",
         isCompleted: false,
       };
-      const updated = [...tasks, newTask];
+      const updated = [newTask, ...tasks];
       setTasks(updated);
       // <-- notify parent
       onUpdateRoutine(phaseIndex, updated);
     };
   
     const handleRemoveTask = (taskId) => {
-    console.log("Before removal:", tasks);
-    console.log("Task to remove:", taskId);
       const updated = tasks.filter(t => t.id !== taskId);
       setTasks(updated);
       // <-- notify parent
@@ -108,11 +107,11 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
       onUpdateRoutine(phaseIndex, updated);
     };
   
-    const handleDragEnd = ({ data }) => {
-      setTasks(data);
-      // <-- notify parent
-      onUpdateRoutine(phaseIndex, data);
-    };
+    // const handleDragEnd = ({ data }) => {
+    //   setTasks(data);
+    //   // <-- notify parent
+    //   onUpdateRoutine(phaseIndex, data);
+    // };
   
     const handleConfirmTime = (time) => {
       const hours = String(time.getHours()).padStart(2, '0');
@@ -292,42 +291,154 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
       );
     }, [expandedTaskId, tasks]);
   
-    return (
-      <View style={{ marginTop: 10, marginBottom: 10 }}>
-        {/* "Add Task" Button */}
-        <TouchableOpacity
-          style={[PhaseBuilderStyles.addButton, { alignSelf: 'flex-end' }]}
-          onPress={handleAddTask}
-        >
-          <MaterialIcons name="add" size={24} color="#fff" />
-          <Text style={PhaseBuilderStyles.addButtonText}>Add Task</Text>
-        </TouchableOpacity>
-  
-        {/* Draggable List */}
-        <View style={{ height: 400 }}>
-          <DraggableFlatList
-            data={tasks}
-            onDragEnd={handleDragEnd}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-          />
-        </View>
-  
-        {/* Time Picker Modal */}
-        <DateTimePickerModal
-          isVisible={isTimePickerVisible}
-          mode="time"
-          onConfirm={handleConfirmTime}
-          onCancel={hideTimePicker}
-          date={selectedTime}
-          isDarkModeEnabled={false}
-          textColor={Platform.OS === 'ios' ? undefined : '#000'}
-          themeVariant="light"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-        />
-      </View>
-    );
-  }  
+return (
+    <View style={{ marginTop: 10, marginBottom: 10 }}>
+      {/* "Add Task" Button */}
+      <TouchableOpacity
+        style={[PhaseBuilderStyles.addButton, { alignSelf: 'flex-end' }]}
+        onPress={handleAddTask}
+      >
+        <MaterialIcons name="add" size={24} color="#fff" />
+        <Text style={PhaseBuilderStyles.addButtonText}>Add Task</Text>
+      </TouchableOpacity>
+
+      {/* Render tasks via map instead of DraggableFlatList */}
+      {console.log("TASKS:",tasks)}
+      {tasks.map((item) => {
+        const isExpanded = expandedTaskId === item.id;
+
+        return (
+          <Animated.View
+            key={item.id}
+            style={PhaseBuilderStyles.taskItem}
+          >
+            {/* Task Header */}
+            <TouchableOpacity
+              style={PhaseBuilderStyles.taskHeader}
+              onPress={() => setExpandedTaskId(isExpanded ? null : item.id)}
+            >
+              {/* Checkbox */}
+              <TouchableOpacity
+                style={[
+                  PhaseBuilderStyles.checkbox,
+                  item.isCompleted && PhaseBuilderStyles.checkboxCompleted
+                ]}
+                onPress={() => toggleTaskCompletion(item.id)}
+              >
+                {item.isCompleted && (
+                  <MaterialIcons name="check" size={16} color="#fff" />
+                )}
+              </TouchableOpacity>
+
+              {/* Task Title + Time */}
+              <View style={PhaseBuilderStyles.taskTitleContainer}>
+                <Text
+                  style={[
+                    PhaseBuilderStyles.taskTitle,
+                    item.isCompleted && PhaseBuilderStyles.completedText
+                  ]}
+                >
+                  {item.title}
+                </Text>
+                <Text style={PhaseBuilderStyles.taskTime}>
+                  {formatTimeForDisplay(item.timeRange.start)} - {formatTimeForDisplay(item.timeRange.end)}
+                </Text>
+              </View>
+
+              {/* Expand / Collapse Icon */}
+              <MaterialIcons
+                name={isExpanded ? "expand-less" : "expand-more"}
+                size={24}
+                color="#666"
+              />
+            </TouchableOpacity>
+
+            {/* Expanded Content */}
+            {isExpanded && (
+              <View style={PhaseBuilderStyles.expandedContent}>
+                {/* Title Input */}
+                <TextInput
+                  style={PhaseBuilderStyles.titleInput}
+                  value={item.title}
+                  placeholder="Task title"
+                  onChangeText={(text) => {
+                    const updated = tasks.map(t =>
+                      t.id === item.id ? { ...t, title: text } : t
+                    );
+                    setTasks(updated);
+                    onUpdateRoutine(phaseIndex, updated);
+                  }}
+                />
+
+                {/* Time Inputs */}
+                <View style={PhaseBuilderStyles.timeInputsContainer}>
+                  <TouchableOpacity
+                    style={PhaseBuilderStyles.timeButton}
+                    onPress={() => showTimePicker(item.id, "start")}
+                  >
+                    <MaterialIcons name="access-time" size={20} color="#007AFF" />
+                    <Text style={PhaseBuilderStyles.timeButtonText}>
+                      {formatTimeForDisplay(item.timeRange.start) || "Start Time"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={PhaseBuilderStyles.timeButton}
+                    onPress={() => showTimePicker(item.id, "end")}
+                  >
+                    <MaterialIcons name="access-time" size={20} color="#007AFF" />
+                    <Text style={PhaseBuilderStyles.timeButtonText}>
+                      {formatTimeForDisplay(item.timeRange.end) || "End Time"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Description Input */}
+                <TextInput
+                  style={PhaseBuilderStyles.descriptionInput}
+                  value={item.description}
+                  placeholder="Task description"
+                  multiline
+                  numberOfLines={3}
+                  onChangeText={(desc) => {
+                    const updated = tasks.map(t =>
+                      t.id === item.id ? { ...t, description: desc } : t
+                    );
+                    setTasks(updated);
+                    onUpdateRoutine(phaseIndex, updated);
+                  }}
+                />
+
+                {/* Remove Task Button */}
+                <TouchableOpacity
+                  style={PhaseBuilderStyles.removeButton}
+                  onPress={() => handleRemoveTask(item.id)}
+                >
+                  <MaterialIcons name="delete-outline" size={20} color="#FF3B30" />
+                  <Text style={PhaseBuilderStyles.removeButtonText}>
+                    Remove Task
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Animated.View>
+        );
+      })}
+    {/* Time Picker Modal */}
+    <DateTimePickerModal
+        isVisible={isTimePickerVisible}
+        mode="time"
+        onConfirm={handleConfirmTime}
+        onCancel={hideTimePicker}
+        date={selectedTime}
+        isDarkModeEnabled={true}
+        textColor={Platform.OS === 'ios' ? undefined : '#000'}
+        themeVariant="light"
+        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+      />
+    </View>
+  );
+}
 
 /**
  * =============================================================================
@@ -403,6 +514,7 @@ export default function SMARTBuilder({ navigation }) {
 
   // Called by child to update tasks for a given phase
   const handleUpdateRoutine = (phaseIndex, updatedTasks) => {
+    // console.log("ROUTINE:", phase.routine)
     setGeneratedPhases(prev => {
       const newPhases = [...prev];
       newPhases[phaseIndex] = {
@@ -442,13 +554,19 @@ export default function SMARTBuilder({ navigation }) {
                    - Phases should progress logically (e.g., Foundation → Building → Mastery)
                 
                 2. Daily Routine Rules for Each Phase:
-                   - Tasks must be completable within a single day
-                   - Include 6-8 hours max of activities per day
-                   - Ensure 15-30 minute breaks between tasks
-                   - Limit intense tasks to 1-2 hours
-                   - Use realistic times (5 AM - 10 PM)
-                   - Time format must be "HH:mm"
-                   - Tasks should flow logically within the day
+                    1. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
+                    2. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
+                    - If the goal is fitness-related, the routine should include complementary exercises (e.g., warm-up, workout, cool-down).
+                    - If the goal involves study or productivity, the routine should include time blocks for focused work, breaks, and review.
+                    3. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
+                    4. **Valid Time Range**: Task times must use the 24-hour format ("HH:mm"), fit within a single calendar day (e.g., 06:00 to 22:00), and have appropriate durations.
+                    5. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
+                    6. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
+                    7. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
+                    8. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
+                    9. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
+                    10. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
+                    11. Avoid overscheduling. Include buffer times or flexibility in the routine.
                 
                 3. Progress Tracking:
                    - Each phase needs clear, measurable metrics
@@ -616,7 +734,10 @@ export default function SMARTBuilder({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        nestedScrollEnabled={false}  // allow inner list to scroll
+        >
 
           <Text style={styles.header}>Create Dynamic Goal</Text>
 
@@ -782,6 +903,7 @@ export default function SMARTBuilder({ navigation }) {
                         </View>
 
                         {/* Routine Editor for Tasks */}
+                        {/* {console.log("ROUTINE:", phase.routine)} */}
                         <PhaseRoutineView
                         phaseIndex={index}
                         routine={phase.routine}

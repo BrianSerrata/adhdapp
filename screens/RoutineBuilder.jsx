@@ -10,7 +10,7 @@ import {
   SafeAreaView,
   Platform,
   Keyboard,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
 } from "react-native";
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import   Animated, { FadeInDown } from 'react-native-reanimated';
@@ -48,10 +48,8 @@ export default function RoutineBuilder({ route, navigation }) {
   useEffect(() => {
     if (routine) {
       setTasks(routine.tasks);
-      // If the routine has daysOfWeek, set that too
-      if (routine.daysOfWeek) {
-        setSelectedDays(routine.daysOfWeek);
-      }
+      setSelectedDays(routine.daysOfWeek || []);
+      setIsRecurring(routine.isRecurring || false); // Load recurring status if editing
     }
   }, [routine]);
 
@@ -62,6 +60,7 @@ export default function RoutineBuilder({ route, navigation }) {
   // Time picker state
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [isRecurring, setIsRecurring] = useState(false); // NEW: Track recurring status
   const [timeField, setTimeField] = useState("");
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [expandedTaskId, setExpandedTaskId] = useState(null);
@@ -278,28 +277,60 @@ export default function RoutineBuilder({ route, navigation }) {
       return;
     }
 
-    if (!selectedDays.length) {
+    if (isRecurring && !selectedDays.length) {
       Alert.alert("Days Not Selected", "Please select at least one day of the week.");
       return;
     }
-    
+
     try {
-      const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
+      const routinesRef = collection(db, "users", auth.currentUser.uid, "routines");
+      
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+      const dd = String(now.getDate()).padStart(2, "0");
+      const currentDate = `${yyyy}-${mm}-${dd}`;
+      
       const routineData = {
-        name: `Routine - ${new Date().toLocaleDateString()}`, 
+        name: `Routine - ${new Date().toLocaleDateString()}`,
         tasks,
         timestamp: serverTimestamp(),
-        // Include the days of week
-        daysOfWeek: selectedDays,  
+        daysOfWeek: isRecurring ? selectedDays : [], // Only save days if recurring
+        isRecurring, // NEW: Save recurring status
+        createdDate: isRecurring ? null : currentDate, // Non-recurring uses the specific date
       };
-  
+
       await addDoc(routinesRef, routineData);
       Alert.alert("Routine Saved", "Your routine has been saved successfully!");
     } catch (error) {
-      console.error('Error saving routine:', error);
+      console.error("Error saving routine:", error);
       Alert.alert("Error", "Failed to save routine. Please try again.");
     }
   };
+
+  const renderRecurringCheckbox = () => (
+    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+      <TouchableOpacity
+        onPress={() => setIsRecurring((prev) => !prev)}
+        style={[
+          {
+            width: 24,
+            height: 24,
+            borderRadius: 12,
+            borderWidth: 2,
+            borderColor: "#3d5afe",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 8,
+          },
+          isRecurring && { backgroundColor: "#3d5afe" },
+        ]}
+      >
+        {isRecurring && <MaterialIcons name="check" size={16} color="#fff" />}
+      </TouchableOpacity>
+      <Text style={{ color: "#ffffff", fontSize: 16 }}>Recurring Routine</Text>
+    </View>
+  );
 
   // --------------- Draggable List Render ---------------
   const renderItem = ({ item, drag, isActive }) => {
@@ -413,16 +444,16 @@ export default function RoutineBuilder({ route, navigation }) {
   // --------------- Main Render ---------------
   return (
     <SafeAreaView style={styles.safeArea}>
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <ScrollView 
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
           style={styles.container}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          nestedScrollEnabled={true}  // allow inner list to scroll
+          nestedScrollEnabled
         >
           <Text style={styles.header}>Routine Builder</Text>
-          
-          {/* Collect user's routine goals */}
+
+          {/* User Goals */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.goalInput}
@@ -432,10 +463,10 @@ export default function RoutineBuilder({ route, navigation }) {
               multiline
               numberOfLines={3}
             />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.generateButton, loading && styles.generateButtonDisabled]}
-              onPress={handleGenerateRoutine} 
+              onPress={handleGenerateRoutine}
               disabled={loading}
             >
               {loading ? (
@@ -449,42 +480,49 @@ export default function RoutineBuilder({ route, navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Days of the Week Selection */}
-          <Text style={styles.subHeader}>Select Days of the Week</Text>
-          <View style={styles.daysContainer}>
-            {DAYS_OF_WEEK.map((day) => {
-              const isSelected = selectedDays.includes(day.value);
-              return (
-                <TouchableOpacity
-                  key={day.value}
-                  style={[
-                    styles.dayButton,
-                    isSelected && styles.dayButtonSelected
-                  ]}
-                  onPress={() => toggleDaySelection(day.value)}
-                >
-                  <Text style={[
-                    styles.dayButtonText,
-                    isSelected && styles.dayButtonTextSelected
-                  ]}>
-                    {day.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* Recurring Checkbox */}
+          {renderRecurringCheckbox()}
 
+          {/* Days of the Week */}
+          {isRecurring && (
+            <>
+              <Text style={styles.subHeader}>Select Days of the Week</Text>
+              <View style={styles.daysContainer}>
+                {DAYS_OF_WEEK.map((day) => {
+                  const isSelected = selectedDays.includes(day.value);
+                  return (
+                    <TouchableOpacity
+                      key={day.value}
+                      style={[
+                        styles.dayButton,
+                        isSelected && styles.dayButtonSelected,
+                      ]}
+                      onPress={() => toggleDaySelection(day.value)}
+                    >
+                      <Text
+                        style={[
+                          styles.dayButtonText,
+                          isSelected && styles.dayButtonTextSelected,
+                        ]}
+                      >
+                        {day.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
+          {/* Tasks Section */}
           <View style={styles.taskListHeader}>
             <Text style={styles.taskListTitle}>Tasks</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={handleAddTask}
-            >
+            <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
               <MaterialIcons name="add" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          {/* Draggable list of 3tasks */}
+          {/* Draggable List */}
           <View style={{ maxHeight: 400 }}>
             <DraggableFlatList
               data={tasks}
@@ -492,34 +530,30 @@ export default function RoutineBuilder({ route, navigation }) {
               keyExtractor={(item) => item.id}
               renderItem={renderItem}
               contentContainerStyle={styles.taskList}
-              nestedScrollEnabled={true} // child can scroll within parent
-              scrollEnabled={true} // disable DraggableFlatList scrolling
+              nestedScrollEnabled
             />
           </View>
 
           <View style={styles.bottomSpacing} />
 
-          {/* Time picker modal */}
+          {/* Time Picker Modal */}
           <DateTimePickerModal
             isVisible={isTimePickerVisible}
             mode="time"
             onConfirm={handleConfirm}
             onCancel={hideTimePicker}
             date={selectedTime}
-            isDarkModeEnabled={false}
-            textColor={Platform.OS === 'ios' ? undefined : '#000'}
+            isDarkModeEnabled={true}
+            textColor={Platform.OS === "ios" ? undefined : "#000"}
             themeVariant="light"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
           />
         </ScrollView>
       </TouchableWithoutFeedback>
 
-      {/* Save button pinned at bottom */}
+      {/* Save Button */}
       <View style={styles.saveButtonContainer}>
-        <TouchableOpacity 
-          style={styles.saveButton}
-          onPress={handleSaveRoutine}
-        >
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveRoutine}>
           <MaterialIcons name="save" size={24} color="#fff" />
           <Text style={styles.saveButtonText}>Save Routine</Text>
         </TouchableOpacity>

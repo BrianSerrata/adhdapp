@@ -1,75 +1,83 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  Alert,  
+import {
+  View,
+  Text,
+  TouchableOpacity,
   ScrollView,
-  SafeAreaView
+  SafeAreaView,
+  TextInput,
+  Alert,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { 
-  collection, 
-  query, 
-  onSnapshot, 
-  doc, 
-  updateDoc, 
-  getDoc 
-} from "firebase/firestore";
-import { auth, db } from "../firebase";
-import ConfettiCannon from 'react-native-confetti-cannon';
-import styles from "../styles/RoutineCalendarStyles";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { MaterialIcons } from "@expo/vector-icons";
+import ConfettiCannon from "react-native-confetti-cannon";
 
-/* -------------------- Days-of-Week Mapping -------------------- */
-const DAY_OF_WEEK_MAP = {
-  Sun: 0,
-  Mon: 1,
-  Tue: 2,
-  Wed: 3,
-  Thu: 4,
-  Fri: 5,
-  Sat: 6
-};
+import {
+  collection,
+  query,
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDoc,
+} from "firebase/firestore";
+
+import { auth, db } from "../firebase";
+import styles from "../styles/RoutineCalendarStyles";
 
 /* -------------------- Status Colors -------------------- */
 const STATUS_COLORS = {
-  COMPLETED: '#4CAF50',   // Green
-  IN_PROGRESS: '#3d5afe', // Blue
-  FAILED: '#FF5252',      // Red
+  COMPLETED: "#4CAF50",
+  IN_PROGRESS: "#3d5afe",
+  FAILED: "#FF5252",
 };
 
 /* -------------------- Greeting -------------------- */
 const getGreeting = () => {
   const hours = new Date().getHours();
-  if (hours < 12) return 'Good Morning';
-  if (hours < 18) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hours < 12) return "Good Morning";
+  if (hours < 18) return "Good Afternoon";
+  return "Good Evening";
 };
 
 export default function RoutineCalendar() {
+  // -------------------------
+  // Local State
+  // -------------------------
   const [routines, setRoutines] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [showConfetti, setShowConfetti] = useState(false);
-  const [greeting, setGreeting] = useState('');
-  const [name, setName] = useState('');
+  const [greeting, setGreeting] = useState("");
+  const [name, setName] = useState("");
 
-  // Function to fetch the user's name
+  // For toggling expanded tasks
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
+
+  // For time picker
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [timeField, setTimeField] = useState("");
+  const [selectedDateObj, setSelectedDateObj] = useState(new Date());
+
+  // -------------------------
+  // Pull in user's name
+  // -------------------------
   const fetchUserName = async () => {
     try {
       const userId = auth.currentUser?.uid;
       if (!userId) return;
 
-      const userDoc = await getDoc(doc(db, 'users', userId));
+      const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
-        setName(userDoc.data().name || 'User');
+        setName(userDoc.data().name || "User");
       } else {
-        console.log('No user document found.');
-        setName('User');
+        console.log("No user document found.");
+        setName("User");
       }
     } catch (error) {
-      console.error('Error fetching user name:', error);
-      setName('User');
+      console.error("Error fetching user name:", error);
+      setName("User");
     }
   };
 
@@ -78,26 +86,23 @@ export default function RoutineCalendar() {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      await fetchUserName(); // Await the name fetch
-    };
-    fetchData();
+    fetchUserName();
   }, []);
-  
-  // Initialize selectedDate with today's date
+
+  // -------------------------
+  // Selected Date
+  // -------------------------
   const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   });
 
-  /* 
-   * ----------------------------------------------------------------
-   * 1) Fetch Routines from Firestore (Existing Code)
-   * ----------------------------------------------------------------
-   */
+  // -------------------------
+  // Fetch Routines
+  // -------------------------
   useEffect(() => {
     if (!auth.currentUser) {
       Alert.alert("Error", "User not authenticated.");
@@ -108,21 +113,19 @@ export default function RoutineCalendar() {
     const q = query(routinesRef);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedRoutines = snapshot.docs.map((doc) => ({
+      const fetched = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setRoutines(fetchedRoutines);
+      setRoutines(fetched);
     });
 
     return () => unsubscribe();
   }, []);
 
-  /* 
-   * ----------------------------------------------------------------
-   * 2) Fetch Goals from Firestore -> Transform Phases into "Routines"
-   * ----------------------------------------------------------------
-   */
+  // -------------------------
+  // Also fetch dynamicGoals -> transform
+  // -------------------------
   useEffect(() => {
     if (!auth.currentUser) return;
 
@@ -135,285 +138,422 @@ export default function RoutineCalendar() {
         ...doc.data(),
       }));
 
-      // Transform each goal's phases into routine-like objects
       const goalRoutines = [];
       fetchedGoals.forEach((goal) => {
         if (goal.phases && Array.isArray(goal.phases)) {
-          goal.phases.forEach((phase, index) => {
-            // Convert string days (["Mon", "Wed"]) -> numeric ([1, 3])
-            const numericDays = phase.routine.daysOfWeek
-
-            // Build routine-like object
+          goal.phases.forEach((phase) => {
             goalRoutines.push({
-              id: `${goal.id}_${phase.id}`, // Add `phase.name` or another unique field
-              name: phase.name,            // e.g., "Phase A"
-              tasks: phase.routine.tasks,  // array of tasks
-              daysOfWeek: numericDays,
-              dateRange: phase.dateRange,  // from the phase
-              completedDates: {},          // or fetch from sub-collection if needed
+              id: `${goal.id}_${phase.id}`,
+              name: phase.name,
+              tasks: phase.routine.tasks,
+              daysOfWeek: phase.routine.daysOfWeek,
+              dateRange: phase.dateRange,
+              completedDates: {}, // or fetch from sub-collection if needed
             });
           });
         }
       });
 
-      // Merge these new "goal routines" into existing routines
-      setRoutines((prevRoutines) => {
+      setRoutines((prev) => {
         const routineMap = new Map();
-      
-        // Add existing routines to the map
-        prevRoutines.forEach((routine) => {
-          routineMap.set(routine.id, routine);
-        });
-      
-        // Add new routines, overwriting duplicates based on `id`
-        goalRoutines.forEach((routine) => {
-          routineMap.set(routine.id, routine);
-        });
-      
-        // Convert map back to array
+        // Add existing
+        prev.forEach((r) => routineMap.set(r.id, r));
+        // Add new
+        goalRoutines.forEach((r) => routineMap.set(r.id, r));
         return Array.from(routineMap.values());
       });
-      
     });
 
     return () => unsubscribeGoals();
   }, []);
 
-  /*
-   * ----------------------------------------------------------------
-   * 3) Build markedDates for the Calendar with Date Range Filtering
-   * ----------------------------------------------------------------
-   */
+  // -------------------------
+  // Marked Dates
+  // -------------------------
   useEffect(() => {
     const newMarkedDates = {};
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
+  
     routines.forEach((routine) => {
-      // We mark +/- 30 days from "today" for demonstration
-      for (let i = -30; i <= 30; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() + i);
-
-        // 3.1) If the routine has a dateRange, only mark dates within that range
-        if (routine.dateRange) {
-          const startDate = new Date(routine.dateRange.start);
-          const endDate = new Date(routine.dateRange.end);
-          
-          // Skip if date is outside the phase date range
-          if (date < startDate || date > endDate) {
-            continue;
+      // For recurring routines
+      if (routine.isRecurring) {
+        // Loop over +/- 30 days
+        for (let i = -30; i <= 30; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + i);
+  
+          // If the routine has a dateRange, skip dates outside the range
+          if (routine.dateRange) {
+            const startDate = new Date(routine.dateRange.start);
+            const endDate = new Date(routine.dateRange.end);
+            if (date < startDate || date > endDate) {
+              continue;
+            }
           }
-        }
-
-        // 3.2) Check if date matches the routine's daysOfWeek
-        const dayOfWeek = date.getDay();
-        if (routine.daysOfWeek?.includes(dayOfWeek)) {
-          const yyyy = date.getFullYear();
-          const mm = String(date.getMonth() + 1).padStart(2, "0");
-          const dd = String(date.getDate()).padStart(2, "0");
-          const dateStr = `${yyyy}-${mm}-${dd}`;
-          
-          const status = getRoutineStatus(routine, dateStr, date);
-          if (status) {
-            newMarkedDates[dateStr] = {
-              ...newMarkedDates[dateStr],
-              marked: true,
-              dotColor: STATUS_COLORS[status],
-            };
+  
+          const dayOfWeek = date.getDay();
+          if (routine.daysOfWeek?.includes(dayOfWeek)) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, "0");
+            const dd = String(date.getDate()).padStart(2, "0");
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+  
+            const status = getRoutineStatus(routine, dateStr, date);
+            if (status) {
+              newMarkedDates[dateStr] = {
+                ...newMarkedDates[dateStr],
+                marked: true,
+                dotColor: STATUS_COLORS[status],
+              };
+            }
           }
         }
       }
+  
+      // For non-recurring routines
+      else if (routine.createdDate) {
+        const createdDate = new Date(routine.createdDate);
+        const yyyy = createdDate.getFullYear();
+        const mm = String(createdDate.getMonth() + 1).padStart(2, "0");
+        const dd = String(createdDate.getDate()).padStart(2, "0");
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+  
+        const status = getRoutineStatus(routine, dateStr, createdDate);
+        if (status) {
+          newMarkedDates[dateStr] = {
+            ...newMarkedDates[dateStr],
+            marked: true,
+            dotColor: STATUS_COLORS[status],
+          };
+        }
+      }
     });
-
+  
     setMarkedDates(newMarkedDates);
-  }, [routines]);
+  }, [routines]);  
 
-  // Routine Status
   const getRoutineStatus = (routine, dateStr, date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // For future dates, skip marking them
-    if (date > today) {
-      return null;
-    }
+    if (date > today) return null;
 
     const isFullyCompleted = isRoutineFullyCompleted(routine, dateStr);
     const hasAnyCompletion =
       routine.completedDates?.[dateStr] &&
-      Object.values(routine.completedDates[dateStr]).some(v => v === true);
+      Object.values(routine.completedDates[dateStr]).some((v) => v === true);
 
-    // Past dates
     if (date < today) {
-      return isFullyCompleted ? 'COMPLETED' : 'FAILED';
+      return isFullyCompleted ? "COMPLETED" : "FAILED";
     }
-
     // Today
-    return isFullyCompleted ? 'COMPLETED' : (hasAnyCompletion ? 'IN_PROGRESS' : null);
+    return isFullyCompleted ? "COMPLETED" : hasAnyCompletion ? "IN_PROGRESS" : null;
   };
 
-  // Check if all tasks are completed for a given date
   const isRoutineFullyCompleted = (routine, dateStr) => {
     const { tasks = [], completedDates = {} } = routine;
     if (!completedDates[dateStr]) return false;
     return tasks.every((task) => completedDates[dateStr][task.id] === true);
   };
 
-  // When user presses a day on the calendar
   const handleDayPress = useCallback((day) => {
     setSelectedDate(day.dateString);
   }, []);
 
-  // Trigger confetti animation
   const triggerConfetti = () => {
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 2000);
   };
 
-  /* 
-   * ----------------------------------------------------------------
-   * 4) Filter Routines for the Selected Date
-   * ----------------------------------------------------------------
-   */
+  // -------------------------
+  // Filter Routines for Selected Date
+  // -------------------------
   const routinesForSelectedDate = routines.filter((routine) => {
     if (!selectedDate) return false;
-
-    // If routine has a dateRange, skip if outside that date
-    const [year, month, day] = selectedDate.split('-').map(Number);
-    const date = new Date(year, month - 1, day, 12);
-
-    // Check date range if present
-    if (routine.dateRange) {
-      const startDate = new Date(routine.dateRange.start);
-      const endDate = new Date(routine.dateRange.end);
-      if (date < startDate || date > endDate) {
-        return false;
+  
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+  
+    // Handle non-recurring routines
+    if (!routine.isRecurring && routine.createdDate === selectedDate) {
+      return true;
+    }
+  
+    // Handle recurring routines
+    if (routine.isRecurring) {
+      const dayOfWeek = date.getDay();
+      if (routine.daysOfWeek?.includes(dayOfWeek)) {
+        if (routine.dateRange) {
+          const startDate = new Date(routine.dateRange.start);
+          const endDate = new Date(routine.dateRange.end);
+          return date >= startDate && date <= endDate;
+        }
+        return true;
       }
     }
-
-    const dayOfWeek = date.getDay();
-    return routine.daysOfWeek.includes(dayOfWeek);
+  
+    return false;
   });
+  
 
-  /* 
-   * ----------------------------------------------------------------
-   * 5) Render Task Rows
-   * ----------------------------------------------------------------
-   */
-  const TaskList = ({ routine }) => {
-    return routine.tasks.map((task, idx) => (
-      <TaskRow
-        key={`${routine.id}_${idx}`} // Or task.id if tasks have unique IDs
-        routine={routine}
-        task={task}
-        dateStr={selectedDate}
-      />
-    ));
+  // -------------------------
+  // Time Picker Logic
+  // -------------------------
+  const showTimePicker = (routine, taskId, field) => {
+    // Find the specific task
+    const task = routine.tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    // Set up the pre-selected time
+    if (task.timeRange[field]) {
+      const [hours, minutes] = task.timeRange[field].split(":").map(Number);
+      const dt = new Date();
+      dt.setHours(hours);
+      dt.setMinutes(minutes);
+      setSelectedDateObj(dt);
+    } else {
+      setSelectedDateObj(new Date());
+    }
+
+    // Store references
+    setSelectedTask({ routine, taskId, field });
+    setTimePickerVisible(true);
   };
 
-  /* 
-   * ----------------------------------------------------------------
-   * 6) Render Routines for Selected Date
-   * ----------------------------------------------------------------
-   */
-  const RoutinesList = () => {
-    return routinesForSelectedDate.map(routine => (
-      <View key={routine.id} style={styles.routineContainer}>
-        <Text style={styles.routineName}>{routine.name}</Text>
-        <TaskList routine={routine} />
-      </View>
-    ));
+  const hideTimePicker = () => {
+    setTimePickerVisible(false);
+    setSelectedTask(null);
+    setTimeField("");
   };
 
-  /* 
-   * ----------------------------------------------------------------
-   * 7) Task Row + Completion Logic
-   * ----------------------------------------------------------------
-   */
-  function TaskRow({ routine, task, dateStr }) {
-    const { id: routineId, completedDates = {} } = routine;
-    // If tasks have IDs, use them; otherwise use index
-    const isCompleted = completedDates[dateStr]?.[task.id] === true;
-    
+  const handleConfirmTime = (date) => {
+    if (!selectedTask) return;
+    const { routine, taskId, field } = selectedTask;
+
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const timeString = `${hours}:${minutes}`;
+
+    const updatedTasks = routine.tasks.map((task) =>
+      task.id === taskId
+        ? {
+            ...task,
+            timeRange: { ...task.timeRange, [field]: timeString },
+          }
+        : task
+    );
+
+    // Update tasks in Firestore
+    const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+    updateDoc(routineRef, { tasks: updatedTasks })
+      .then(() => {
+        setTimePickerVisible(false);
+        setSelectedTask(null);
+      })
+      .catch((error) => {
+        console.error("Error updating time:", error);
+        Alert.alert("Error", "Failed to update task time.");
+      });
+  };
+
+  // -------------------------
+  // Helper
+  // -------------------------
+  const formatTimeForDisplay = (timeString) => {
+    if (!timeString) return "";
+    const [hours, minutes] = timeString.split(":").map(Number);
+    const date = new Date();
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  };
+
+  // -------------------------
+  // Task Row with SMART Builder UI
+  // -------------------------
+  const TaskRow = ({ routine, task }) => {
+    // Completion logic
+    const isCompleted = routine.completedDates?.[selectedDate]?.[task.id] === true;
+
     const toggleTaskCompletion = async () => {
+      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+
       const newValue = !isCompleted;
-      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routineId);
+      const updatedCompletedDates = {
+        ...routine.completedDates,
+        [selectedDate]: {
+          ...(routine.completedDates?.[selectedDate] || {}),
+          [task.id]: newValue,
+        },
+      };
 
       try {
-        await updateDoc(routineRef, {
-          [`completedDates.${dateStr}.${task.id}`]: newValue
-        });
-        
-        // Check if this completion means the entire routine is complete
-        const updatedCompletedDates = {
-          ...completedDates,
-          [dateStr]: { ...(completedDates[dateStr] || {}), [task.id]: newValue }
-        };
-        
+        await updateDoc(routineRef, { completedDates: updatedCompletedDates });
+
+        // Check if all tasks are now complete
         const allTasksCompleted = routine.tasks.every(
-          t => updatedCompletedDates[dateStr]?.[t.id] === true
+          (t) => updatedCompletedDates[selectedDate]?.[t.id] === true
         );
-        
+
         if (newValue && allTasksCompleted) {
           triggerConfetti();
         }
-      } catch (error) {
-        console.error("Error updating task completion:", error);
-        Alert.alert("Error", "Could not update completion status.");
+      } catch (err) {
+        console.error("Error updating completion:", err);
+        Alert.alert("Error", "Could not update completion.");
+      }
+    };
+
+    // Expanded logic
+    const isExpanded = expandedTaskId === task.id;
+    const toggleExpanded = () => {
+      setExpandedTaskId(isExpanded ? null : task.id);
+    };
+
+    const handleTitleChange = async (text) => {
+      const updatedTasks = routine.tasks.map((t) =>
+        t.id === task.id ? { ...t, title: text } : t
+      );
+      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+      try {
+        await updateDoc(routineRef, { tasks: updatedTasks });
+      } catch (err) {
+        console.error("Error updating title:", err);
+        Alert.alert("Error", "Could not update title.");
+      }
+    };
+
+    const handleDescriptionChange = async (desc) => {
+      const updatedTasks = routine.tasks.map((t) =>
+        t.id === task.id ? { ...t, description: desc } : t
+      );
+      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+      try {
+        await updateDoc(routineRef, { tasks: updatedTasks });
+      } catch (err) {
+        console.error("Error updating description:", err);
+        Alert.alert("Error", "Could not update description.");
+      }
+    };
+
+    const handleRemoveTask = async () => {
+      const updatedTasks = routine.tasks.filter((t) => t.id !== task.id);
+      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+      try {
+        await updateDoc(routineRef, { tasks: updatedTasks });
+      } catch (err) {
+        console.error("Error removing task:", err);
+        Alert.alert("Error", "Could not remove task.");
       }
     };
 
     return (
-      <TouchableOpacity 
-        style={styles.taskRow}
-        onPress={toggleTaskCompletion}
-        activeOpacity={0.7}
-      >
-        <View style={styles.taskContent}>
-          <View 
-            style={[
-              styles.checkbox, 
-              isCompleted && styles.checkboxCompleted
-            ]}
+      <Animated.View style={styles.taskItem} key={task.id}>
+        {/* Header */}
+        <TouchableOpacity
+          style={styles.taskHeader}
+          onPress={toggleExpanded}
+          activeOpacity={0.7}
+        >
+          <TouchableOpacity
+            style={[styles.checkbox, isCompleted && styles.checkboxCompleted]}
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleTaskCompletion();
+            }}
           >
-            {isCompleted && <View style={styles.checkmark} />}
-          </View>
-          <Text style={[
-            styles.taskTitle,
-            isCompleted && styles.taskTitleCompleted
-          ]}>
-            {task.title}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  }
+            {isCompleted && <MaterialIcons name="check" size={16} color="#fff" />}
+          </TouchableOpacity>
 
-  /* 
-   * ----------------------------------------------------------------
-   * 8) Calendar Theme & Rendering
-   * ----------------------------------------------------------------
-   */
-  const calendarTheme = {
-    backgroundColor: '#1a1a1a',
-    calendarBackground: '#1a1a1a',
-    textSectionTitleColor: '#848484',
-    selectedDayBackgroundColor: '#3d5afe',
-    selectedDayTextColor: '#ffffff',
-    todayTextColor: '#3d5afe',
-    dayTextColor: '#ffffff',
-    textDisabledColor: '#4d4d4d',
-    dotColor: '#3d5afe',
-    selectedDotColor: '#ffffff',
-    arrowColor: '#3d5afe',
-    monthTextColor: '#ffffff',
-    textDayFontSize: 16,
-    textMonthFontSize: 18,
-    textDayHeaderFontSize: 14
+          <View style={styles.taskTitleContainer}>
+            <Text
+              style={[styles.taskTitle, isCompleted && styles.taskTitleCompleted]}
+              numberOfLines={1}
+            >
+              {task.title}
+            </Text>
+            <Text style={styles.taskTime}>
+              {formatTimeForDisplay(task.timeRange.start)} - {formatTimeForDisplay(task.timeRange.end)}
+            </Text>
+          </View>
+
+          <MaterialIcons
+            name={isExpanded ? "expand-less" : "expand-more"}
+            size={24}
+            color="#666"
+          />
+        </TouchableOpacity>
+
+        {/* Expanded Content */}
+        {isExpanded && (
+          <View style={styles.expandedContent}>
+            {/* <TextInput
+              style={styles.titleInput}
+              value={task.title}
+              placeholder="Task title"
+              onChangeText={handleTitleChange}
+            /> */}
+
+            {/* Time Inputs */}
+            <View style={styles.timeInputsContainer}>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => showTimePicker(routine, task.id, "start")}
+              >
+                <MaterialIcons name="access-time" size={20} color="#007AFF" />
+                <Text style={styles.timeButtonText}>
+                  {formatTimeForDisplay(task.timeRange.start) || "Start Time"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => showTimePicker(routine, task.id, "end")}
+              >
+                <MaterialIcons name="access-time" size={20} color="#007AFF" />
+                <Text style={styles.timeButtonText}>
+                  {formatTimeForDisplay(task.timeRange.end) || "End Time"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Description */}
+            <TextInput
+              style={styles.descriptionInput}
+              value={task.description}
+              placeholder="Task description"
+              multiline
+              numberOfLines={3}
+              onChangeText={handleDescriptionChange}
+            />
+
+            {/* Remove Button */}
+            {/* <TouchableOpacity style={styles.removeButton} onPress={handleRemoveTask}>
+              <MaterialIcons name="delete-outline" size={20} color="#FF3B30" />
+              <Text style={styles.removeButtonText}>Remove Task</Text>
+            </TouchableOpacity> */}
+          </View>
+        )}
+      </Animated.View>
+    );
   };
 
-  // Main Return
+  // -------------------------
+  // Routines for Selected Date
+  // -------------------------
+  const RoutinesList = () => {
+    return routinesForSelectedDate.map((routine) => (
+      <View key={routine.id} style={styles.routineContainer}>
+        <Text style={styles.routineName}>{routine.name}</Text>
+
+        {routine.tasks.map((task) => (
+          <TaskRow key={task.id} routine={routine} task={task} />
+        ))}
+      </View>
+    ));
+  };
+
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.container}>
@@ -422,19 +562,19 @@ export default function RoutineCalendar() {
           entering={FadeInDown.duration(1000).delay(200)}
           style={styles.greetingContainer}
         >
-          <Text style={styles.greeting}>{`${greeting}, ${name || 'User'}`}</Text>
+          <Text style={styles.greeting}>{`${greeting}, ${name || "User"}`}</Text>
           <Text style={styles.subGreeting}>Let's make today productive</Text>
         </Animated.View>
 
-        {/* (Optional) Additional Header */}
+        {/* Additional Header (Optional) */}
         <Animated.Text
           entering={FadeInDown.duration(1000).delay(400)}
           style={styles.header}
         >
-          {/* Possibly: "My Goals and Routines" */}
+          {/* "My Goals and Routines" or other header */}
         </Animated.Text>
 
-        {/* Calendar */}
+        {/* Calendar + Scroll */}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -454,23 +594,43 @@ export default function RoutineCalendar() {
                 },
               }}
               markingType="dot"
-              theme={calendarTheme}
+              theme={{
+                backgroundColor: "#1a1a1a",
+                calendarBackground: "#1a1a1a",
+                textSectionTitleColor: "#848484",
+                selectedDayBackgroundColor: "#3d5afe",
+                selectedDayTextColor: "#ffffff",
+                todayTextColor: "#3d5afe",
+                dayTextColor: "#ffffff",
+                textDisabledColor: "#4d4d4d",
+                dotColor: "#3d5afe",
+                selectedDotColor: "#ffffff",
+                arrowColor: "#3d5afe",
+                monthTextColor: "#ffffff",
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 14,
+              }}
             />
           </Animated.View>
 
-          {/* Routines for Selected Date */}
+          {/* Routines for This Date */}
           {selectedDate && (
             <Animated.View
               entering={FadeInDown.duration(1000).delay(800)}
               style={styles.routinesSection}
             >
-                <Text style={styles.dateHeader}>
-                  {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </Text>
+              <Text style={styles.dateHeader}>
+                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}
+              </Text>
+
               {routinesForSelectedDate.length === 0 ? (
                 <Animated.View
                   entering={FadeInDown.duration(1000).delay(1000)}
@@ -493,15 +653,23 @@ export default function RoutineCalendar() {
         {/* Confetti */}
         {showConfetti && (
           <ConfettiCannon
-            count={100} // Number of confetti pieces
-            origin={{ x: 0.5, y: 0 }} // Start at the top center
-            autoStart={true} // Auto-launch confetti
-            fadeOut={true} // Fade out confetti as they fall
-            fallAngle={180} // Make confetti fall downward
-            explosionSpeed={500} // Optional: Adjust the speed of the explosion
-            colors={['#3d5afe', '#4CAF50', '#FFF']} // Confetti colors
+            count={100}
+            origin={{ x: 0.5, y: 0 }}
+            autoStart={true}
+            fadeOut={true}
+            explosionSpeed={400}
+            colors={["#3d5afe", "#4CAF50", "#FFF"]}
           />
         )}
+
+        {/* Time Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isTimePickerVisible}
+          mode="time"
+          date={selectedDateObj}
+          onConfirm={handleConfirmTime}
+          onCancel={hideTimePicker}
+        />
       </View>
     </SafeAreaView>
   );
