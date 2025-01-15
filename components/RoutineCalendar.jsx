@@ -149,6 +149,7 @@ export default function RoutineCalendar() {
               daysOfWeek: phase.routine.daysOfWeek,
               dateRange: phase.dateRange,
               completedDates: {}, // or fetch from sub-collection if needed
+              isRecurring: true
             });
           });
         }
