@@ -1,34 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
   Alert,
   ActivityIndicator,
-  ScrollView,
   SafeAreaView,
   Platform,
   Keyboard,
-  TouchableWithoutFeedback,
+  Switch,
+  KeyboardAvoidingView,
 } from "react-native";
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import   Animated, { FadeInDown } from 'react-native-reanimated';
-import { auth, db } from '../firebase'; // Ensure you have firebase configured properly
+import {
+  collection,
+  addDoc,
+  serverTimestamp
+} from "firebase/firestore";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { auth, db } from "../firebase";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 
-import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
+import { EXPO_PUBLIC_OPENAI_API_KEY } from "@env";
 import styles from "../styles/RoutineBuilderStyles";
-
-// Helper to dismiss keyboard
-const dismissKeyboard = () => {
-  Keyboard.dismiss();
-};
-
-// console.log(OPENAI_API_KEY)
 
 // Days of week labels (0=Sunday, 6=Saturday)
 const DAYS_OF_WEEK = [
@@ -43,41 +40,43 @@ const DAYS_OF_WEEK = [
 
 export default function RoutineBuilder({ route, navigation }) {
   const routine = route?.params?.routine;
-  
-  // If a routine is provided (edit mode), load its tasks
-  useEffect(() => {
-    if (routine) {
-      setTasks(routine.tasks);
-      setSelectedDays(routine.daysOfWeek || []);
-      setIsRecurring(routine.isRecurring || false); // Load recurring status if editing
-    }
-  }, [routine]);
 
+  // ---------------- State ----------------
   const [userInput, setUserInput] = useState("");
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Time picker state
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [isRecurring, setIsRecurring] = useState(false); // NEW: Track recurring status
   const [timeField, setTimeField] = useState("");
   const [selectedTime, setSelectedTime] = useState(new Date());
-  const [expandedTaskId, setExpandedTaskId] = useState(null);
 
-  // **New**: State for days of the week selection
-  const [selectedDays, setSelectedDays] = useState([]); 
-  // Add these state variables alongside your existing states
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  // Recurring routine state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [selectedDays, setSelectedDays] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [isInputting, setIsInputting] = useState(false);
 
+  const hasAtLeastOneTask = tasks.length > 0;
+
+  // ---------------- Load Routine if Editing ----------------
+  useEffect(() => {
+    if (routine) {
+      setTasks(routine.tasks);
+      setSelectedDays(routine.daysOfWeek || []);
+      setIsRecurring(routine.isRecurring || false);
+    }
+  }, [routine]);
 
   // Generate a random ID for tasks
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
   // --------------- LLM Routine Generation ---------------
   const handleGenerateRoutine = async () => {
-    Keyboard.dismiss()
+    Keyboard.dismiss();
     if (!userInput.trim()) {
       Alert.alert("Error", "Please provide a description of your goals.");
       return;
@@ -88,7 +87,7 @@ export default function RoutineBuilder({ route, navigation }) {
       const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         {
-          model: "gpt-4o-mini", // Use a model that supports function calling
+          model: "gpt-4o-mini", // Example: a model that supports function calling
           messages: [
             {
               role: "system",
@@ -96,19 +95,14 @@ export default function RoutineBuilder({ route, navigation }) {
               The routine must adhere to the following rules:
 
               1. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
-              2. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
-                - If the goal is fitness-related, the routine should include complementary exercises (e.g., warm-up, workout, cool-down).
-                - If the goal involves study or productivity, the routine should include time blocks for focused work, breaks, and review.
+              2. **Logical Flow**: Tasks must make sense together in a single day's context.
               3. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
-              4. **Valid Time Range**: Task times must use the 24-hour format ("HH:mm"), fit within a single calendar day (e.g., 06:00 to 22:00), and have appropriate durations.
-              5. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
-              6. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
-              7. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
-              8. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
-              9. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
-              10. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
-              11. Avoid overscheduling. Include buffer times or flexibility in the routine.`
-
+              4. **Valid Time Range**: Task times must use the 24-hour format ("HH:mm"), fit within a single day, and have appropriate durations.
+              5. **Concise and Relevant**: Avoid unnecessary tasks or filler; the routine must directly address the user's goal.
+              6. **Include breaks** and ensure tasks are balanced (1-2 hours max for intense tasks).
+              7. **No earlier than 5 AM or later than 10 PM** for start/end times.
+              8. Ensure the routine is achievable in one day.
+              `
             },
             {
               role: "user",
@@ -131,24 +125,30 @@ export default function RoutineBuilder({ route, navigation }) {
                         timeRange: {
                           type: "object",
                           properties: {
-                            start: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
-                            end: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" }
+                            start: {
+                              type: "string",
+                              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+                            },
+                            end: {
+                              type: "string",
+                              pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+                            },
                           },
-                          required: ["start", "end"]
+                          required: ["start", "end"],
                         },
                         description: { type: "string" },
-                        isCompleted: { type: "boolean" }
+                        isCompleted: { type: "boolean" },
                       },
-                      required: ["title", "timeRange", "description", "isCompleted"]
-                    }
-                  }
+                      required: ["title", "timeRange", "description", "isCompleted"],
+                    },
+                  },
                 },
-                required: ["routine"]
-              }
-            }
+                required: ["routine"],
+              },
+            },
           ],
           function_call: { name: "generate_routine" },
-          temperature: 0.7
+          temperature: 0.7,
         },
         {
           headers: {
@@ -157,19 +157,18 @@ export default function RoutineBuilder({ route, navigation }) {
           },
         }
       );
-      
+
       // Parse the response
       const functionCall = response.data.choices[0].message.function_call;
       const routineData = JSON.parse(functionCall.arguments);
       const routine = routineData.routine;
-      
+
       // Add IDs to each task
-      const parsedTasks = routine.map(task => ({
+      const parsedTasks = routine.map((task) => ({
         id: generateId(),
-        ...task
+        ...task,
       }));
       setTasks(parsedTasks);
-
     } catch (error) {
       console.error("Error generating routine:", error);
       Alert.alert("Error", "Failed to generate routine. Please try again.");
@@ -179,16 +178,6 @@ export default function RoutineBuilder({ route, navigation }) {
   };
 
   // --------------- Task Functions ---------------
-  const toggleTaskCompletion = (taskId) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId
-          ? { ...task, isCompleted: !task.isCompleted }
-          : task
-      )
-    );
-  };
-
   const handleDragEnd = ({ data }) => {
     setTasks(data);
   };
@@ -205,14 +194,14 @@ export default function RoutineBuilder({ route, navigation }) {
   };
 
   const handleRemoveTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+    setTasks(tasks.filter((task) => task.id !== taskId));
   };
 
   // --------------- Time Picker ---------------
   const showTimePicker = (taskId, field) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     if (task && task.timeRange[field]) {
-      const [hours, minutes] = task.timeRange[field].split(':').map(Number);
+      const [hours, minutes] = task.timeRange[field].split(":").map(Number);
       const time = new Date();
       time.setHours(hours);
       time.setMinutes(minutes);
@@ -232,31 +221,36 @@ export default function RoutineBuilder({ route, navigation }) {
   };
 
   // Show Date Picker
-const showDatePicker = () => {
-  setDatePickerVisible(true);
-};
+  const showDatePicker = () => {
+    setDatePickerVisible(true);
+  };
 
-// Hide Date Picker
-const hideDatePicker = () => {
-  setDatePickerVisible(false);
-};
+  // Hide Date Picker
+  const hideDatePicker = () => {
+    setDatePickerVisible(false);
+  };
 
-// Handle Date Confirmation
-const handleConfirmDate = (date) => {
-  setSelectedDate(date);
-  hideDatePicker();
-};
-
+  // Handle Date Confirmation
+  const handleConfirmDate = (date) => {
+    setSelectedDate(date);
+    hideDatePicker();
+  };
 
   const handleConfirmTime = (time) => {
-    const hours = String(time.getHours()).padStart(2, '0');
-    const minutes = String(time.getMinutes()).padStart(2, '0');
+    const hours = String(time.getHours()).padStart(2, "0");
+    const minutes = String(time.getMinutes()).padStart(2, "0");
     const timeString = `${hours}:${minutes}`;
 
-    setTasks(prev =>
-      prev.map(task =>
+    setTasks((prev) =>
+      prev.map((task) =>
         task.id === selectedTaskId
-          ? { ...task, timeRange: { ...task.timeRange, [timeField]: timeString } }
+          ? {
+              ...task,
+              timeRange: {
+                ...task.timeRange,
+                [timeField]: timeString,
+              },
+            }
           : task
       )
     );
@@ -264,17 +258,17 @@ const handleConfirmDate = (date) => {
   };
 
   const formatTimeForDisplay = (timeString) => {
-    if (!timeString) return '';
-    
-    const [hours, minutes] = timeString.split(':').map(Number);
+    if (!timeString) return "";
+
+    const [hours, minutes] = timeString.split(":").map(Number);
     const date = new Date();
     date.setHours(hours);
     date.setMinutes(minutes);
-    
-    return date.toLocaleTimeString([], { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
+
+    return date.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
@@ -297,34 +291,36 @@ const handleConfirmDate = (date) => {
       Alert.alert("Error", "No tasks to save.");
       return;
     }
-  
+
     if (isRecurring && !selectedDays.length) {
       Alert.alert("Days Not Selected", "Please select at least one day of the week.");
       return;
     }
-  
+
     try {
-      const routinesRef = collection(db, "users", auth.currentUser.uid, "routines");
-      
+      const routinesRef = collection(
+        db,
+        "users",
+        auth.currentUser.uid,
+        "routines"
+      );
+
       const yyyy = selectedDate.getFullYear();
-      const mm = String(selectedDate.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+      const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
       const dd = String(selectedDate.getDate()).padStart(2, "0");
       const formattedSelectedDate = `${yyyy}-${mm}-${dd}`;
 
-      
       const routineData = {
         name: isRecurring
           ? `Routine - Recurring`
-          : `Routine - ${selectedDate.toLocaleDateString()}`, // Use selected date for non-recurring
+          : `Routine - ${selectedDate.toLocaleDateString()}`,
         tasks,
         timestamp: serverTimestamp(),
-        daysOfWeek: isRecurring ? selectedDays : [], // Only save days if recurring
-        isRecurring, // NEW: Save recurring status
-        createdDate: isRecurring
-          ? null
-          : formattedSelectedDate, // Save the selected date as ISO string
+        daysOfWeek: isRecurring ? selectedDays : [],
+        isRecurring,
+        createdDate: isRecurring ? null : formattedSelectedDate,
       };
-  
+
       await addDoc(routinesRef, routineData);
       Alert.alert("Routine Saved", "Your routine has been saved successfully!");
       // navigation.goBack(); // Optionally navigate back after saving
@@ -333,76 +329,179 @@ const handleConfirmDate = (date) => {
       Alert.alert("Error", "Failed to save routine. Please try again.");
     }
   };
-  
 
-  const renderRecurringCheckbox = () => (
-    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
-      <TouchableOpacity
-        onPress={() => setIsRecurring((prev) => !prev)}
-        style={[
-          {
-            width: 24,
-            height: 24,
-            borderRadius: 12,
-            borderWidth: 2,
-            borderColor: "#3d5afe",
-            alignItems: "center",
-            justifyContent: "center",
-            marginRight: 8,
-          },
-          isRecurring && { backgroundColor: "#3d5afe" },
-        ]}
-      >
-        {isRecurring && <MaterialIcons name="check" size={16} color="#fff" />}
-      </TouchableOpacity>
-      <Text style={{ color: "#ffffff", fontSize: 16 }}>Recurring Routine</Text>
-    </View>
-  );
+  // ---------------------------------------------
+  //         RENDER FUNCTIONS FOR THE LIST
+  // ---------------------------------------------
+  const renderHeader = () => {
+    return (
+      <>
+        {/* User Goals */}
+        <View style={styles.inputContainer}>
+          {/* {/* <TextInput
+            style={styles.goalInput}
+            placeholder="What are your goals for this routine?"
+            value={userInput}
+            onChangeText={setUserInput}
+            multiline
+            numberOfLines={3}
+            onFocus={() => setIsInputting(true)}
+            onEndEditing={() => setIsInputting(false)}
+            /> */}
 
-  // --------------- Draggable List Render ---------------
+          <TouchableOpacity
+            style={[styles.generateButton, loading && styles.generateButtonDisabled]}
+            onPress={handleGenerateRoutine}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <MaterialIcons name="auto-awesome" size={24} color="#fff" />
+                <Text style={styles.generateButtonText}>Generate Routine</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Toggle Recurring Routine */}
+        <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 16 }}>
+          <Switch
+            trackColor={{ false: "#767577", true: "#3d5afe" }}
+            thumbColor={isRecurring ? "#f4f3f4" : "#f4f3f4"}
+            onValueChange={(value) => setIsRecurring(value)}
+            value={isRecurring}
+          />
+          <Text style={{ marginLeft: 8, color: "#fff", fontSize: 16 }}>
+            Recurring Routine
+          </Text>
+        </View>
+
+        {/* If recurring: show day-of-week; otherwise show date */}
+        {isRecurring ? (
+          <>
+            <Text style={styles.subHeader}>Select Days of the Week</Text>
+            <View style={styles.daysContainer}>
+              {DAYS_OF_WEEK.map((day) => {
+                const isSelected = selectedDays.includes(day.value);
+                return (
+                  <TouchableOpacity
+                    key={day.value}
+                    style={[
+                      styles.dayButton,
+                      isSelected && styles.dayButtonSelected,
+                      !hasAtLeastOneTask && { opacity: 0.5 }, // grey out if no tasks
+                    ]}
+                    onPress={() => hasAtLeastOneTask && toggleDaySelection(day.value)}
+                    disabled={!hasAtLeastOneTask}
+                  >
+                    <Text
+                      style={[
+                        styles.dayButtonText,
+                        isSelected && styles.dayButtonTextSelected,
+                      ]}
+                    >
+                      {day.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.subHeader}>Select Date for Routine</Text>
+            <TouchableOpacity
+              style={[
+                styles.dateButton,
+                !hasAtLeastOneTask && { opacity: 0.5 }, // grey out
+              ]}
+              onPress={hasAtLeastOneTask ? showDatePicker : null}
+              disabled={!hasAtLeastOneTask}
+            >
+              <MaterialIcons name="calendar-today" size={24} color="#fff" />
+              <Text style={styles.dateButtonText}>
+                {selectedDate.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* Tasks Section Header */}
+        <View style={styles.taskListHeader}>
+          <Text style={styles.taskListTitle}>Tasks</Text>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
+            <MaterialIcons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </>
+    );
+  };
+
+  const renderFooter = () => {
+    return (
+      <View style={{ marginBottom: 40 }}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            { marginTop: 16 },
+            !hasAtLeastOneTask && { opacity: 0.5 },
+          ]}
+          onPress={hasAtLeastOneTask ? handleSaveRoutine : null}
+          disabled={!hasAtLeastOneTask}
+        >
+          <MaterialIcons name="save" size={24} color="#fff" />
+          <Text style={styles.saveButtonText}>Save Routine</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const renderItem = ({ item, drag, isActive }) => {
     const isExpanded = expandedTaskId === item.id;
+
     return (
       <Animated.View
         style={[
           styles.taskItem,
-          isActive && styles.draggingTask
+          isActive && styles.draggingTask,
         ]}
         entering={FadeInDown.duration(1000).delay(200)}
       >
-        <TouchableOpacity 
+        {/* Task Header (Tap to Expand) */}
+        <TouchableOpacity
           style={styles.taskHeader}
           onPress={() => setExpandedTaskId(isExpanded ? null : item.id)}
-          onLongPress={drag}
+          activeOpacity={0.8}
         >
-          <TouchableOpacity
-            style={[styles.checkbox, item.isCompleted && styles.checkboxCompleted]}
-            onPress={() => toggleTaskCompletion(item.id)}
-          >
-            {item.isCompleted && <MaterialIcons name="check" size={16} color="#fff" />}
+          {/* Burger Icon for Drag */}
+          <TouchableOpacity onLongPress={drag} style={{ marginRight: 8 }}>
+            <MaterialIcons name="drag-handle" size={24} color="#666" />
           </TouchableOpacity>
-          
+
+          {/* Title & Times */}
           <View style={styles.taskTitleContainer}>
-            <Text 
-              style={[
-                styles.taskTitle,
-                item.isCompleted && styles.completedText
-              ]}
-            >
-              {item.title}
-            </Text>
+            <Text style={styles.taskTitle}>{item.title}</Text>
             <Text style={styles.taskTime}>
-              {formatTimeForDisplay(item.timeRange.start)} - {formatTimeForDisplay(item.timeRange.end)}
+              {formatTimeForDisplay(item.timeRange.start)} -{" "}
+              {formatTimeForDisplay(item.timeRange.end)}
             </Text>
           </View>
-          
-          <MaterialIcons 
-            name={isExpanded ? "expand-less" : "expand-more"} 
-            size={24} 
+
+          {/* Expand/Collapse Icon */}
+          <MaterialIcons
+            name={isExpanded ? "expand-less" : "expand-more"}
+            size={24}
             color="#666"
           />
         </TouchableOpacity>
 
+        {/* Expanded Content */}
         {isExpanded && (
           <View style={styles.expandedContent}>
             <TextInput
@@ -411,15 +510,13 @@ const handleConfirmDate = (date) => {
               placeholder="Task title"
               onChangeText={(text) =>
                 setTasks((prev) =>
-                  prev.map((t) =>
-                    t.id === item.id ? { ...t, title: text } : t
-                  )
+                  prev.map((t) => (t.id === item.id ? { ...t, title: text } : t))
                 )
               }
             />
-            
+
             <View style={styles.timeInputsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.timeButton}
                 onPress={() => showTimePicker(item.id, "start")}
               >
@@ -429,7 +526,7 @@ const handleConfirmDate = (date) => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.timeButton}
                 onPress={() => showTimePicker(item.id, "end")}
               >
@@ -448,14 +545,12 @@ const handleConfirmDate = (date) => {
               numberOfLines={3}
               onChangeText={(text) =>
                 setTasks((prev) =>
-                  prev.map((t) =>
-                    t.id === item.id ? { ...t, description: text } : t
-                  )
+                  prev.map((t) => (t.id === item.id ? { ...t, description: text } : t))
                 )
               }
             />
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.removeButton}
               onPress={() => handleRemoveTask(item.id)}
             >
@@ -471,141 +566,49 @@ const handleConfirmDate = (date) => {
   // --------------- Main Render ---------------
   return (
     <SafeAreaView style={styles.safeArea}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.scrollContent}
+      
+      <TextInput
+            style={styles.goalInput}
+            placeholder="What are your goals for this routine?"
+            value={userInput}
+            onChangeText={setUserInput}
+            multiline
+            numberOfLines={3}
+            onFocus={() => setIsInputting(true)}
+            onEndEditing={() => setIsInputting(false)}
+            />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+
+        
+        <DraggableFlatList
+          data={tasks}
+          onDragEnd={handleDragEnd}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          ListHeaderComponent={renderHeader}
+          ListFooterComponent={renderFooter}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+          // Make sure taps inside TextInputs don’t dismiss the keyboard:
           keyboardShouldPersistTaps="handled"
-          nestedScrollEnabled
-        >
-          <Text style={styles.header}>Routine Builder</Text>
-
-          {/* User Goals */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.goalInput}
-              placeholder="What are your goals for this routine?"
-              value={userInput}
-              onChangeText={setUserInput}
-              multiline
-              numberOfLines={3}
-            />
-
-            <TouchableOpacity
-              style={[styles.generateButton, loading && styles.generateButtonDisabled]}
-              onPress={handleGenerateRoutine}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <MaterialIcons name="auto-awesome" size={24} color="#fff" />
-                  <Text style={styles.generateButtonText}>Generate Routine</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Recurring Checkbox */}
-          {renderRecurringCheckbox()}
-          
-          {!isRecurring && (
-            <>
-              <Text style={styles.subHeader}>Select Date for Routine</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={showDatePicker}
-              >
-                <MaterialIcons name="calendar-today" size={24} color="#fff" />
-                <Text style={styles.dateButtonText}>
-                  {selectedDate.toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-
-
-          {/* Days of the Week */}
-          {isRecurring && (
-            <>
-              <Text style={styles.subHeader}>Select Days of the Week</Text>
-              <View style={styles.daysContainer}>
-                {DAYS_OF_WEEK.map((day) => {
-                  const isSelected = selectedDays.includes(day.value);
-                  return (
-                    <TouchableOpacity
-                      key={day.value}
-                      style={[
-                        styles.dayButton,
-                        isSelected && styles.dayButtonSelected,
-                      ]}
-                      onPress={() => toggleDaySelection(day.value)}
-                    >
-                      <Text
-                        style={[
-                          styles.dayButtonText,
-                          isSelected && styles.dayButtonTextSelected,
-                        ]}
-                      >
-                        {day.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {/* Tasks Section */}
-          <View style={styles.taskListHeader}>
-            <Text style={styles.taskListTitle}>Tasks</Text>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
-              <MaterialIcons name="add" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Draggable List */}
-          <View style={{ maxHeight: 400 }}>
-            <DraggableFlatList
-              data={tasks}
-              onDragEnd={handleDragEnd}
-              keyExtractor={(item) => item.id}
-              renderItem={renderItem}
-              contentContainerStyle={styles.taskList}
-              nestedScrollEnabled
-            />
-          </View>
-
-          <View style={styles.bottomSpacing} />
-
-          {/* Time Picker Modal */}
-        <DateTimePickerModal
-          isVisible={isTimePickerVisible || isDatePickerVisible}
-          mode={isTimePickerVisible ? "time" : "date"}
-          onConfirm={isTimePickerVisible ? handleConfirmTime : handleConfirmDate}
-          onCancel={isTimePickerVisible ? hideTimePicker : hideDatePicker}
-          date={isTimePickerVisible ? selectedTime : selectedDate}
-          isDarkModeEnabled={true}
-          textColor={Platform.OS === "ios" ? "white" : "black"}
-          themeVariant="light"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
+          // Prevent the list from dismissing the keyboard on scroll/drag:
+          keyboardDismissMode="none"
         />
-        </ScrollView>
-      </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
-      {/* Save Button */}
-      <View style={styles.saveButtonContainer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveRoutine}>
-          <MaterialIcons name="save" size={24} color="#fff" />
-          <Text style={styles.saveButtonText}>Save Routine</Text>
-        </TouchableOpacity>
-      </View>
+      <DateTimePickerModal
+        isVisible={isTimePickerVisible || isDatePickerVisible}
+        mode={isTimePickerVisible ? "time" : "date"}
+        onConfirm={isTimePickerVisible ? handleConfirmTime : handleConfirmDate}
+        onCancel={isTimePickerVisible ? hideTimePicker : hideDatePicker}
+        date={isTimePickerVisible ? selectedTime : selectedDate}
+        isDarkModeEnabled={true}
+        textColor={Platform.OS === "ios" ? "white" : "black"}
+        themeVariant="light"
+        display={Platform.OS === "ios" ? "spinner" : "default"}
+      />
     </SafeAreaView>
   );
 }

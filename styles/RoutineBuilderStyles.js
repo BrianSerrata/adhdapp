@@ -38,11 +38,20 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   goalInput: {
-    fontSize: 16,
-    minHeight: 80,
-    marginBottom: 16,
-    color: '#ffffff',
-  },
+    backgroundColor: '#1a1a1a', // Consistent with generateButton background
+    color: '#ffffff', // White text for readability
+    borderRadius: 12, // Match the generateButton rounded corners
+    paddingHorizontal: 16, // Consistent padding
+    paddingVertical: 20, // Consistent vertical padding
+    fontSize: 16, // Standard readable font size
+    lineHeight: 20, // Better spacing for multiline input
+    marginBottom: 16, // Space below the input
+    shadowColor: '#000', // Add subtle shadow for a tactile feel
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },  
   generateButton: {
     backgroundColor: '#3d5afe',
     borderRadius: 12,
@@ -124,6 +133,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
+  dragHandle: {
+    padding: 8,
+    marginRight: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   taskHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -154,6 +169,14 @@ const styles = StyleSheet.create({
   taskTime: {
     fontSize: 14,
     color: '#848484',
+  },
+  taskContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingRight: 12,
   },
   completedText: {
     textDecorationLine: 'line-through',
@@ -258,7 +281,13 @@ dateButtonText: {
   fontSize: 16,
   marginLeft: 8,
 },
-
+// Add these to your styles
+fixedHeader: {
+  position: 'relative',
+  zIndex: 1,
+  backgroundColor: 'your-background-color',
+  paddingHorizontal: 16,
+},
 });
 
 export default styles;
