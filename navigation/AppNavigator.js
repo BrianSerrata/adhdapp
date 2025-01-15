@@ -1,8 +1,10 @@
-// navigation/AppNavigator.js
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import { Animated, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
+import { CardStyleInterpolators } from '@react-navigation/stack';
+import { enableScreens } from 'react-native-screens';
 
 // Import your screens
 import LoginPage from '../screens/LoginPage';
@@ -13,10 +15,79 @@ import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
 import RoutineManager from '../screens/RoutineManager';
 
+enableScreens();
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// Create TabNavigator separately
+// Animated Screen Wrapper Component
+const AnimatedScreen = ({ children }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        flex: 1,
+        opacity: fadeAnim,
+        transform: [
+          {
+            translateX: fadeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [100, 0],
+            }),
+          },
+        ],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
+// Custom transition configuration
+const forSlide = ({ current, next, inverted, layouts: { screen } }) => {
+  const progress = Animated.add(
+    current.progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    }),
+    next
+      ? next.progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1],
+          extrapolate: 'clamp',
+        })
+      : 0
+  );
+
+  return {
+    cardStyle: {
+      transform: [
+        {
+          translateX: Animated.multiply(
+            progress.interpolate({
+              inputRange: [0, 1, 2],
+              outputRange: [screen.width, 0, -screen.width],
+              extrapolate: 'clamp',
+            }),
+            inverted
+          ),
+        },
+      ],
+    },
+  };
+};
+
+// Tab Navigator
 const TabNavigator = () => {
   return (
     <Tab.Navigator
@@ -28,7 +99,7 @@ const TabNavigator = () => {
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
-          marginBottom: 7, // Adjust this value to raise the tab bar
+          marginBottom: 7,
         },
         tabBarActiveTintColor: '#3d5afe',
         tabBarInactiveTintColor: '#848484',
@@ -38,11 +109,33 @@ const TabNavigator = () => {
         },
         headerShown: false,
         tabBarHideOnKeyboard: true,
+        // Animation configuration
+        animation: 'timing',
+        animationEnabled: true,
+        cardStyleInterpolator: forSlide,
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 100,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 100,
+            },
+          },
+        },
       }}
     >
       <Tab.Screen
         name="Home"
-        component={RoutineCalendar}
+        component={(props) => (
+          <AnimatedScreen>
+            <RoutineCalendar {...props} />
+          </AnimatedScreen>
+        )}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
@@ -52,7 +145,11 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Routines"
-        component={Routines}
+        component={(props) => (
+          <AnimatedScreen>
+            <Routines {...props} />
+          </AnimatedScreen>
+        )}
         options={{
           tabBarLabel: 'Routines',
           tabBarIcon: ({ color, size }) => (
@@ -62,7 +159,11 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="ADHD Life Coach"
-        component={LifeCoach}
+        component={(props) => (
+          <AnimatedScreen>
+            <LifeCoach {...props} />
+          </AnimatedScreen>
+        )}
         options={{
           tabBarLabel: 'AI Coach',
           tabBarIcon: ({ color, size }) => (
@@ -72,7 +173,11 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Resources"
-        component={Resources}
+        component={(props) => (
+          <AnimatedScreen>
+            <Resources {...props} />
+          </AnimatedScreen>
+        )}
         options={{
           tabBarLabel: 'Resources',
           tabBarIcon: ({ color, size }) => (
@@ -82,7 +187,11 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Routine Manager"
-        component={RoutineManager}
+        component={(props) => (
+          <AnimatedScreen>
+            <RoutineManager {...props} />
+          </AnimatedScreen>
+        )}
         options={{
           tabBarLabel: 'Routine Manager',
           tabBarIcon: ({ color, size }) => (
@@ -97,9 +206,12 @@ const TabNavigator = () => {
 // Root Navigator
 const AppNavigator = () => {
   return (
-    <Stack.Navigator 
+    <Stack.Navigator
       initialRouteName="Login Page"
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+      }}
     >
       <Stack.Screen name="Login Page" component={LoginPage} />
       <Stack.Screen name="Register Page" component={RegisterPage} />

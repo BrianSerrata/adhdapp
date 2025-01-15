@@ -20,7 +20,7 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from '@expo/vector-icons';
 import axios from "axios";
 
-import { OPENAI_API_KEY } from '@env';
+import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import styles from "../styles/RoutineBuilderStyles";
 
 // Helper to dismiss keyboard
@@ -67,6 +67,10 @@ export default function RoutineBuilder({ route, navigation }) {
 
   // **New**: State for days of the week selection
   const [selectedDays, setSelectedDays] = useState([]); 
+  // Add these state variables alongside your existing states
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
 
   // Generate a random ID for tasks
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -149,7 +153,7 @@ export default function RoutineBuilder({ route, navigation }) {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            Authorization: `Bearer ${EXPO_PUBLIC_OPENAI_API_KEY}`,
           },
         }
       );
@@ -227,7 +231,24 @@ export default function RoutineBuilder({ route, navigation }) {
     setTimeField("");
   };
 
-  const handleConfirm = (time) => {
+  // Show Date Picker
+const showDatePicker = () => {
+  setDatePickerVisible(true);
+};
+
+// Hide Date Picker
+const hideDatePicker = () => {
+  setDatePickerVisible(false);
+};
+
+// Handle Date Confirmation
+const handleConfirmDate = (date) => {
+  setSelectedDate(date);
+  hideDatePicker();
+};
+
+
+  const handleConfirmTime = (time) => {
     const hours = String(time.getHours()).padStart(2, '0');
     const minutes = String(time.getMinutes()).padStart(2, '0');
     const timeString = `${hours}:${minutes}`;
@@ -276,37 +297,43 @@ export default function RoutineBuilder({ route, navigation }) {
       Alert.alert("Error", "No tasks to save.");
       return;
     }
-
+  
     if (isRecurring && !selectedDays.length) {
       Alert.alert("Days Not Selected", "Please select at least one day of the week.");
       return;
     }
-
+  
     try {
       const routinesRef = collection(db, "users", auth.currentUser.uid, "routines");
       
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-based
-      const dd = String(now.getDate()).padStart(2, "0");
-      const currentDate = `${yyyy}-${mm}-${dd}`;
+      const yyyy = selectedDate.getFullYear();
+      const mm = String(selectedDate.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+      const dd = String(selectedDate.getDate()).padStart(2, "0");
+      const formattedSelectedDate = `${yyyy}-${mm}-${dd}`;
+
       
       const routineData = {
-        name: `Routine - ${new Date().toLocaleDateString()}`,
+        name: isRecurring
+          ? `Routine - Recurring`
+          : `Routine - ${selectedDate.toLocaleDateString()}`, // Use selected date for non-recurring
         tasks,
         timestamp: serverTimestamp(),
         daysOfWeek: isRecurring ? selectedDays : [], // Only save days if recurring
         isRecurring, // NEW: Save recurring status
-        createdDate: isRecurring ? null : currentDate, // Non-recurring uses the specific date
+        createdDate: isRecurring
+          ? null
+          : formattedSelectedDate, // Save the selected date as ISO string
       };
-
+  
       await addDoc(routinesRef, routineData);
       Alert.alert("Routine Saved", "Your routine has been saved successfully!");
+      // navigation.goBack(); // Optionally navigate back after saving
     } catch (error) {
       console.error("Error saving routine:", error);
       Alert.alert("Error", "Failed to save routine. Please try again.");
     }
   };
+  
 
   const renderRecurringCheckbox = () => (
     <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
@@ -482,6 +509,27 @@ export default function RoutineBuilder({ route, navigation }) {
 
           {/* Recurring Checkbox */}
           {renderRecurringCheckbox()}
+          
+          {!isRecurring && (
+            <>
+              <Text style={styles.subHeader}>Select Date for Routine</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={showDatePicker}
+              >
+                <MaterialIcons name="calendar-today" size={24} color="#fff" />
+                <Text style={styles.dateButtonText}>
+                  {selectedDate.toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+
 
           {/* Days of the Week */}
           {isRecurring && (
@@ -537,17 +585,17 @@ export default function RoutineBuilder({ route, navigation }) {
           <View style={styles.bottomSpacing} />
 
           {/* Time Picker Modal */}
-          <DateTimePickerModal
-            isVisible={isTimePickerVisible}
-            mode="time"
-            onConfirm={handleConfirm}
-            onCancel={hideTimePicker}
-            date={selectedTime}
-            isDarkModeEnabled={true}
-            textColor={Platform.OS === "ios" ? undefined : "#000"}
-            themeVariant="light"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-          />
+        <DateTimePickerModal
+          isVisible={isTimePickerVisible || isDatePickerVisible}
+          mode={isTimePickerVisible ? "time" : "date"}
+          onConfirm={isTimePickerVisible ? handleConfirmTime : handleConfirmDate}
+          onCancel={isTimePickerVisible ? hideTimePicker : hideDatePicker}
+          date={isTimePickerVisible ? selectedTime : selectedDate}
+          isDarkModeEnabled={true}
+          textColor={Platform.OS === "ios" ? "white" : "black"}
+          themeVariant="light"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+        />
         </ScrollView>
       </TouchableWithoutFeedback>
 

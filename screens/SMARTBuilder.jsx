@@ -19,7 +19,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import axios from 'axios';
-import { OPENAI_API_KEY } from '@env';
+import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import DraggableFlatList from "react-native-draggable-flatlist";
 
 import styles from '../styles/SMARTBuilderStyles';
@@ -663,7 +663,7 @@ export default function SMARTBuilder({ navigation }) {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            Authorization: `Bearer ${EXPO_PUBLIC_OPENAI_API_KEY}`,
           },
         }
       );
@@ -938,8 +938,8 @@ export default function SMARTBuilder({ navigation }) {
         onConfirm={handleConfirmDate}
         onCancel={hideDatePicker}
         date={dateType === 'start' ? dateRange.start : dateRange.end}
-        isDarkModeEnabled={false}
-        textColor={Platform.OS === 'ios' ? undefined : '#000'}
+        isDarkModeEnabled={true}
+        textColor={Platform.OS === "ios" ? "white" : "white"}
         themeVariant="light"
         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
       />

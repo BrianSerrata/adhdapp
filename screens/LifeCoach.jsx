@@ -18,7 +18,7 @@ import axios from 'axios';
 import { auth, db } from '../firebase';
 import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import styles from '../styles/LifeCoachStyles';
-import { OPENAI_API_KEY } from '@env';
+import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
 
 const LifeCoach = ({ navigation, route }) => {
@@ -312,7 +312,7 @@ const handleDeleteConversation = async (conversationId) => {
 
     const headers = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      Authorization: `Bearer ${EXPO_PUBLIC_OPENAI_API_KEY}`,
     };
 
     const response = await axios.post(apiUrl, payload, { headers });

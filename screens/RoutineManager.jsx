@@ -126,26 +126,74 @@ const RoutineManager = () => {
     setTimePickerVisible(true);
   };
 
+  const formatTimeForDisplay = (timeString) => {
+        if (!timeString) return "";
+        const [hours, minutes] = timeString.split(":").map(Number);
+        const date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes);
+        return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+    };
+
   const hideTimePicker = () => {
     setTimePickerVisible(false);
     setSelectedTaskId(null);
     setTimeField("");
   };
 
-  const handleConfirm = (time) => {
+  const handleConfirm = async (time) => {
     const hours = String(time.getHours()).padStart(2, '0');
     const minutes = String(time.getMinutes()).padStart(2, '0');
     const timeString = `${hours}:${minutes}`;
-
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === selectedTaskId
-          ? { ...task, timeRange: { ...task.timeRange, [timeField]: timeString } }
-          : task
+  
+    setRoutines((prevRoutines) =>
+      prevRoutines.map((routine) =>
+        routine.id === expandedRoutineId
+          ? {
+              ...routine,
+              tasks: routine.tasks.map((task) =>
+                task.id === selectedTaskId
+                  ? {
+                      ...task,
+                      timeRange: {
+                        ...task.timeRange,
+                        [timeField]: timeString,
+                      },
+                    }
+                  : task
+              ),
+            }
+          : routine
       )
     );
+  
+    // Save updated tasks to Firestore
+    const routine = routines.find((r) => r.id === expandedRoutineId);
+    if (routine) {
+      try {
+        const routineRef = doc(db, 'users', auth.currentUser.uid, 'routines', expandedRoutineId);
+        await updateDoc(routineRef, {
+          tasks: routine.tasks.map((task) =>
+            task.id === selectedTaskId
+              ? {
+                  ...task,
+                  timeRange: {
+                    ...task.timeRange,
+                    [timeField]: timeString,
+                  },
+                }
+              : task
+          ),
+        });
+      } catch (error) {
+        console.error('Error updating task time:', error);
+        Alert.alert('Error', 'Failed to update task time.');
+      }
+    }
+  
     hideTimePicker();
   };
+  
 
   const renderTask = ({ item: task, drag, isActive }) => {
     const isExpanded = task.id === expandedTaskId;
@@ -177,7 +225,7 @@ const RoutineManager = () => {
               {task.title}
             </Text>
             <Text style={styles.taskTime}>
-              {task.timeRange?.start || 'Not Set'} - {task.timeRange?.end || 'Not Set'}
+              {formatTimeForDisplay(task.timeRange?.start)} - {formatTimeForDisplay(task.timeRange?.end)}
             </Text>
           </View>
   
@@ -206,7 +254,7 @@ const RoutineManager = () => {
               >
                 <MaterialIcons name="access-time" size={20} color="#007AFF" />
                 <Text style={styles.timeButtonText}>
-                {task.timeRange?.start || 'Start Time'}
+                {formatTimeForDisplay(task.timeRange?.start)}
                 </Text>
               </TouchableOpacity>
   
@@ -216,7 +264,7 @@ const RoutineManager = () => {
               >
                 <MaterialIcons name="access-time" size={20} color="#007AFF" />
                 <Text style={styles.timeButtonText}>
-                    {task.timeRange?.end || 'End Time'}
+                {formatTimeForDisplay(task.timeRange?.end)}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -323,7 +371,7 @@ const RoutineManager = () => {
           onCancel={hideTimePicker}
           date={selectedTime}
           isDarkModeEnabled={true}
-          textColor={Platform.OS === "ios" ? undefined : "#000"}
+          textColor={Platform.OS === "ios" ? "white" : "white"}
           themeVariant="light"
           display={Platform.OS === "ios" ? "spinner" : "default"}
         />

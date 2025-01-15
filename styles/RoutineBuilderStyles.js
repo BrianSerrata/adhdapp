@@ -244,6 +244,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  // In RoutineBuilderStyles.js
+dateButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  padding: 12,
+  backgroundColor: "#3d5afe",
+  borderRadius: 8,
+  marginBottom: 16,
+},
+dateButtonText: {
+  color: "#fff",
+  fontSize: 16,
+  marginLeft: 8,
+},
+
 });
 
 export default styles;

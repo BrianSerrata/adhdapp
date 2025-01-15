@@ -4,7 +4,7 @@
     "slug": "adhdapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "newArchEnabled":"true",
+    "newArchEnabled": "true",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -13,7 +13,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "0",
+      "bundleIdentifier": "com.brianserrata.focusai"
     },
     "android": {
       "adaptiveIcon": {
@@ -34,6 +36,6 @@
     },
     "updates": {
       "url": "https://u.expo.dev/44e601d0-bab4-4e49-bce2-38dbda7bdd81"
-    }  
+    }
   }
 }
