@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   TextInput,
   Alert,
+  Platform
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -425,29 +426,29 @@ export default function RoutineCalendar() {
       }
     };
 
-    const handleDescriptionChange = async (desc) => {
-      const updatedTasks = routine.tasks.map((t) =>
-        t.id === task.id ? { ...t, description: desc } : t
-      );
-      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
-      try {
-        await updateDoc(routineRef, { tasks: updatedTasks });
-      } catch (err) {
-        console.error("Error updating description:", err);
-        Alert.alert("Error", "Could not update description.");
-      }
-    };
+    // const handleDescriptionChange = async (desc) => {
+    //   const updatedTasks = routine.tasks.map((t) =>
+    //     t.id === task.id ? { ...t, description: desc } : t
+    //   );
+    //   const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+    //   try {
+    //     await updateDoc(routineRef, { tasks: updatedTasks });
+    //   } catch (err) {
+    //     console.error("Error updating description:", err);
+    //     Alert.alert("Error", "Could not update description.");
+    //   }
+    // };
 
-    const handleRemoveTask = async () => {
-      const updatedTasks = routine.tasks.filter((t) => t.id !== task.id);
-      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
-      try {
-        await updateDoc(routineRef, { tasks: updatedTasks });
-      } catch (err) {
-        console.error("Error removing task:", err);
-        Alert.alert("Error", "Could not remove task.");
-      }
-    };
+    // const handleRemoveTask = async () => {
+    //   const updatedTasks = routine.tasks.filter((t) => t.id !== task.id);
+    //   const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+    //   try {
+    //     await updateDoc(routineRef, { tasks: updatedTasks });
+    //   } catch (err) {
+    //     console.error("Error removing task:", err);
+    //     Alert.alert("Error", "Could not remove task.");
+    //   }
+    // };
 
     return (
       <Animated.View style={styles.taskItem} key={task.id}>
@@ -520,14 +521,15 @@ export default function RoutineCalendar() {
             </View>
 
             {/* Description */}
-            <TextInput
+            {/* <Text
               style={styles.descriptionInput}
               value={task.description}
               placeholder="Task description"
               multiline
               numberOfLines={3}
-              onChangeText={handleDescriptionChange}
-            />
+            /> */}
+
+            <Text style={styles.description}>{task.description}</Text>
 
             {/* Remove Button */}
             {/* <TouchableOpacity style={styles.removeButton} onPress={handleRemoveTask}>
@@ -596,21 +598,24 @@ export default function RoutineCalendar() {
               }}
               markingType="dot"
               theme={{
-                backgroundColor: "#1a1a1a",
-                calendarBackground: "#1a1a1a",
-                textSectionTitleColor: "#848484",
-                selectedDayBackgroundColor: "#3d5afe",
-                selectedDayTextColor: "#ffffff",
-                todayTextColor: "#3d5afe",
-                dayTextColor: "#ffffff",
-                textDisabledColor: "#4d4d4d",
-                dotColor: "#3d5afe",
-                selectedDotColor: "#ffffff",
-                arrowColor: "#3d5afe",
-                monthTextColor: "#ffffff",
+                backgroundColor: "#1C1F26", // Match safeContainer
+                calendarBackground: "#1C1F26", // Match background
+                textSectionTitleColor: "#848484", // Muted slate for headers
+                selectedDayBackgroundColor: "#3d5afe", // Blue accent for selection
+                selectedDayTextColor: "#ffffff", // White text for selected day
+                todayTextColor: "#60A5FA", // Bright blue for today
+                dayTextColor: "#D1D5DB", // Slate white for regular days
+                textDisabledColor: "#4d4d4d", // Darker slate for disabled days
+                dotColor: "#60A5FA", // Bright blue dots
+                selectedDotColor: "#ffffff", // White dot for selected day
+                arrowColor: "#60A5FA", // Blue accent for arrows
+                monthTextColor: "#D1D5DB", // Slate white for month name
                 textDayFontSize: 16,
                 textMonthFontSize: 18,
                 textDayHeaderFontSize: 14,
+                textDayFontFamily: "System", // Use system font
+                textMonthFontFamily: "System",
+                textDayHeaderFontFamily: "System",
               }}
             />
           </Animated.View>
@@ -665,12 +670,16 @@ export default function RoutineCalendar() {
 
         {/* Time Picker Modal */}
         <DateTimePickerModal
-          isVisible={isTimePickerVisible}
-          mode="time"
-          date={selectedDateObj}
-          onConfirm={handleConfirmTime}
-          onCancel={hideTimePicker}
-        />
+        isVisible={isTimePickerVisible}
+        mode={"time"}
+        onCancel={hideTimePicker}
+        onConfirm={handleConfirmTime}
+        date={selectedDateObj}
+        isDarkModeEnabled={true}
+        textColor={Platform.OS === "ios" ? "white" : "black"}
+        themeVariant="light"
+        display={Platform.OS === "ios" ? "spinner" : "default"}
+      />
       </View>
     </SafeAreaView>
   );

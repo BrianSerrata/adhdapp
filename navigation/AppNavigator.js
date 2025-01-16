@@ -13,7 +13,8 @@ import RoutineCalendar from '../components/RoutineCalendar';
 import Routines from '../screens/RoutinesPage';
 import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
-import RoutineManager from '../screens/RoutineManager';
+import GoalDetail from '../screens/GoalDetail';
+import GeneralManager from '../screens/GeneralManager';
 
 enableScreens();
 
@@ -186,14 +187,14 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="Routine Manager"
+        name="Manager"
         component={(props) => (
           <AnimatedScreen>
-            <RoutineManager {...props} />
+            <GeneralManager {...props} />
           </AnimatedScreen>
         )}
         options={{
-          tabBarLabel: 'Routine Manager',
+          tabBarLabel: 'Manager',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="library-books" size={size} color={color} />
           ),
@@ -216,6 +217,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Login Page" component={LoginPage} />
       <Stack.Screen name="Register Page" component={RegisterPage} />
       <Stack.Screen name="MainApp" component={TabNavigator} />
+      <Stack.Screen name="GoalDetail" component={GoalDetail} />
     </Stack.Navigator>
   );
 };

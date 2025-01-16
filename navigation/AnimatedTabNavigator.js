@@ -10,7 +10,7 @@ import RoutineCalendar from '../components/RoutineCalendar';
 import Routines from '../screens/RoutinesPage';
 import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
-import RoutineManager from '../screens/RoutineManager';
+import GeneralManager from '../screens/GeneralManager';
 
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
@@ -38,7 +38,7 @@ const AnimatedTabNavigator = () => {
         <Routines />
         <LifeCoach />
         <Resources />
-        <RoutineManager />
+        <GeneralManager />
       </Animated.View>
 
       {/* Custom Tab Bar */}
@@ -48,7 +48,7 @@ const AnimatedTabNavigator = () => {
           { name: 'Routines', icon: 'schedule' },
           { name: 'AI Coach', icon: 'chat' },
           { name: 'Resources', icon: 'library-books' },
-          { name: 'Routine Manager', icon: 'settings' },
+          { name: 'Manager', icon: 'settings' },
         ].map((tab, index) => (
           <TouchableOpacity
             key={index}

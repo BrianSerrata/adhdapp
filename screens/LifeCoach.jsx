@@ -231,9 +231,10 @@ const handleDeleteConversation = async (conversationId) => {
         Interaction Style:
         1. When addressing struggles:
            - Name the pattern and explain its neurological basis
-           - Convert insight into immediate action steps
+           - Convert insight into immediate action steps, when applicable
            - Build understanding through doing
            - Use setbacks as learning opportunities
+           - Remember to humanize and approach with emotional intelligence
         
         2. With successes:
            - Celebrate the win while analyzing why it worked

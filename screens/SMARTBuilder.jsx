@@ -189,7 +189,7 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
             onPress={() => setExpandedTaskId(isExpanded ? null : item.id)}
             onLongPress={drag}
           >
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[
                 PhaseBuilderStyles.checkbox,
                 item.isCompleted && PhaseBuilderStyles.checkboxCompleted
@@ -199,7 +199,7 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
               {item.isCompleted && (
                 <MaterialIcons name="check" size={16} color="#fff" />
               )}
-            </TouchableOpacity>
+            </TouchableOpacity> */}
   
             <View style={PhaseBuilderStyles.taskTitleContainer}>
               <Text
@@ -318,7 +318,7 @@ return (
               onPress={() => setExpandedTaskId(isExpanded ? null : item.id)}
             >
               {/* Checkbox */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[
                   PhaseBuilderStyles.checkbox,
                   item.isCompleted && PhaseBuilderStyles.checkboxCompleted
@@ -328,7 +328,7 @@ return (
                 {item.isCompleted && (
                   <MaterialIcons name="check" size={16} color="#fff" />
                 )}
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Task Title + Time */}
               <View style={PhaseBuilderStyles.taskTitleContainer}>
@@ -739,7 +739,7 @@ export default function SMARTBuilder({ navigation }) {
         nestedScrollEnabled={false}  // allow inner list to scroll
         >
 
-          <Text style={styles.header}>Create Dynamic Goal</Text>
+          <Text style={styles.header}>Create Goal</Text>
 
           {/* SMART Goal Inputs */}
           <View style={styles.inputContainer}>

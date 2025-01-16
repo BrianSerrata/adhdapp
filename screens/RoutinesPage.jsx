@@ -42,7 +42,7 @@ const Routines = () => {
             styles.buttonText,
             activeBuilder === 'smart' && styles.activeButtonText
           ]}>
-            SMART Builder
+            Goal Builder
           </Text>
         </TouchableOpacity>
       </View>
