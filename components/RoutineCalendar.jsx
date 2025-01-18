@@ -51,6 +51,8 @@ export default function RoutineCalendar() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [name, setName] = useState("");
+  const [quote, setQuote] = useState('');
+
 
   // For toggling expanded tasks
   const [expandedTaskId, setExpandedTaskId] = useState(null);
@@ -109,6 +111,8 @@ export default function RoutineCalendar() {
       Alert.alert("Error", "User not authenticated.");
       return;
     }
+
+    setQuote(getRandomQuote());
 
     const routinesRef = collection(db, "users", auth.currentUser.uid, "routines");
     const q = query(routinesRef);
@@ -265,7 +269,18 @@ export default function RoutineCalendar() {
 
   const triggerConfetti = () => {
     setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 2000);
+    setTimeout(() => setShowConfetti(false), 3450);
+  };
+
+  const getRandomQuote = () => {
+    const quotes = [
+      "Small steps lead to big changes! 🌟",
+      "You've got this! One task at a time. 💪",
+      "Focus on progress, not perfection. 🎯",
+      "Your effort today is shaping your future. 🌈",
+      "Embrace the journey, celebrate small wins! 🎉",
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
   };
 
   // -------------------------
@@ -569,13 +584,14 @@ export default function RoutineCalendar() {
           <Text style={styles.subGreeting}>Let's make today productive</Text>
         </Animated.View>
 
-        {/* Additional Header (Optional) */}
-        <Animated.Text
-          entering={FadeInDown.duration(1000).delay(400)}
-          style={styles.header}
-        >
-          {/* "My Goals and Routines" or other header */}
-        </Animated.Text>
+        <Animated.View
+        entering={FadeInDown.duration(1000).delay(600)}
+        style={styles.quoteBubbleContainer}
+      >
+        <Text style={styles.quoteText}>
+          {quote}
+      </Text>
+    </Animated.View>
 
         {/* Calendar + Scroll */}
         <ScrollView
@@ -601,9 +617,9 @@ export default function RoutineCalendar() {
                 backgroundColor: "#1C1F26", // Match safeContainer
                 calendarBackground: "#1C1F26", // Match background
                 textSectionTitleColor: "#848484", // Muted slate for headers
-                selectedDayBackgroundColor: "#3d5afe", // Blue accent for selection
+                selectedDayBackgroundColor: "#2f4156", // Blue accent for selection
                 selectedDayTextColor: "#ffffff", // White text for selected day
-                todayTextColor: "#60A5FA", // Bright blue for today
+                todayTextColor: "#D0CDC9", // Bright blue for today
                 dayTextColor: "#D1D5DB", // Slate white for regular days
                 textDisabledColor: "#4d4d4d", // Darker slate for disabled days
                 dotColor: "#60A5FA", // Bright blue dots
@@ -639,7 +655,7 @@ export default function RoutineCalendar() {
 
               {routinesForSelectedDate.length === 0 ? (
                 <Animated.View
-                  entering={FadeInDown.duration(1000).delay(1000)}
+                  entering={FadeInDown.duration(1000).delay(300)}
                   style={styles.emptyState}
                 >
                   <Text style={styles.emptyStateText}>No routines scheduled</Text>
@@ -660,13 +676,18 @@ export default function RoutineCalendar() {
         {showConfetti && (
           <ConfettiCannon
             count={100}
-            origin={{ x: 0.5, y: 0 }}
+            origin={{ x: 0.5, y: 0 }} // Start from the top center of the screen
             autoStart={true}
-            fadeOut={true}
-            explosionSpeed={400}
-            colors={["#3d5afe", "#4CAF50", "#FFF"]}
+            fadeOut={false} // Disable fadeOut to make confetti last longer
+            explosionSpeed={300} // Adjusted speed for slower falling confetti
+            gravity={0.3} // Slower fall, adjust for longer animation
+            angle={90} // Angle set to 90 degrees to fall vertically
+            duration={5000} // Increase the duration for longer confetti animation
+            colors={["#3d5afe", "#FF4081", "#FFC107", "#00E676", "#FF9800"]}
           />
-        )}
+)}
+
+
 
         {/* Time Picker Modal */}
         <DateTimePickerModal

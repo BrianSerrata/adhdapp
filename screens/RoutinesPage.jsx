@@ -5,7 +5,7 @@ import RoutineBuilder from './RoutineBuilder';
 import SMARTBuilder from './SMARTBuilder';
 
 const Routines = () => {
-  const [activeBuilder, setActiveBuilder] = useState('routine'); // 'routine' or 'smart'
+  const [activeBuilder, setActiveBuilder] = useState('routine'); // 'routine' or 'goal'
 
   return (
     <View style={styles.container}>
@@ -74,7 +74,7 @@ const styles = {
     alignItems: 'center',
   },
   activeButton: {
-    backgroundColor: '#3d5afe',
+    backgroundColor: '#2f4156',
   },
   buttonText: {
     color: '#848484',

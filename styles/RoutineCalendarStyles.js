@@ -17,17 +17,19 @@ const slateStyles = StyleSheet.create({
     paddingBottom: 60, // Space for the tab bar
   },
   greetingContainer: {
-    paddingTop: 40, // Space for the header
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-    backgroundColor: '#23272F', // Slightly lighter slate
+    paddingTop: 10, // Reduce top padding to move it closer to the top
+    paddingBottom: 10, // Reduce bottom padding for tighter spacing
+    paddingHorizontal: 16, // Keep some horizontal padding
+    alignItems: 'flex-start', // Align content to the left
+    backgroundColor: '#1C1F26', // Slightly lighter slate
     borderBottomWidth: 1,
-    borderBottomColor: '#2B3039',
-    alignItems: 'center',
-  },
+    borderBottomColor: '#1C1F26',
+  },  
   greeting: {
     fontSize: 24,
     fontWeight: '600',
+    fontFamily: "DM Sans",
+    fontWeight: "bold",
     color: '#D1D5DB', // Soft slate gray for text
     textAlign: 'center',
     marginBottom: 4,
@@ -193,6 +195,46 @@ const slateStyles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
+  },
+  quoteBubbleContainer: {
+    marginVertical: 20,
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#23272F', // Slightly lighter slate for contrast
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3.84,
+    elevation: 4,
+  },
+  quoteText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: '#9CA3AF', // Muted slate gray for the text
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  monthHeader: {
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: "System", // Match the rest of the calendar's style
+    color: '#D1D5DB', // Slate white text
+    textAlign: 'left', // Align text to the left
+    paddingLeft: 16, // Add padding for left alignment
+    paddingTop: 10, // Space from the top
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#3a5a40',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxCompleted: {
+    backgroundColor: '#3a5a40',
   },
 });
 

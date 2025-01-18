@@ -15,12 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "buildNumber": "0",
-      "bundleIdentifier": "com.brianserrata.focusai",
-      "infoPlist": {
-        "UIBackgroundModes": ["fetch"],
-        "NSCalendarsUsageDescription": "We need access to your calendar.",
-        "NSRemindersUsageDescription": "We need access to set reminders for your tasks."
-}
+      "bundleIdentifier": "com.brianserrata.focusai"
 
     },
     "android": {

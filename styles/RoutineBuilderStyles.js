@@ -3,11 +3,11 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#1C1F26',
   },
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#1C1F26',
   },
   scrollContent: {
     padding: 16,
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },  
   generateButton: {
-    backgroundColor: '#3d5afe',
+    backgroundColor: '#2f4156',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#242424',
   },
   saveButton: {
-    backgroundColor: '#3d5afe',
+    backgroundColor: '#4c5b6c',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -272,7 +272,7 @@ dateButton: {
   flexDirection: "row",
   alignItems: "center",
   padding: 12,
-  backgroundColor: "#3d5afe",
+  backgroundColor: "#2f4156",
   borderRadius: 8,
   marginBottom: 16,
 },
