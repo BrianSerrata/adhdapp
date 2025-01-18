@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CardStyleInterpolators } from '@react-navigation/stack';
 import { enableScreens } from 'react-native-screens';
+import { Ionicons } from '@expo/vector-icons'; // For Expo projects
 
 // Import your screens
 import LoginPage from '../screens/LoginPage';
@@ -152,9 +153,9 @@ const TabNavigator = () => {
           </AnimatedScreen>
         )}
         options={{
-          tabBarLabel: 'Routines',
+          tabBarLabel: 'Planner',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="schedule" size={size} color={color} />
+            <Ionicons name="construct-outline" size={size} color={color} />
           ),
         }}
       />
@@ -166,9 +167,9 @@ const TabNavigator = () => {
           </AnimatedScreen>
         )}
         options={{
-          tabBarLabel: 'AI Coach',
+          tabBarLabel: 'Coach',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="chat" size={size} color={color} />
+            <Ionicons name="chatbubbles-outline" size={size} color={color} />
           ),
         }}
       />
@@ -194,9 +195,9 @@ const TabNavigator = () => {
           </AnimatedScreen>
         )}
         options={{
-          tabBarLabel: 'Manager',
+          tabBarLabel: 'Routines',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="library-books" size={size} color={color} />
+            <Ionicons name="bookmark-outline" size={size} color={color} />
           ),
         }}
       />

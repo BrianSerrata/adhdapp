@@ -77,10 +77,6 @@ const ResourcesPage = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Header Section with Gradient */}
-      <LinearGradient
-        colors={['#1a1a1a', '#121212']}
-        style={styles.headerGradient}
-      >
         <SafeAreaView style={styles.headerContent}>
           <Text style={styles.title}>Resources</Text>
 
@@ -124,7 +120,6 @@ const ResourcesPage = ({ navigation }) => {
             ))}
           </View>
         </SafeAreaView>
-      </LinearGradient>
 
       {/* Content Section */}
       <View style={styles.contentContainer}>

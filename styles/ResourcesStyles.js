@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212', // Dark background for the app theme
+    backgroundColor: '#1C1F26', // Dark background for the app theme
   },
   headerGradient: {
     paddingBottom: 16,
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingVertical: 8,
     marginHorizontal: 16,
-    backgroundColor: '#1a1a1a', // Matches header theme
+    backgroundColor: '#1C1F26', // Matches header theme
     borderRadius: 12,
   },
   tab: {
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#121212', // Match main app background
+    backgroundColor: '#1C1F26', // Match main app background
   },
   pagerView: {
     flex: 1,

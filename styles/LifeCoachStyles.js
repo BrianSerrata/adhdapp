@@ -4,12 +4,12 @@ const styles = StyleSheet.create({
   // Container & Layout
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#1C1F26',
     flexDirection: 'row',
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#1C1F26',
   },
   
   // Left Panel
@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     top: 20,
     left: 10,
     zIndex: 10,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#242424',
     borderRadius: 20,
     padding: 8,
     alignItems: 'center',
@@ -31,9 +31,9 @@ const styles = StyleSheet.create({
   },
   leftPanel: {
     width: 250,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#242424',
     borderRightWidth: 1,
-    borderRightColor: '#242424',
+    borderRightColor: '#3A3A3A',
     padding: 16,
     flexShrink: 0,
     shadowColor: '#000',
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   conversationItem: {
     padding: 16,
     marginBottom: 12,
-    backgroundColor: '#242424',
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   newConversationButton: {
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#3d5afe',
+    backgroundColor: '#2f4156',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#121212',
+    backgroundColor: '#1C1F26',
   },
   messageList: {
     paddingVertical: 16,
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   aiBubble: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#242424',
     borderBottomLeftRadius: 4,
   },
   userBubble: {
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#242424',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#242424',
+    backgroundColor: '#1A1A1A',
     color: '#ffffff',
     fontSize: 16,
     padding: 12,
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#242424',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,

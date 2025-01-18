@@ -56,8 +56,8 @@ export default function RoutineBuilder({ route, navigation }) {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [timeField, setTimeField] = useState("");
   const [selectedTime, setSelectedTime] = useState(new Date());
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
   const [isSelectingStartTime, setIsSelectingStartTime] = useState(true);
 
 
@@ -321,8 +321,8 @@ export default function RoutineBuilder({ route, navigation }) {
       )
     );
 
-    if (timeField === "start") setStartTime(timeString);
-    if (timeField === "end") setEndTime(timeString);
+    if (timeField === "start") setStartTime(time);
+    if (timeField === "end") setEndTime(time);
 
     hideTimePicker();
   };
@@ -507,11 +507,9 @@ export default function RoutineBuilder({ route, navigation }) {
                     key={day.value}
                     style={[
                       styles.dayButton,
-                      isSelected && styles.dayButtonSelected,
-                      !hasAtLeastOneTask && { opacity: 0.5 }, // grey out if no tasks
+                      isSelected && styles.dayButtonSelected
                     ]}
-                    onPress={() => hasAtLeastOneTask && toggleDaySelection(day.value)}
-                    disabled={!hasAtLeastOneTask}
+                    onPress={() => toggleDaySelection(day.value)}
                   >
                     <Text
                       style={[

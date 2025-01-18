@@ -22,6 +22,8 @@ import {
   doc,
   updateDoc,
   getDoc,
+  getDocs,
+  setDoc
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
@@ -107,6 +109,7 @@ export default function RoutineCalendar() {
   // Fetch Routines
   // -------------------------
   useEffect(() => {
+
     if (!auth.currentUser) {
       Alert.alert("Error", "User not authenticated.");
       return;
@@ -114,63 +117,27 @@ export default function RoutineCalendar() {
 
     setQuote(getRandomQuote());
 
-    const routinesRef = collection(db, "users", auth.currentUser.uid, "routines");
-    const q = query(routinesRef);
+    // Firestore reference to the user's routines collection
+    const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
+    
+    // onSnapshot for real-time updates
+    const unsubscribe = onSnapshot(
+      routinesRef,
+      (snapshot) => {
+        const fetchedRoutines = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setRoutines(fetchedRoutines);
+      },
+      (error) => {
+        console.error('Error fetching routines:', error);
+        Alert.alert('Error', 'Failed to fetch routines. Please try again.');
+      }
+    );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetched = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setRoutines(fetched);
-    });
-
+    // Cleanup the listener on unmount
     return () => unsubscribe();
-  }, []);
-
-  // -------------------------
-  // Also fetch dynamicGoals -> transform
-  // -------------------------
-  useEffect(() => {
-    if (!auth.currentUser) return;
-
-    const goalsRef = collection(db, "users", auth.currentUser.uid, "dynamicGoals");
-    const q = query(goalsRef);
-
-    const unsubscribeGoals = onSnapshot(q, (snapshot) => {
-      const fetchedGoals = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const goalRoutines = [];
-      fetchedGoals.forEach((goal) => {
-        if (goal.phases && Array.isArray(goal.phases)) {
-          goal.phases.forEach((phase) => {
-            goalRoutines.push({
-              id: `${goal.id}_${phase.id}`,
-              name: phase.name,
-              tasks: phase.routine.tasks,
-              daysOfWeek: phase.routine.daysOfWeek,
-              dateRange: phase.dateRange,
-              completedDates: {}, // or fetch from sub-collection if needed
-              isRecurring: true
-            });
-          });
-        }
-      });
-
-      setRoutines((prev) => {
-        const routineMap = new Map();
-        // Add existing
-        prev.forEach((r) => routineMap.set(r.id, r));
-        // Add new
-        goalRoutines.forEach((r) => routineMap.set(r.id, r));
-        return Array.from(routineMap.values());
-      });
-    });
-
-    return () => unsubscribeGoals();
   }, []);
 
   // -------------------------
@@ -394,7 +361,13 @@ export default function RoutineCalendar() {
     const isCompleted = routine.completedDates?.[selectedDate]?.[task.id] === true;
 
     const toggleTaskCompletion = async () => {
+      console.log("toggleTaskCompletion called");
+      console.log("routine id", routine.id);
       const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+
+      console.log("routine id",routine.id)
+      console.log("task id",task.id)
+
 
       const newValue = !isCompleted;
       const updatedCompletedDates = {
@@ -441,32 +414,8 @@ export default function RoutineCalendar() {
       }
     };
 
-    // const handleDescriptionChange = async (desc) => {
-    //   const updatedTasks = routine.tasks.map((t) =>
-    //     t.id === task.id ? { ...t, description: desc } : t
-    //   );
-    //   const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
-    //   try {
-    //     await updateDoc(routineRef, { tasks: updatedTasks });
-    //   } catch (err) {
-    //     console.error("Error updating description:", err);
-    //     Alert.alert("Error", "Could not update description.");
-    //   }
-    // };
-
-    // const handleRemoveTask = async () => {
-    //   const updatedTasks = routine.tasks.filter((t) => t.id !== task.id);
-    //   const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
-    //   try {
-    //     await updateDoc(routineRef, { tasks: updatedTasks });
-    //   } catch (err) {
-    //     console.error("Error removing task:", err);
-    //     Alert.alert("Error", "Could not remove task.");
-    //   }
-    // };
-
     return (
-      <Animated.View style={styles.taskItem} key={task.id}>
+      <Animated.View style={styles.taskItem}>
         {/* Header */}
         <TouchableOpacity
           style={styles.taskHeader}
@@ -505,13 +454,6 @@ export default function RoutineCalendar() {
         {/* Expanded Content */}
         {isExpanded && (
           <View style={styles.expandedContent}>
-            {/* <TextInput
-              style={styles.titleInput}
-              value={task.title}
-              placeholder="Task title"
-              onChangeText={handleTitleChange}
-            /> */}
-
             {/* Time Inputs */}
             <View style={styles.timeInputsContainer}>
               <TouchableOpacity
@@ -535,22 +477,7 @@ export default function RoutineCalendar() {
               </TouchableOpacity>
             </View>
 
-            {/* Description */}
-            {/* <Text
-              style={styles.descriptionInput}
-              value={task.description}
-              placeholder="Task description"
-              multiline
-              numberOfLines={3}
-            /> */}
-
             <Text style={styles.description}>{task.description}</Text>
-
-            {/* Remove Button */}
-            {/* <TouchableOpacity style={styles.removeButton} onPress={handleRemoveTask}>
-              <MaterialIcons name="delete-outline" size={20} color="#FF3B30" />
-              <Text style={styles.removeButtonText}>Remove Task</Text>
-            </TouchableOpacity> */}
           </View>
         )}
       </Animated.View>

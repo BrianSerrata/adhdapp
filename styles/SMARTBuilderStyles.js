@@ -1,105 +1,105 @@
 import { StyleSheet } from "react-native";
 
-
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#121212',
-    },
-    scrollContainer: {
-      padding: 20,
-    },
-    header: {
-      fontSize: 28,
-      fontWeight: '600',
-      color: '#ffffff',
-      marginBottom: 20,
-    },
-    inputContainer: {
-      backgroundColor: '#1a1a1a',
-      borderRadius: 12,
-      padding: 15,
-      marginBottom: 20,
-    },
-    label: {
-      fontSize: 16,
-      color: '#ffffff',
-      marginBottom: 8,
-      fontWeight: '500',
-    },
-    input: {
-      backgroundColor: '#242424',
-      borderRadius: 8,
-      padding: 12,
-      color: '#ffffff',
-      fontSize: 16,
-      minHeight: 45,
-    },
-    dateContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: 15,
-    },
-    dateButton: {
-      flex: 1,
-      backgroundColor: '#242424',
-      borderRadius: 8,
-      padding: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-    },
-    dateButtonText: {
-      color: '#ffffff',
-      fontSize: 14,
-    },
-    generateButton: {
-      backgroundColor: '#3d5afe',
-      borderRadius: 12,
-      padding: 16,
-      alignItems: 'center',
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: 8,
-      marginTop: 20,
-    },
-    generateButtonText: {
-      color: '#ffffff',
-      fontSize: 18,
-      fontWeight: '600',
-    },
-    // Day selection styles
+  container: {
+    flex: 1,
+    backgroundColor: '#1C1F26',
+  },
+  scrollContainer: {
+    padding: 16,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  inputContainer: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  input: {
+    backgroundColor: '#242424',
+    borderRadius: 8,
+    padding: 12,
+    color: '#ffffff',
+    fontSize: 16,
+    minHeight: 45,
+  },
+  label: {
+    fontSize: 16,
+    color: '#ffffff',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 15,
+  },
+  dateButton: {
+    flex: 1,
+    backgroundColor: '#2f4156',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  dateButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  generateButton: {
+    backgroundColor: '#2f4156',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+  },
+  generateButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
   daysContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   dayButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#3d5afe',
-    marginVertical: 4,
-    minWidth: 45,
-    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#1a1a1a',
   },
   dayButtonSelected: {
     backgroundColor: '#3d5afe',
   },
   dayButtonText: {
-    color: '#3d5afe',
+    color: '#848484',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   dayButtonTextSelected: {
     color: '#ffffff',
   },
   phaseContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#242424',
     borderRadius: 8,
     marginBottom: 16,
     shadowColor: '#000',
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#242424',
   },
   phaseTitleContainer: {
     flex: 1,
@@ -122,23 +122,23 @@ const styles = StyleSheet.create({
   phaseTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
   },
   phaseDuration: {
     fontSize: 14,
-    color: '#666',
+    color: '#848484',
     marginTop: 4,
   },
   phaseDate: {
     fontSize: 14,
-    color: '#666',
+    color: '#848484',
     marginTop: 2,
   },
   phaseContent: {
     padding: 16,
   },
   metricsContainer: {
-    backgroundColor: '#f5f9ff',
+    backgroundColor: '#1a1a1a',
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -146,17 +146,17 @@ const styles = StyleSheet.create({
   metricsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 8,
   },
   metricsValue: {
     fontSize: 14,
-    color: '#666',
+    color: '#848484',
     marginBottom: 4,
   },
   metricsDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#848484',
   },
   tasksContainer: {
     marginTop: 16,
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   tasksTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 12,
   },
   headerContainer: {
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#242424',
   },
   backButton: {
     flexDirection: 'row',
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3d5afe',
+    backgroundColor: '#3a5a40',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -197,7 +197,107 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     color: '#ffffff',
-  }
-  });
+  },
+  taskItem: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2.84,
+    elevation: 3,
+  },
+  taskHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#3d5afe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxCompleted: {
+    backgroundColor: '#3d5afe',
+  },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  taskTime: {
+    fontSize: 14,
+    color: '#848484',
+  },
+  expandedContent: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#242424',
+  },
+  titleInput: {
+    fontSize: 16,
+    padding: 12,
+    backgroundColor: '#242424',
+    borderRadius: 8,
+    marginBottom: 12,
+    color: '#ffffff',
+  },
+  timeInputsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  timeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#242424',
+    borderRadius: 8,
+  },
+  timeButtonText: {
+    color: '#3d5afe',
+    fontSize: 14,
+  },
+  descriptionInput: {
+    fontSize: 16,
+    padding: 12,
+    backgroundColor: '#242424',
+    borderRadius: 8,
+    marginBottom: 12,
+    minHeight: 80,
+    color: '#ffffff',
+  },
+  removeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#3a1a1a',
+    borderRadius: 8,
+  },
+  removeButtonText: {
+    color: '#ff4d4f',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  fixedHeader: {
+    position: 'relative',
+    zIndex: 1,
+    backgroundColor: '#1C1F26',
+    paddingHorizontal: 16,
+  },
+  bottomSpacing: {
+    height: 100,
+  },
+});
 
-  export default styles
+export default styles;

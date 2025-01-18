@@ -61,7 +61,8 @@ const RoutineManager = () => {
         const loadedRoutines = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        }));
+        }))
+        .filter((routine) => !routine.dateRange); // Exclude routines with dateRange
         setRoutines(loadedRoutines);
         setLoading(false)
       }

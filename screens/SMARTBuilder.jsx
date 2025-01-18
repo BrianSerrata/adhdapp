@@ -679,16 +679,20 @@ export default function SMARTBuilder({ navigation }) {
       // Insert selectedDays into each phase's routine (just in case)
       const updatedPhases = plan.phases.map(phase => ({
         ...phase,
-        id: generateId(), // Generate unique id for each phase
+        id: generateId(), // Unique ID for each phase
         routine: {
           ...phase.routine,
           daysOfWeek: selectedDays,
           tasks: phase.routine.tasks.map(task => ({
             ...task,
-            id: generateId() // Unique id for each task
+            id: generateId() // Unique ID for each task
           }))
+        },
+        dateRange: {
+          start: new Date(phase.dateRange.start),
+          end: new Date(phase.dateRange.end)
         }
-      }));
+      }));      
       
 
       setGeneratedPhases(updatedPhases);
@@ -710,6 +714,8 @@ export default function SMARTBuilder({ navigation }) {
       return;
     }
     try {
+      // Reference to the dynamicGoals collection for the current user
+
       const dynamicGoalRef = collection(db, 'users', auth.currentUser.uid, 'dynamicGoals');
       const goalData = {
         smartGoal: goal,
@@ -722,14 +728,55 @@ export default function SMARTBuilder({ navigation }) {
         currentPhase: 0,
         createdAt: serverTimestamp(),
       };
-      await addDoc(dynamicGoalRef, goalData);
+      const goalDocRef = await addDoc(dynamicGoalRef, goalData);
+
+      const goalId = goalDocRef.id;
+      
+      // Reference to the 'routines' subcollection within the newly created goal document
+      const routinesRef =  collection(
+        db,
+        "users",
+        auth.currentUser.uid,
+        "routines"
+      );
+      
+      // Prepare promises to add each routine directly
+      const routinesPromises = generatedPhases.map(phase => {
+        const routineData = {
+          name: phase.name, // Using phase.name as the routine name
+          dateRange: {
+            start: phase.dateRange.start.toISOString(),
+            end: phase.dateRange.end.toISOString(),
+          },
+          isRecurring: true,
+          tasks: phase.routine.tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            timeRange: {
+              start: task.timeRange.start,
+              end: task.timeRange.end,
+            },
+            description: task.description,
+            isCompleted: task.isCompleted,
+          })),
+          daysOfWeek: phase.routine.daysOfWeek,
+          createdAt: serverTimestamp(),
+          goalId
+        };
+        return addDoc(routinesRef, routineData);
+      });
+      
+      // Execute all promises concurrently
+      await Promise.all(routinesPromises);
+      
       Alert.alert("Plan Saved", "Your entire plan has been saved!");
-    //   navigation.navigate('Calendar');
+      // Optionally navigate to another screen
+      // navigation.navigate('Calendar');
     } catch (err) {
-      console.error("Error saving plan:", err);
-      Alert.alert("Error", "Failed to save plan. Please try again.");
+      console.error("Error saving routines:", err);
+      Alert.alert("Error", "Failed to save routines. Please try again.");
     }
-  };
+  };  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -739,10 +786,10 @@ export default function SMARTBuilder({ navigation }) {
         nestedScrollEnabled={false}  // allow inner list to scroll
         >
 
-          <Text style={styles.header}>Create Goal</Text>
+          <Text style={styles.header}>Set the goal, make it happen.</Text>
 
           {/* SMART Goal Inputs */}
-          <View style={styles.inputContainer}>
+          <View style = {{marginBottom: 20}}>
             <Text style={styles.label}>Specific</Text>
             <TextInput
               style={styles.input}
@@ -753,7 +800,7 @@ export default function SMARTBuilder({ navigation }) {
             />
           </View>
 
-          <View style={styles.inputContainer}>
+          <View style = {{marginBottom: 20}}>
             <Text style={styles.label}>Measurable</Text>
             <TextInput
               style={styles.input}
@@ -764,7 +811,7 @@ export default function SMARTBuilder({ navigation }) {
             />
           </View>
 
-          <View style={styles.inputContainer}>
+          {/* <View style={styles.inputContainer}>
             <Text style={styles.label}>Achievable</Text>
             <TextInput
               style={styles.input}
@@ -773,9 +820,9 @@ export default function SMARTBuilder({ navigation }) {
               value={goal.achievable}
               onChangeText={(text) => setGoal(prev => ({ ...prev, achievable: text }))}
             />
-          </View>
+          </View> */}
 
-          <View style={styles.inputContainer}>
+          <View style = {{marginBottom: 20}}>
             <Text style={styles.label}>Relevant</Text>
             <TextInput
               style={styles.input}
@@ -786,8 +833,33 @@ export default function SMARTBuilder({ navigation }) {
             />
           </View>
 
-          {/* Days of Week */}
-          <View style={styles.inputContainer}>
+          {/* Date Range */}
+          <View >
+            <Text style={styles.label}>Time Range</Text>
+            <View style={styles.dateContainer}>
+              <TouchableOpacity 
+                style={styles.dateButton}
+                onPress={() => showDatePicker('start')}
+              >
+                <MaterialIcons name="calendar-today" size={20} color="#3d5afe" />
+                <Text style={styles.dateButtonText}>
+                  {dateRange.start.toLocaleDateString()}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.dateButton}
+                onPress={() => showDatePicker('end')}
+              >
+                <MaterialIcons name="calendar-today" size={20} color="#3d5afe" />
+                <Text style={styles.dateButtonText}>
+                  {dateRange.end.toLocaleDateString()}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View>
             <Text style={styles.label}>Schedule Days</Text>
             <View style={styles.daysContainer}>
               {DAYS_OF_WEEK.map((day) => {
@@ -815,32 +887,6 @@ export default function SMARTBuilder({ navigation }) {
             </View>
           </View>
 
-          {/* Date Range */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Time Range</Text>
-            <View style={styles.dateContainer}>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => showDatePicker('start')}
-              >
-                <MaterialIcons name="calendar-today" size={20} color="#3d5afe" />
-                <Text style={styles.dateButtonText}>
-                  {dateRange.start.toLocaleDateString()}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => showDatePicker('end')}
-              >
-                <MaterialIcons name="calendar-today" size={20} color="#3d5afe" />
-                <Text style={styles.dateButtonText}>
-                  {dateRange.end.toLocaleDateString()}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Generate Button */}
           <TouchableOpacity
             style={styles.generateButton}
@@ -853,7 +899,7 @@ export default function SMARTBuilder({ navigation }) {
               <>
                 <MaterialIcons name="auto-awesome" size={24} color="#ffffff" />
                 <Text style={styles.generateButtonText}>
-                  Generate Dynamic Goal
+                  Create Goal
                 </Text>
               </>
             )}
@@ -919,12 +965,12 @@ export default function SMARTBuilder({ navigation }) {
               <TouchableOpacity
                 style={[
                   styles.generateButton,
-                  { backgroundColor: '#009688', marginTop: 20 }
+                  { backgroundColor: '#3a5a40', marginTop: 20 }
                 ]}
                 onPress={handleSavePlan}
               >
                 <MaterialIcons name="save" size={24} color="#ffffff" />
-                <Text style={styles.generateButtonText}>Save Plan</Text>
+                <Text style={styles.generateButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
           )}

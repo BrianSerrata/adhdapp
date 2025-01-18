@@ -13,7 +13,9 @@ import {
   collection,
   getDocs,
   doc,
-  deleteDoc
+  deleteDoc,
+  query, 
+  where
 } from 'firebase/firestore';
 import { auth, db } from '../firebase'; // Adjust path as needed
 import slateStyles from '../styles/RoutineCalendarStyles';
@@ -52,6 +54,15 @@ export default function GoalManager({ navigation }) {
       await deleteDoc(goalDocRef);
 
       setGoals((prevGoals) => prevGoals.filter((g) => g.id !== goalId));
+
+      // Query routines associated with this goal
+      const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
+      const routinesQuery = query(routinesRef, where('goalId', '==', goalId));
+      const routinesSnapshot = await getDocs(routinesQuery);
+
+      // Delete each routine document
+      const deletePromises = routinesSnapshot.docs.map((doc) => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
 
       Alert.alert('Goal Deleted', 'The goal has been removed from the database.');
     } catch (err) {
