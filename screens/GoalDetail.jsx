@@ -73,12 +73,15 @@ export default function GoalDetail({ route, navigation }) {
           const isExpanded = expandedPhaseIndex === index;
 
           // Convert dateRange to readable
+          console.log("phase", phase)
           const phaseStart = phase.dateRange.start
-            ? new Date(phase.dateRange.start)
+            ? (phase.dateRange.start)
             : null;
           const phaseEnd = phase.dateRange.end
-            ? new Date(phase.dateRange.end)
+            ? (phase.dateRange.end)
             : null;
+
+          console.log("start:", phaseStart)
 
           return (
             <View key={index} style={slateStyles.routineContainer}>
@@ -106,7 +109,9 @@ export default function GoalDetail({ route, navigation }) {
                 <View style={{ marginTop: 10 }}>
                   {/* Phase date range */}
                   <Text style={slateStyles.taskTime}>
-                    {phaseStart?.toLocaleDateString()} - {phaseEnd?.toLocaleDateString()}
+                  {phaseStart && phaseEnd
+                  ? `${new Date(phaseStart.seconds * 1000).toLocaleDateString()} - ${new Date(phaseEnd.seconds * 1000).toLocaleDateString()}`
+                  : "No date available"}                  
                   </Text>
 
                   {/* Phase metrics (optional) */}

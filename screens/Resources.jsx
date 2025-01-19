@@ -13,6 +13,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import PagerView from 'react-native-pager-view';
 import * as Linking from "expo-linking";
 import styles from '../styles/ResourcesStyles';
+import FeedbackModal from '../components/FeedbackModal';
 
 const resourceCategories = [
   {
@@ -64,6 +65,54 @@ const ResourcesPage = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const pagerRef = useRef(null);
+
+  // Feedback logic / states
+const [feedbackVisible, setFeedbackVisible] = useState(false);
+const [feedback, setFeedback] = useState({
+  relevance: "1",
+  timeline: "1",
+  taskCompleteness: "1",
+  clarity: "1",
+  suggestion: '',
+});
+
+const questions = [
+  {
+    key: 'relevance',
+    text: 'How relevant are the tasks to your goal?',
+    labels: ['Not relevant', 'Very relevant'],
+  },
+  {
+    key: 'timeline',
+    text: 'How realistic is the suggested timeline?',
+    labels: ['Unrealistic', 'Very realistic'],
+  },
+  {
+    key: 'taskCompleteness',
+    text: 'Do the tasks cover everything necessary for your goal?',
+    labels: ['Incomplete', 'Complete'],
+  },
+  {
+    key: 'clarity',
+    text: 'How clear and easy to follow are the tasks?',
+    labels: ['Confusing', 'Very clear'],
+  },
+]
+
+const handleSubmitFeedback = () => {
+  // Handle feedback submission logic (e.g., saving to Firestore)
+
+  const numericFeedback = {
+    relevance: Number(feedback.relevance),
+    timeline: Number(feedback.timeline),
+    taskCompleteness: Number(feedback.taskCompleteness),
+    clarity: Number(feedback.clarity),
+    suggestion: feedback.suggestion,
+  };
+
+  console.log('Feedback submitted:', numericFeedback);
+  setFeedbackVisible(false); // Close the feedback form after submission
+};
 
   const handleResourceSelect = (resource) => {
     navigation.navigate('Therapy Chat', { resource });
@@ -168,6 +217,18 @@ const ResourcesPage = ({ navigation }) => {
           ))}
         </PagerView>
       </View>
+
+
+        <FeedbackModal
+          visible={feedbackVisible}
+          setVisible={setFeedbackVisible}
+          questions={questions}
+          feedback={feedback}
+          setFeedback={setFeedback}
+          handleSubmit={handleSubmitFeedback}
+          showFeedbackIcon={true}
+        />
+
     </View>
   );
 };

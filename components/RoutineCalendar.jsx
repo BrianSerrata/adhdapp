@@ -14,6 +14,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
 import ConfettiCannon from "react-native-confetti-cannon";
+import FeedbackModal from "./FeedbackModal";
 
 import {
   collection,
@@ -64,6 +65,55 @@ export default function RoutineCalendar() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [timeField, setTimeField] = useState("");
   const [selectedDateObj, setSelectedDateObj] = useState(new Date());
+
+  // Logic / states for feedback form
+  
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedback, setFeedback] = useState({
+    relevance: "1",
+    timeline: "1",
+    taskCompleteness: "1",
+    clarity: "1",
+    suggestion: '',
+  });
+
+  const questions = [
+    {
+      key: 'relevance',
+      text: 'How relevant are the tasks to your goal?',
+      labels: ['Not relevant', 'Very relevant'],
+    },
+    {
+      key: 'timeline',
+      text: 'How realistic is the suggested timeline?',
+      labels: ['Unrealistic', 'Very realistic'],
+    },
+    {
+      key: 'taskCompleteness',
+      text: 'Do the tasks cover everything necessary for your goal?',
+      labels: ['Incomplete', 'Complete'],
+    },
+    {
+      key: 'clarity',
+      text: 'How clear and easy to follow are the tasks?',
+      labels: ['Confusing', 'Very clear'],
+    },
+  ]
+
+  const handleSubmitFeedback = () => {
+    // Handle feedback submission logic (e.g., saving to Firestore)
+
+    const numericFeedback = {
+      relevance: Number(feedback.relevance),
+      timeline: Number(feedback.timeline),
+      taskCompleteness: Number(feedback.taskCompleteness),
+      clarity: Number(feedback.clarity),
+      suggestion: feedback.suggestion,
+    };
+
+    console.log('Feedback submitted:', numericFeedback);
+    setFeedbackVisible(false); // Close the feedback form after submission
+  };
 
   // -------------------------
   // Pull in user's name
@@ -597,6 +647,19 @@ export default function RoutineCalendar() {
               )}
             </Animated.View>
           )}
+
+
+              <FeedbackModal
+                visible={feedbackVisible}
+                setVisible={setFeedbackVisible}
+                questions={questions}
+                feedback={feedback}
+                setFeedback={setFeedback}
+                handleSubmit={handleSubmitFeedback}
+                showFeedbackIcon={true}
+              />
+
+
         </ScrollView>
 
         {/* Confetti */}

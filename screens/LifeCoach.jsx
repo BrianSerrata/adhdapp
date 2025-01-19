@@ -20,6 +20,7 @@ import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc } fro
 import styles from '../styles/LifeCoachStyles';
 import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
+import FeedbackModal from '../components/FeedbackModal';
 
 const LifeCoach = ({ navigation, route }) => {
   const resource = route.params?.resource;
@@ -32,6 +33,55 @@ const LifeCoach = ({ navigation, route }) => {
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [isPanelVisible, setIsPanelVisible] = useState(true);
   const flatListRef = useRef(null);
+
+  // Feedback states
+
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedback, setFeedback] = useState({
+    relevance: "1",
+    timeline: "1",
+    taskCompleteness: "1",
+    clarity: "1",
+    suggestion: '',
+  });
+
+  const questions = [
+    {
+      key: 'relevance',
+      text: 'How relevant are the tasks to your goal?',
+      labels: ['Not relevant', 'Very relevant'],
+    },
+    {
+      key: 'timeline',
+      text: 'How realistic is the suggested timeline?',
+      labels: ['Unrealistic', 'Very realistic'],
+    },
+    {
+      key: 'taskCompleteness',
+      text: 'Do the tasks cover everything necessary for your goal?',
+      labels: ['Incomplete', 'Complete'],
+    },
+    {
+      key: 'clarity',
+      text: 'How clear and easy to follow are the tasks?',
+      labels: ['Confusing', 'Very clear'],
+    },
+  ]
+
+  const handleSubmitFeedback = () => {
+    // Handle feedback submission logic (e.g., saving to Firestore)
+
+    const numericFeedback = {
+      relevance: Number(feedback.relevance),
+      timeline: Number(feedback.timeline),
+      taskCompleteness: Number(feedback.taskCompleteness),
+      clarity: Number(feedback.clarity),
+      suggestion: feedback.suggestion,
+    };
+
+    console.log('Feedback submitted:', numericFeedback);
+    setFeedbackVisible(false); // Close the feedback form after submission
+  };
 
   useEffect(() => {
     const unsubscribe = fetchConversations();
@@ -420,6 +470,19 @@ const handleDeleteConversation = async (conversationId) => {
                 </TouchableOpacity>
               </View>
             </KeyboardAvoidingView>
+
+          <View style={{marginBottom: 70}}>
+            <FeedbackModal
+                visible={feedbackVisible}
+                setVisible={setFeedbackVisible}
+                questions={questions}
+                feedback={feedback}
+                setFeedback={setFeedback}
+                handleSubmit={handleSubmitFeedback}
+                showFeedbackIcon={true}
+              />
+          </View>
+
           </View>
         </View>
       </SafeAreaView>

@@ -24,6 +24,7 @@ import DraggableFlatList from "react-native-draggable-flatlist";
 
 import styles from '../styles/SMARTBuilderStyles';
 import { styles as PhaseBuilderStyles } from '../styles/PhaseBuilderStyles';
+import FeedbackModal from '../components/FeedbackModal';
 
 // -------------------------------------
 // Constants
@@ -461,6 +462,29 @@ export default function SMARTBuilder({ navigation }) {
     timeBased: ''
   });
 
+  const questions = [
+    {
+      key: 'relevance',
+      text: 'How relevant are the tasks to your goal?',
+      labels: ['Not relevant', 'Very relevant'],
+    },
+    {
+      key: 'timeline',
+      text: 'How realistic is the suggested timeline?',
+      labels: ['Unrealistic', 'Very realistic'],
+    },
+    {
+      key: 'taskCompleteness',
+      text: 'Do the tasks cover everything necessary for your goal?',
+      labels: ['Incomplete', 'Complete'],
+    },
+    {
+      key: 'clarity',
+      text: 'How clear and easy to follow are the tasks?',
+      labels: ['Confusing', 'Very clear'],
+    },
+  ];  
+
   // Date range
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [dateType, setDateType] = useState(null);
@@ -468,6 +492,30 @@ export default function SMARTBuilder({ navigation }) {
     start: new Date(),
     end: new Date()
   });
+
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedback, setFeedback] = useState({
+    relevance: "1",
+    timeline: "1",
+    taskCompleteness: "1",
+    clarity: "1",
+    suggestion: '',
+  });
+
+  const handleSubmitFeedback = () => {
+    // Handle feedback submission logic (e.g., saving to Firestore)
+
+    const numericFeedback = {
+      relevance: Number(feedback.relevance),
+      timeline: Number(feedback.timeline),
+      taskCompleteness: Number(feedback.taskCompleteness),
+      clarity: Number(feedback.clarity),
+      suggestion: feedback.suggestion,
+    };
+
+    console.log('Feedback submitted:', numericFeedback);
+    setFeedbackVisible(false); // Close the feedback form after submission
+  };
 
   function generateId() {
     return Math.random().toString(36).substr(2, 9);
@@ -995,7 +1043,6 @@ export default function SMARTBuilder({ navigation }) {
           {!!generatedPhases.length && (
             <View style={{ marginTop: 20 }}>
               <Text style={styles.header}>Generated Phases</Text>
-
               {generatedPhases.map((phase, index) => {
                 const isExpanded = expandedPhaseIndex === index;
                 return (
@@ -1046,6 +1093,16 @@ export default function SMARTBuilder({ navigation }) {
                   </View>
                 );
               })}
+
+              <FeedbackModal
+                visible={feedbackVisible}
+                setVisible={setFeedbackVisible}
+                questions={questions}
+                feedback={feedback}
+                setFeedback={setFeedback}
+                handleSubmit={handleSubmitFeedback}
+                showFeedbackIcon={true}
+              />
 
               {/* Single "Save Plan" button for everything */}
               <TouchableOpacity

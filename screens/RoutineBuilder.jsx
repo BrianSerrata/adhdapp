@@ -407,11 +407,11 @@ export default function RoutineBuilder({ route, navigation }) {
     return (
       <>
         {/* User Goals */}
-        <Animated.View entering={
+        {/* <Animated.View entering={
           isFirstRender.current
             ? FadeInDown.duration(1000).delay(200)
             : undefined
-        }>
+        }> */}
         <View style={styles.inputContainer}>
             <TouchableOpacity
               style={[styles.generateButton, loading && styles.generateButtonDisabled]}
@@ -428,14 +428,14 @@ export default function RoutineBuilder({ route, navigation }) {
               )}
             </TouchableOpacity>
           </View>
-        </Animated.View>
+        {/* </Animated.View> */}
 
         {/* Toggle Recurring Routine */}
-        <Animated.View entering={
+        {/* <Animated.View entering={
           isFirstRender.current
             ? FadeInDown.duration(1000).delay(200)
             : undefined
-        }>
+        }> */}
         <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 16 }}>
             <Switch
               trackColor={{ false: "#767577", true: "#3d5afe" }}
@@ -447,13 +447,13 @@ export default function RoutineBuilder({ route, navigation }) {
               Recurring Routine
             </Text>
           </View>
-        </Animated.View>
+        {/* </Animated.View> */}
 
-        <Animated.View entering={
+        {/* <Animated.View entering={
           isFirstRender.current
             ? FadeInDown.duration(1000).delay(200)
             : undefined
-        }>
+        }> */}
         <View style={styles.timeInputsContainer}>
           <TouchableOpacity
             style={styles.timeButton}
@@ -486,18 +486,19 @@ export default function RoutineBuilder({ route, navigation }) {
             </Text>
           </TouchableOpacity>
         </View>
-        </Animated.View>
+        {/* </Animated.View> */}
 
 
 
         {/* If recurring: show day-of-week; otherwise show date */}
         
         {isRecurring ? (
-    <Animated.View entering={
-      isFirstRender.current
-        ? FadeInDown.duration(1000).delay(200)
-        : undefined
-    }>
+    // <Animated.View entering={
+    //   isFirstRender.current
+    //     ? FadeInDown.duration(1000).delay(200)
+    //     : undefined
+    // }>
+      <View>
             <Text style={styles.subHeader}>Select Days of the Week</Text>
             <View style={styles.daysContainer}>
               {DAYS_OF_WEEK.map((day) => {
@@ -523,13 +524,15 @@ export default function RoutineBuilder({ route, navigation }) {
                 );
               })}
             </View>
-          </Animated.View>
+            </View>
+      // </Animated.View>
         ) : (
-          <Animated.View entering={
-            isFirstRender.current
-              ? FadeInDown.duration(1000).delay(200)
-              : undefined
-          }>
+          // <Animated.View entering={
+          //   isFirstRender.current
+          //     ? FadeInDown.duration(1000).delay(200)
+          //     : undefined
+          // }>
+          <View>
             <Text style={styles.subHeader}>Select Date for Routine</Text>
             <TouchableOpacity
               style={[
@@ -548,33 +551,34 @@ export default function RoutineBuilder({ route, navigation }) {
                 })}
               </Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
+          // </Animated.View>
         )}
 
         {/* Tasks Section Header */}
-        <Animated.View entering={
+        {/* <Animated.View entering={
           isFirstRender.current
             ? FadeInDown.duration(1000).delay(200)
             : undefined
-        }>
+        }> */}
         <View style={styles.taskListHeader}>
             <Text style={styles.taskListTitle}>Tasks</Text>
             <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
               <MaterialIcons name="add" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
-        </Animated.View>
+        {/* </Animated.View> */}
       </>
     );
   };
 
   const renderFooter = () => {
     return (
-      <Animated.View entering={
-        isFirstRender.current
-          ? FadeInDown.duration(1000).delay(200)
-          : undefined
-      }>
+      // <Animated.View entering={
+      //   isFirstRender.current
+      //     ? FadeInDown.duration(1000).delay(200)
+      //     : undefined
+      // }>
         <View style={{ marginBottom: 40 }}>
           <TouchableOpacity
             style={[
@@ -589,7 +593,7 @@ export default function RoutineBuilder({ route, navigation }) {
             <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
-      </Animated.View>
+      // </Animated.View>
     );
   };
 
@@ -697,11 +701,11 @@ export default function RoutineBuilder({ route, navigation }) {
   // --------------- Main Render ---------------
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Animated.View entering={
+      {/* <Animated.View entering={
           isFirstRender.current
             ? FadeInDown.duration(1000).delay(200)
             : undefined
-        }>
+        }> */}
         <TextInput
           style={styles.goalInput}
           placeholder="What are your goals for this routine?"
@@ -712,7 +716,7 @@ export default function RoutineBuilder({ route, navigation }) {
           onFocus={() => setIsInputting(true)}
           onEndEditing={() => setIsInputting(false)}
         />
-      </Animated.View>
+      {/* </Animated.View> */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -777,6 +781,10 @@ export default function RoutineBuilder({ route, navigation }) {
               <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
                 1. How relevant are the tasks to your goal?
               </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ fontSize: 14, color: 'gray' }}>Not relevant</Text>
+                <Text style={{ fontSize: 14, color: 'gray' }}>Very relevant</Text>
+              </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                 {[1, 2, 3, 4, 5].map((value) => (
                   <TouchableOpacity
@@ -799,6 +807,10 @@ export default function RoutineBuilder({ route, navigation }) {
               <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
                 2. How realistic is the suggested timeline for completing the tasks?
               </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ fontSize: 14, color: 'gray' }}>Not realistic</Text>
+                <Text style={{ fontSize: 14, color: 'gray' }}>Very realistic</Text>
+              </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                 {[1, 2, 3, 4, 5].map((value) => (
                   <TouchableOpacity
@@ -821,6 +833,10 @@ export default function RoutineBuilder({ route, navigation }) {
               <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
                 3. Do the tasks cover everything necessary for your goal?
               </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 10 }}>
+                <Text style={{ fontSize: 14, color: 'gray', textAlign: 'center', flex: 1 }}>Missing many critical elements</Text>
+                <Text style={{ fontSize: 14, color: 'gray', textAlign: 'center', flex: 1 }}>Completely covers all necessary aspects</Text>
+              </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                 {[1, 2, 3, 4, 5].map((value) => (
                   <TouchableOpacity
@@ -843,6 +859,10 @@ export default function RoutineBuilder({ route, navigation }) {
               <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
                 4. How clear and easy to follow are the tasks?
               </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ fontSize: 14, color: 'gray' }}>Not clear</Text>
+                <Text style={{ fontSize: 14, color: 'gray' }}>Very clear and easy</Text>
+              </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                 {[1, 2, 3, 4, 5].map((value) => (
                   <TouchableOpacity
@@ -879,7 +899,6 @@ export default function RoutineBuilder({ route, navigation }) {
                 placeholder="Enter your suggestion here"
                 multiline
               />
-      
               {/* Submit Button */}
               <TouchableOpacity
                 onPress={handleSubmitFeedback}
@@ -895,7 +914,7 @@ export default function RoutineBuilder({ route, navigation }) {
             </ScrollView>
           </View>
         </View>
-      </Modal>      
+      </Modal> 
       
       )}
 
