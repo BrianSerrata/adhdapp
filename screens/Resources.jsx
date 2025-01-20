@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+// ResourcesPage.js
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +15,16 @@ import PagerView from 'react-native-pager-view';
 import * as Linking from "expo-linking";
 import styles from '../styles/ResourcesStyles';
 import FeedbackModal from '../components/FeedbackModal';
+import { auth } from '../firebase';
+
+// Import Tracking Functions
+import {
+  trackResourcesTabOpened,
+  trackResourceLinkClicked,
+  trackUniqueResourceLinkOpened,
+  trackFeedbackSubmitted,
+  trackResourceTabClicked
+} from "../backend/apis/segment"; // Adjust the path accordingly
 
 const resourceCategories = [
   {
@@ -52,123 +63,154 @@ const resourceCategories = [
   },
 ];
 
-const handlePress = async (url) => {
-  const supported = await Linking.canOpenURL(url);
-  if (supported) {
-    await Linking.openURL(url);
-  } else {
-    alert(`The URL ${url} is not supported.`);
-  }
-};
-
 const ResourcesPage = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const pagerRef = useRef(null);
 
   // Feedback logic / states
-const [feedbackVisible, setFeedbackVisible] = useState(false);
-const [feedback, setFeedback] = useState({
-  relevance: "1",
-  timeline: "1",
-  taskCompleteness: "1",
-  clarity: "1",
-  suggestion: '',
-});
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedback, setFeedback] = useState({
+    relevance: "1",
+    clarity: "1",
+    usefulness: "1",
+    resourceExpectations: '',
+  });
 
-const questions = [
-  {
-    key: 'relevance',
-    text: 'How relevant are the tasks to your goal?',
-    labels: ['Not relevant', 'Very relevant'],
-  },
-  {
-    key: 'timeline',
-    text: 'How realistic is the suggested timeline?',
-    labels: ['Unrealistic', 'Very realistic'],
-  },
-  {
-    key: 'taskCompleteness',
-    text: 'Do the tasks cover everything necessary for your goal?',
-    labels: ['Incomplete', 'Complete'],
-  },
-  {
-    key: 'clarity',
-    text: 'How clear and easy to follow are the tasks?',
-    labels: ['Confusing', 'Very clear'],
-  },
-]
+  const questions = [
+    {
+      key: 'relevance',
+      text: 'How relevant are the resources to your needs?',
+      labels: ['Not relevant', 'Very relevant'],
+    },
+    {
+      key: 'clarity',
+      text: 'How clear and understandable is the information provided?',
+      labels: ['Confusing', 'Very clear'],
+    },
+    {
+      key: 'usefulness',
+      text: 'How useful have you found the resources?',
+      labels: ['Not useful', 'Very useful'],
+    },
+    {
+      key: 'resourceExpectations',
+      text: 'What kind of resources or information would you like to see added here?',
+    },
+  ];
+  
 
-const handleSubmitFeedback = () => {
-  // Handle feedback submission logic (e.g., saving to Firestore)
+  const handleSubmitFeedback = () => {
+    // Handle feedback submission logic (e.g., saving to Firestore)
 
-  const numericFeedback = {
-    relevance: Number(feedback.relevance),
-    timeline: Number(feedback.timeline),
-    taskCompleteness: Number(feedback.taskCompleteness),
-    clarity: Number(feedback.clarity),
-    suggestion: feedback.suggestion,
+    const numericFeedback = {
+      relevance: Number(feedback.relevance),
+      clarity: Number(feedback.clarity),
+      usefulness: Number(feedback.usefulness),
+      resourceExpectations: feedback.resourceExpectations || '', // Open-ended question
+    };
+
+    console.log('Feedback submitted:', numericFeedback);
+    setFeedbackVisible(false); // Close the feedback form after submission
   };
 
-  console.log('Feedback submitted:', numericFeedback);
-  setFeedbackVisible(false); // Close the feedback form after submission
-};
+  useEffect(() => {
+    // Track "Resources Tab Opened" when the component mounts
+    trackResourcesTabOpened({
+      userId: auth.currentUser.uid,
+      timestamp: new Date().toISOString(),
+    });
+  }, []);
+
+  const handlePress = async (url, title) => {
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+
+      // Track "Resource Link Clicked" event
+      trackResourceLinkClicked({
+        userId: auth.currentUser.uid,
+        linkTitle: title,
+        linkURL: url,
+        timestamp: new Date().toISOString(),
+      });
+
+    } else {
+      Alert.alert(`The URL ${url} is not supported.`);
+    }
+  };
 
   const handleResourceSelect = (resource) => {
     navigation.navigate('Therapy Chat', { resource });
+
+    // Optionally, track when a user navigates to Therapy Chat via a resource
+    trackResourceLinkClicked({
+      userId: auth.currentUser.uid,
+      linkTitle: resource.title,
+      linkURL: resource.url,
+      timestamp: new Date().toISOString(),
+    });
   };
 
   const handleTabPress = (index) => {
     setActiveTab(index);
     pagerRef.current?.setPage(index);
+
+    // Optionally, track tab changes
+    trackResourceTabClicked({
+      userId: auth.currentUser.uid,
+      newTabIndex: index,
+      newTabTitle: resourceCategories[index].title,
+      timestamp: new Date().toISOString(),
+    });
   };
 
   return (
     <View style={styles.container}>
       {/* Header Section with Gradient */}
-        <SafeAreaView style={styles.headerContent}>
-          <Text style={styles.title}>Resources</Text>
+      <SafeAreaView style={styles.headerContent}>
+        <Text style={styles.title}>Resources</Text>
 
-          {/* Search Bar */}
-          <View style={styles.searchCard}>
-            <View style={styles.searchContainer}>
-              <Feather name="search" size={20} color="#848484" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search resources..."
-                placeholderTextColor="#848484"
-                value={searchTerm}
-                onChangeText={setSearchTerm}
+        {/* Search Bar */}
+        <View style={styles.searchCard}>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={20} color="#848484" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search resources..."
+              placeholderTextColor="#848484"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+          </View>
+        </View>
+
+        {/* Tab Bar */}
+        <View style={styles.tabBar}>
+          {resourceCategories.map((category, index) => (
+            <TouchableOpacity
+              key={category.id}
+              style={[
+                styles.tab,
+                activeTab === index && styles.activeTab
+              ]}
+              onPress={() => handleTabPress(index)}
+            >
+              <Ionicons
+                name={category.icon}
+                size={20}
+                color={activeTab === index ? '#ffffff' : '#848484'}
               />
-            </View>
-          </View>
-
-          {/* Tab Bar */}
-          <View style={styles.tabBar}>
-            {resourceCategories.map((category, index) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.tab,
-                  activeTab === index && styles.activeTab
-                ]}
-                onPress={() => handleTabPress(index)}
-              >
-                <Ionicons
-                  name={category.icon}
-                  size={20}
-                  color={activeTab === index ? '#ffffff' : '#848484'}
-                />
-                <Text style={[
-                  styles.tabText,
-                  activeTab === index && styles.activeTabText
-                ]}>
-                  {category.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </SafeAreaView>
+              <Text style={[
+                styles.tabText,
+                activeTab === index && styles.activeTabText
+              ]}>
+                {category.title}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </SafeAreaView>
 
       {/* Content Section */}
       <View style={styles.contentContainer}>
@@ -197,7 +239,7 @@ const handleSubmitFeedback = () => {
                         <TouchableOpacity
                           key={idx}
                           style={styles.resourceButton}
-                          onPress={() => handlePress(resource.url)}
+                          onPress={() => handlePress(resource.url, resource.title)}
                         >
                           <View style={styles.resourceTextContainer}>
                             <Text style={styles.resourceButtonText}>{resource.title}</Text>
@@ -218,17 +260,16 @@ const handleSubmitFeedback = () => {
         </PagerView>
       </View>
 
-
-        <FeedbackModal
-          visible={feedbackVisible}
-          setVisible={setFeedbackVisible}
-          questions={questions}
-          feedback={feedback}
-          setFeedback={setFeedback}
-          handleSubmit={handleSubmitFeedback}
-          showFeedbackIcon={true}
-        />
-
+      {/* Feedback Modal */}
+      <FeedbackModal
+        visible={feedbackVisible}
+        setVisible={setFeedbackVisible}
+        questions={questions}
+        feedback={feedback}
+        setFeedback={setFeedback}
+        handleSubmit={handleSubmitFeedback}
+        showFeedbackIcon={true}
+      />
     </View>
   );
 };

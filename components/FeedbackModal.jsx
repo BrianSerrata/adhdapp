@@ -47,11 +47,11 @@ const FeedbackModal = ({
         transparent={true}
         onRequestClose={() => setVisible(false)}
       >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
+        {/* <KeyboardAvoidingView */}
+          {/* style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={64}
-        >
+        > */}
           <View
             style={{
               flex: 1,
@@ -79,63 +79,74 @@ const FeedbackModal = ({
                     <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
                       {index + 1}. {question.text}
                     </Text>
-                    {question.labels && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          marginBottom: 4,
-                        }}
-                      >
-                        <Text style={{ fontSize: 14, color: 'gray' }}>{question.labels[0]}</Text>
-                        <Text style={{ fontSize: 14, color: 'gray' }}>{question.labels[1]}</Text>
-                      </View>
-                    )}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      {[1, 2, 3, 4, 5].map((value) => (
-                        <TouchableOpacity
-                          key={`${question.key}-${value}`}
-                          onPress={() => setFeedback({ ...feedback, [question.key]: value })}
+
+                    {question.labels ? (
+                      // Render rating buttons if labels are provided
+                      <>
+                        <View
                           style={{
-                            padding: 10,
-                            backgroundColor:
-                              feedback[question.key] === value ? '#3d5afe' : '#e0e0e0',
-                            borderRadius: 8,
-                            borderWidth: feedback[question.key] === value ? 2 : 0,
-                            borderColor:
-                              feedback[question.key] === value ? '#0026ca' : 'transparent',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            marginBottom: 4,
                           }}
                         >
-                          <Text
-                            style={{
-                              color: feedback[question.key] === value ? 'white' : 'black',
-                            }}
-                          >
-                            {value}
+                          <Text style={{ fontSize: 14, color: 'gray' }}>
+                            {question.labels[0]}
                           </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+                          <Text style={{ fontSize: 14, color: 'gray' }}>
+                            {question.labels[1]}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <TouchableOpacity
+                              key={`${question.key}-${value}`}
+                              onPress={() =>
+                                setFeedback({ ...feedback, [question.key]: value })
+                              }
+                              style={{
+                                padding: 10,
+                                backgroundColor:
+                                  feedback[question.key] === value ? '#3d5afe' : '#e0e0e0',
+                                borderRadius: 8,
+                                borderWidth: feedback[question.key] === value ? 2 : 0,
+                                borderColor:
+                                  feedback[question.key] === value ? '#0026ca' : 'transparent',
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: feedback[question.key] === value ? 'white' : 'black',
+                                }}
+                              >
+                                {value}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </>
+                    ) : (
+                      // Render a TextInput for open-ended questions
+                      <TextInput
+                        style={{
+                          height: 80,
+                          borderColor: 'gray',
+                          borderWidth: 1,
+                          marginBottom: 10,
+                          padding: 8,
+                          textAlignVertical: 'top',
+                        }}
+                        value={feedback[question.key] || ''}
+                        onChangeText={(text) =>
+                          setFeedback({ ...feedback, [question.key]: text })
+                        }
+                        placeholder="Enter your response here"
+                        multiline
+                      />
+                    )}
                   </View>
                 ))}
 
-                <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-                  Any additional suggestions?
-                </Text>
-                <TextInput
-                  style={{
-                    height: 80,
-                    borderColor: 'gray',
-                    borderWidth: 1,
-                    marginBottom: 20,
-                    padding: 8,
-                    textAlignVertical: 'top',
-                  }}
-                  value={feedback.suggestion}
-                  onChangeText={(text) => setFeedback({ ...feedback, suggestion: text })}
-                  placeholder="Enter your suggestions here"
-                  multiline
-                />
                 <TouchableOpacity
                   onPress={handleSubmit}
                   style={{
@@ -150,7 +161,7 @@ const FeedbackModal = ({
               </ScrollView>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        {/* </KeyboardAvoidingView> */}
       </Modal>
     </>
   );

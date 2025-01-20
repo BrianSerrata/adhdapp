@@ -22,6 +22,12 @@ import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
 import FeedbackModal from '../components/FeedbackModal';
 
+import {
+  trackMessageSent,
+  trackAIResponse,
+  trackConversationDuration,
+  trackCoachTabOpened} from '../backend/apis/segment';
+
 const LifeCoach = ({ navigation, route }) => {
   const resource = route.params?.resource;
   const isResourceChat = !!resource;
@@ -38,55 +44,137 @@ const LifeCoach = ({ navigation, route }) => {
 
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedback, setFeedback] = useState({
-    relevance: "1",
-    timeline: "1",
-    taskCompleteness: "1",
-    clarity: "1",
-    suggestion: '',
+    personalization: "1", // How personalized was the advice?
+    usefulness: "1", // How useful was the advice?
+    clarity: "1", // How clear and easy to follow was the advice?
+    motivation: "1", // How motivating was the coach?
+    actionability: "1", // Were the recommendations actionable?
+    overallSatisfaction: "1", // Overall experience with the coach
+    improvementSuggestions: '', // Open-ended improvement suggestions
+    coachingPurpose: '', // Open-ended: What did you use the coach for?
+    coachingFuture: '',
   });
+  
 
   const questions = [
     {
-      key: 'relevance',
-      text: 'How relevant are the tasks to your goal?',
-      labels: ['Not relevant', 'Very relevant'],
+      key: 'personalization',
+      text: 'How personalized did the advice feel to your situation?',
+      labels: ['Not at all', 'Very personalized'],
     },
     {
-      key: 'timeline',
-      text: 'How realistic is the suggested timeline?',
-      labels: ['Unrealistic', 'Very realistic'],
-    },
-    {
-      key: 'taskCompleteness',
-      text: 'Do the tasks cover everything necessary for your goal?',
-      labels: ['Incomplete', 'Complete'],
+      key: 'usefulness',
+      text: 'How useful was the advice provided by the coach?',
+      labels: ['Not useful', 'Very useful'],
     },
     {
       key: 'clarity',
-      text: 'How clear and easy to follow are the tasks?',
+      text: 'How clear and easy to follow was the advice?',
       labels: ['Confusing', 'Very clear'],
     },
-  ]
+    {
+      key: 'motivation',
+      text: 'How motivated did the coach make you feel to take action?',
+      labels: ['Not motivated', 'Very motivated'],
+    },
+    {
+      key: 'actionability',
+      text: 'Were the coach\'s recommendations actionable?',
+      labels: ['Not actionable', 'Very actionable'],
+    },
+    {
+      key: 'overallSatisfaction',
+      text: 'Overall, how satisfied were you with the coaching session?',
+      labels: ['Not satisfied', 'Very satisfied'],
+    },
+    {
+      key: 'improvementSuggestions',
+      text: 'What could be improved about the coaching experience?',
+    },
+    {
+      key: 'coachingPurpose',
+      text: 'What did you use the coach for in this session?',
+    },
+    {
+      key: 'coachingFuture',
+      text: 'What do you hope to see out of the coach in the future?',
+    },
+  ];
+  
 
   const handleSubmitFeedback = () => {
-    // Handle feedback submission logic (e.g., saving to Firestore)
-
+    // Convert numeric feedback to numbers
     const numericFeedback = {
-      relevance: Number(feedback.relevance),
-      timeline: Number(feedback.timeline),
-      taskCompleteness: Number(feedback.taskCompleteness),
+      personalization: Number(feedback.personalization),
+      usefulness: Number(feedback.usefulness),
       clarity: Number(feedback.clarity),
-      suggestion: feedback.suggestion,
+      motivation: Number(feedback.motivation),
+      actionability: Number(feedback.actionability),
+      overallSatisfaction: Number(feedback.overallSatisfaction),
     };
-
-    console.log('Feedback submitted:', numericFeedback);
-    setFeedbackVisible(false); // Close the feedback form after submission
+  
+    // Include open-ended feedback
+    const fullFeedback = {
+      ...numericFeedback,
+      improvementSuggestions: feedback.improvementSuggestions,
+      coachingPurpose: feedback.coachingPurpose,
+      coachingFuture: feedback.coachingFuture,
+      timestamp: new Date().toISOString(),
+    };
+  
+    console.log('Coach Feedback submitted:', fullFeedback);
+  
+    // Optionally save to Firestore or track the event
+    // saveFeedbackToFirestore(fullFeedback);
+    // trackFeedback(fullFeedback);
+  
+    // Reset modal visibility or provide user feedback
+    setFeedbackVisible(false);
   };
+  
+
+  // useEffect(() => {
+  //   // Track "Resources Tab Opened" when the component mounts
+  //   trackCoachTabOpened({
+  //     userId: auth.currentUser.uid,
+  //     timestamp: new Date().toISOString(),
+  //   });
+  // }, []);
 
   useEffect(() => {
     const unsubscribe = fetchConversations();
     return () => unsubscribe();
   }, []);
+
+  const conversationStartTimeRef = useRef(null);
+
+  // Effect to handle tracking when activeConversationId changes
+  useEffect(() => {
+    // If there's an active conversation, set its start time
+    if (activeConversationId) {
+      const currentConv = conversations.find(conv => conv.id === activeConversationId);
+      conversationStartTimeRef.current = currentConv?.startTime?.toDate() || new Date();
+    }
+
+    // Cleanup function to run when activeConversationId changes or component unmounts
+    return () => {
+      if (activeConversationId && conversationStartTimeRef.current) {
+        const endTime = new Date();
+        const startTime = conversationStartTimeRef.current;
+        const durationSeconds = Math.floor((endTime - startTime) / 1000);
+
+        trackConversationDuration({
+          userId: auth.currentUser.uid,
+          conversationId: activeConversationId,
+          durationSeconds,
+          timestamp: endTime.toISOString(),
+        });
+
+        // Reset the start time
+        conversationStartTimeRef.current = null;
+      }
+    };
+  }, [activeConversationId, conversations]);
 
   const fetchConversations = () => {
     const conversationsRef = collection(db, 'users', auth.currentUser.uid, 'conversations');
@@ -146,6 +234,14 @@ const LifeCoach = ({ navigation, route }) => {
         setMessages(data.messages || []);
         setActiveConversationId(conversationId);
         setIsPanelVisible(false)
+
+        // trackConversationStarted({
+        //   userId: auth.currentUser.uid,
+        //   conversationId: conversationId,
+        //   initialMessage: data.messages?.[0]?.text || 'N/A',
+        //   timestamp: new Date().toISOString(),
+        // });
+
       } else {
         Alert.alert('Error', 'Conversation not found.');
       }
@@ -168,6 +264,7 @@ const LifeCoach = ({ navigation, route }) => {
       const conversationRef = await addDoc(collection(db, 'users', auth.currentUser.uid, 'conversations'), {
         createdAt: new Date(),
         messages: [],
+        startTime: new Date(), // Track when the conversation started
       });
       await loadConversation(conversationRef.id);
     } catch (error) {
@@ -233,6 +330,13 @@ const handleDeleteConversation = async (conversationId) => {
     scrollToEnd();
     setLoading(true);
 
+    trackMessageSent({
+      userId: auth.currentUser.uid,
+      conversationId: activeConversationId,
+      message: input.trim(),
+      timestamp: new Date().toISOString(),
+    });
+
     try {
       const aiResponse = await getAIResponse([...messages, userMessage]);
       const aiMessage = { id: (Date.now() + 1).toString(), text: aiResponse, isAI: true };
@@ -246,6 +350,14 @@ const handleDeleteConversation = async (conversationId) => {
         messages: updatedMessages,
         lastUpdated: new Date()
       });
+
+      trackAIResponse({
+        userId: auth.currentUser.uid,
+        conversationId: activeConversationId,
+        response: aiResponse,
+        timestamp: new Date().toISOString(),
+      });
+
     } catch (error) {
       console.error('Error fetching AI response:', error);
       Alert.alert('Error', 'Failed to get AI response. Please try again.');

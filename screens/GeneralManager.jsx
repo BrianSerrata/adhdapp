@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import GoalManager from './GoalManager'; // Adjust path as needed
 import RoutineManager from './RoutineManager'; // Adjust path as needed
+import { trackRoutinesTabOpened } from '../backend/apis/segment';
+import { auth } from '../firebase';
 
 const GeneralManager = ({ navigation }) => {
   const [activeButton, setActiveButton] = useState('routines'); // 'goals' or 'routines'
+
+  // useEffect(() => {
+  //   // Track "Resources Tab Opened" when the component mounts
+  //   trackRoutinesTabOpened({
+  //     userId: auth.currentUser.uid,
+  //     timestamp: new Date().toISOString(),
+  //   });
+  // }, []);
 
   return (
     <View style={styles.container}>

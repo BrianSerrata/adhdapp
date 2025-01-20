@@ -26,6 +26,15 @@ import styles from '../styles/SMARTBuilderStyles';
 import { styles as PhaseBuilderStyles } from '../styles/PhaseBuilderStyles';
 import FeedbackModal from '../components/FeedbackModal';
 
+import {
+  trackTaskAdded,
+  trackTaskDeleted,
+  trackTimePickerUsed,
+  trackGoalsGenerated,
+  trackSaveButtonClicked,
+  trackDateSelectorUsed,
+  } from '../backend/apis/segment';
+
 // -------------------------------------
 // Constants
 // -------------------------------------
@@ -88,24 +97,36 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
       setTasks(updated);
       // <-- notify parent
       onUpdateRoutine(phaseIndex, updated);
+
+      // todo: additional logic needs to be added to actually see the new task and description
+      trackTaskAdded({
+        userId: auth.currentUser.uid,
+        phaseId: routine.id || 'not_set', // Assuming routine has an id
+        phaseName: routine.name || 'Unnamed Phase',
+        taskTitle: newTask.title,
+        taskDescription: newTask.description || 'N/A',
+        routineDetails: tasks,
+        timestamp: new Date().toISOString(),
+      });
+
     };
   
     const handleRemoveTask = (taskId) => {
+      const taskToDelete = tasks.find(t => t.id === taskId);
       const updated = tasks.filter(t => t.id !== taskId);
       setTasks(updated);
       // <-- notify parent
       onUpdateRoutine(phaseIndex, updated);
-    };
-  
-    const toggleTaskCompletion = (taskId) => {
-      const updated = tasks.map(task =>
-        task.id === taskId
-          ? { ...task, isCompleted: !task.isCompleted }
-          : task
-      );
-      setTasks(updated);
-      // <-- notify parent
-      onUpdateRoutine(phaseIndex, updated);
+
+      trackTaskDeleted({
+        userId: auth.currentUser.uid,
+        phaseId: routine.id || 'not_set',
+        phaseName: routine.name || 'Unnamed Phase',
+        taskTitle: taskToDelete?.title || 'N/A',
+        taskDescription: taskToDelete?.description || 'N/A',
+        timestamp: new Date().toISOString(),
+      });
+
     };
   
     // const handleDragEnd = ({ data }) => {
@@ -118,6 +139,10 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
       const hours = String(time.getHours()).padStart(2, '0');
       const minutes = String(time.getMinutes()).padStart(2, '0');
       const timeString = `${hours}:${minutes}`;
+
+      const taskDetails = selectedTaskId
+      ? tasks.find((t) => t.id === selectedTaskId)
+      : null;
   
       const updated = tasks.map(task =>
         task.id === selectedTaskId
@@ -131,6 +156,21 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
       setTasks(updated);
       // <-- notify parent
       onUpdateRoutine(phaseIndex, updated);
+
+      trackTimePickerUsed({
+        userId: auth.currentUser.uid,
+        phaseId: routine.id || 'not_set',
+        phaseName: routine.name || 'Unnamed Phase',
+        taskId: selectedTaskId || "header_time",
+        taskTitle: taskDetails?.title || "Header Time",
+        taskDescription: taskDetails?.description || "N/A",
+        field: timeField, // 'start' or 'end'
+        selectedTime: timeString,
+        originalStartTime: taskDetails?.timeRange?.start || "Not set",  // Original start time
+        originalEndTime: taskDetails?.timeRange?.end || "Not set",      // Original end time
+        timestamp: new Date().toISOString(),
+      });      
+
       hideTimePicker();
     };
   
@@ -464,26 +504,47 @@ export default function SMARTBuilder({ navigation }) {
 
   const questions = [
     {
-      key: 'relevance',
-      text: 'How relevant are the tasks to your goal?',
-      labels: ['Not relevant', 'Very relevant'],
+      key: 'goalAlignment',
+      text: 'How well do the phases/sub-goals align with your overall goal?',
+      labels: ['Not aligned', 'Perfectly aligned'],
     },
     {
-      key: 'timeline',
-      text: 'How realistic is the suggested timeline?',
-      labels: ['Unrealistic', 'Very realistic'],
+      key: 'subGoalFeasibility',
+      text: 'How achievable do the suggested sub-goals feel?',
+      labels: ['Unachievable', 'Very achievable'],
     },
     {
-      key: 'taskCompleteness',
-      text: 'Do the tasks cover everything necessary for your goal?',
-      labels: ['Incomplete', 'Complete'],
+      key: 'phaseStructure',
+      text: 'Does the breakdown of phases make the goal feel more manageable?',
+      labels: ['Overwhelming', 'Very manageable'],
     },
     {
-      key: 'clarity',
-      text: 'How clear and easy to follow are the tasks?',
-      labels: ['Confusing', 'Very clear'],
+      key: 'routineFit',
+      text: 'How well do the routines for each phase fit your needs?',
+      labels: ['Poor fit', 'Perfect fit'],
     },
-  ];  
+    {
+      key: 'motivation',
+      text: 'Does the goal builder help keep you motivated and track your progress effectively?',
+      labels: ['Not helpful', 'Very helpful'],
+    },
+    {
+      key: 'customization',
+      text: 'How customizable do the sub-goals and routines feel for your specific needs?',
+      labels: ['Not customizable', 'Highly customizable'],
+    },
+    {
+      key: 'overallSatisfaction',
+      text: 'How satisfied are you with the goal-building experience?',
+      labels: ['Not satisfied', 'Very satisfied'],
+    },
+    {
+      key: 'improvementSuggestions',
+      text: 'What could we improve about the goal-building process?',
+      labels: null, // Open-ended question
+    },
+  ];
+  
 
   // Date range
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -495,27 +556,45 @@ export default function SMARTBuilder({ navigation }) {
 
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedback, setFeedback] = useState({
-    relevance: "1",
-    timeline: "1",
-    taskCompleteness: "1",
-    clarity: "1",
-    suggestion: '',
-  });
+    goalAlignment: "1",
+    subGoalFeasibility: "1",
+    phaseStructure: "1",
+    routineFit: "1",
+    motivation: "1",
+    customization: "1",
+    overallSatisfaction: "1",
+    // improvementSuggestions: '',
+  });  
 
   const handleSubmitFeedback = () => {
-    // Handle feedback submission logic (e.g., saving to Firestore)
-
+    // Convert numeric feedback to numbers
     const numericFeedback = {
-      relevance: Number(feedback.relevance),
-      timeline: Number(feedback.timeline),
-      taskCompleteness: Number(feedback.taskCompleteness),
-      clarity: Number(feedback.clarity),
-      suggestion: feedback.suggestion,
+      goalAlignment: Number(feedback.goalAlignment),
+      subGoalFeasibility: Number(feedback.subGoalFeasibility),
+      phaseStructure: Number(feedback.phaseStructure),
+      routineFit: Number(feedback.routineFit),
+      motivation: Number(feedback.motivation),
+      customization: Number(feedback.customization),
+      overallSatisfaction: Number(feedback.overallSatisfaction),
     };
-
+  
+    // Include open-ended feedback
+    const fullFeedback = {
+      ...numericFeedback,
+      improvementSuggestions: feedback.improvementSuggestions,
+      timestamp: new Date().toISOString(),
+    };
+  
     console.log('Feedback submitted:', numericFeedback);
-    setFeedbackVisible(false); // Close the feedback form after submission
+  
+    // Optionally save to Firestore or track the event
+    // saveFeedbackToFirestore(fullFeedback);
+    // trackFeedback(fullFeedback);
+  
+    // Reset modal visibility or provide user feedback
+    setFeedbackVisible(false);
   };
+  
 
   function generateId() {
     return Math.random().toString(36).substr(2, 9);
@@ -558,6 +637,14 @@ export default function SMARTBuilder({ navigation }) {
       [dateType]: date
     }));
     hideDatePicker();
+
+    trackDateSelectorUsed({
+      userId: auth.currentUser.uid,
+      dateType, // 'start' or 'end'
+      selectedDate: date.toISOString(),
+      timestamp: new Date().toISOString(),
+    });
+
   };
 
   // Called by child to update tasks for a given phase
@@ -832,6 +919,22 @@ export default function SMARTBuilder({ navigation }) {
       setGeneratedPhases(updatedPhases);
       setExpandedPhaseIndex(null);
 
+      trackGoalsGenerated({
+        userId: auth.currentUser.uid,
+        specific: goal.specific,
+        measurable: goal.measurable,
+        achievable: goal.achievable,
+        relevant: goal.relevant,
+        timeBased: goal.timeBased,
+        selectedDays: selectedDays.map(d => DAYS_OF_WEEK[d].label),
+        dateRangeStart: dateRange.start.toISOString(),
+        dateRangeEnd: dateRange.end.toISOString(),
+        totalDurationDays: Math.ceil((dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24)),
+        phases: updatedPhases,
+        numberOfTasks: updatedPhases.reduce((acc, phase) => acc + phase.routine.tasks.length, 0),
+        timestamp: new Date().toISOString(),
+      });
+
       Alert.alert("Success", "Phases generated! Expand them to edit tasks.");
     } catch (err) {
       console.error("Error generating routines:", err);
@@ -902,8 +1005,20 @@ export default function SMARTBuilder({ navigation }) {
       
       // Execute all promises concurrently
       await Promise.all(routinesPromises);
+
+      trackSaveButtonClicked({
+        userId: auth.currentUser.uid,
+        goalId,
+        smartGoal: goal,
+        dateRangeStart: dateRange.start.toISOString(),
+        dateRangeEnd: dateRange.end.toISOString(),
+        selectedDays: selectedDays.map(d => DAYS_OF_WEEK[d].label),
+        phases: generatedPhases,
+        numberOfTasks: generatedPhases.reduce((acc, phase) => acc + phase.routine.tasks.length, 0),
+        timestamp: new Date().toISOString(),
+      });
       
-      Alert.alert("Plan Saved", "Your entire plan has been saved!");
+      Alert.alert("Plan Saved", "Your entire plan has been saved! It will now display in your calendar 🗓️");
       // Optionally navigate to another screen
       // navigation.navigate('Calendar');
     } catch (err) {

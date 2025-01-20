@@ -29,6 +29,10 @@ import {
 
 import { auth, db } from "../firebase";
 import styles from "../styles/RoutineCalendarStyles";
+import { trackTaskCompletionToggled,
+         trackRoutineCompleted,
+         trackHomeTabOpened
+ } from "../backend/apis/segment";
 
 /* -------------------- Status Colors -------------------- */
 const STATUS_COLORS = {
@@ -56,7 +60,6 @@ export default function RoutineCalendar() {
   const [name, setName] = useState("");
   const [quote, setQuote] = useState('');
 
-
   // For toggling expanded tasks
   const [expandedTaskId, setExpandedTaskId] = useState(null);
 
@@ -70,44 +73,49 @@ export default function RoutineCalendar() {
   
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedback, setFeedback] = useState({
-    relevance: "1",
-    timeline: "1",
-    taskCompleteness: "1",
-    clarity: "1",
+    usability: "1",
+    motivation: "1",
+    engagement: "1",
     suggestion: '',
   });
 
   const questions = [
     {
-      key: 'relevance',
-      text: 'How relevant are the tasks to your goal?',
-      labels: ['Not relevant', 'Very relevant'],
+      key: 'usability',
+      text: 'How easy is it to navigate and manage your tasks on this page?',
+      labels: ['Unclear', 'Very easy'],
     },
     {
-      key: 'timeline',
-      text: 'How realistic is the suggested timeline?',
-      labels: ['Unrealistic', 'Very realistic'],
+      key: 'motivation',
+      text: 'How motivating do you find this setup to complete your tasks?',
+      labels:['Not motivating', 'Very motivating'],
     },
     {
-      key: 'taskCompleteness',
-      text: 'Do the tasks cover everything necessary for your goal?',
-      labels: ['Incomplete', 'Complete'],
+      key: 'engagement',
+      text: 'How likely are you to check this page daily to stay on track?',
+      labels: ['Very unlikely', 'Very likely'],
     },
     {
-      key: 'clarity',
-      text: 'How clear and easy to follow are the tasks?',
-      labels: ['Confusing', 'Very clear'],
-    },
+      key: 'suggestion',
+      text: 'What could be improved to make this page more helpful for you?'
+    }
   ]
+
+  // useEffect(() => {
+  //   // Track "Resources Tab Opened" when the component mounts
+  //   trackHomeTabOpened({
+  //     userId: auth.currentUser.uid,
+  //     timestamp: new Date().toISOString(),
+  //   });
+  // }, []);
 
   const handleSubmitFeedback = () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
 
     const numericFeedback = {
-      relevance: Number(feedback.relevance),
-      timeline: Number(feedback.timeline),
-      taskCompleteness: Number(feedback.taskCompleteness),
-      clarity: Number(feedback.clarity),
+      usability: Number(feedback.usability),
+      motivation: Number(feedback.motivation),
+      engagement: Number(feedback.engagement),
       suggestion: feedback.suggestion,
     };
 
@@ -411,13 +419,7 @@ export default function RoutineCalendar() {
     const isCompleted = routine.completedDates?.[selectedDate]?.[task.id] === true;
 
     const toggleTaskCompletion = async () => {
-      console.log("toggleTaskCompletion called");
-      console.log("routine id", routine.id);
       const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
-
-      console.log("routine id",routine.id)
-      console.log("task id",task.id)
-
 
       const newValue = !isCompleted;
       const updatedCompletedDates = {
@@ -429,6 +431,17 @@ export default function RoutineCalendar() {
       };
 
       try {
+
+        trackTaskCompletionToggled({
+          userId: auth.currentUser.uid,
+          routineId: routine.id,
+          taskId: task.id,
+          taskTitle: task.title,
+          completed: newValue,
+          timestamp: new Date().toISOString(),
+          date: selectedDate,
+        });
+
         await updateDoc(routineRef, { completedDates: updatedCompletedDates });
 
         // Check if all tasks are now complete
@@ -437,6 +450,18 @@ export default function RoutineCalendar() {
         );
 
         if (newValue && allTasksCompleted) {
+
+          trackRoutineCompleted({
+            userId: auth.currentUser.uid,
+            routineId: routine.id,
+            routineName: routine.name,
+            routineDetails: routine,
+            numTasks: routine.tasks.length,
+            timestamp: new Date().toISOString(),
+            date: selectedDate,
+            totalTasks: routine.tasks.length,
+          });
+
           triggerConfetti();
         }
       } catch (err) {
@@ -611,7 +636,18 @@ export default function RoutineCalendar() {
                 textDayHeaderFontFamily: "System",
               }}
             />
+
           </Animated.View>
+
+          <FeedbackModal
+            visible={feedbackVisible}
+            setVisible={setFeedbackVisible}
+            questions={questions}
+            feedback={feedback}
+            setFeedback={setFeedback}
+            handleSubmit={handleSubmitFeedback}
+            showFeedbackIcon={true}
+          />
 
           {/* Routines for This Date */}
           {selectedDate && (
@@ -647,18 +683,6 @@ export default function RoutineCalendar() {
               )}
             </Animated.View>
           )}
-
-
-              <FeedbackModal
-                visible={feedbackVisible}
-                setVisible={setFeedbackVisible}
-                questions={questions}
-                feedback={feedback}
-                setFeedback={setFeedback}
-                handleSubmit={handleSubmitFeedback}
-                showFeedbackIcon={true}
-              />
-
 
         </ScrollView>
 

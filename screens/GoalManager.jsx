@@ -27,44 +27,43 @@ export default function GoalManager({ navigation }) {
 
   // Feedback logic / states
   const [feedbackVisible, setFeedbackVisible] = useState(false);
+  // Feedback logic / states
   const [feedback, setFeedback] = useState({
-    relevance: "1",
-    timeline: "1",
-    taskCompleteness: "1",
+    deleteReason: "1",
+    managementEase: "1",
     clarity: "1",
     suggestion: '',
   });
 
   const questions = [
     {
-      key: 'relevance',
-      text: 'How relevant are the tasks to your goal?',
-      labels: ['Not relevant', 'Very relevant'],
+      key: 'deleteReason',
+      text: 'If applicable, what is the primary reason for deleting a goal?',
+      labels: ['No longer needed', 'Not helpful'],
     },
     {
-      key: 'timeline',
-      text: 'How realistic is the suggested timeline?',
-      labels: ['Unrealistic', 'Very realistic'],
-    },
-    {
-      key: 'taskCompleteness',
-      text: 'Do the tasks cover everything necessary for your goal?',
-      labels: ['Incomplete', 'Complete'],
+      key: 'managementEase',
+      text: 'How easy was it to manage and view your goals?',
+      labels: ['Difficult', 'Very easy'],
     },
     {
       key: 'clarity',
-      text: 'How clear and easy to follow are the tasks?',
+      text: 'How clear was the information provided about each goal?',
       labels: ['Confusing', 'Very clear'],
     },
-  ]
+    {
+      key: 'suggestion',
+      text: 'Is there anything you\'d like to see in the future for improving goal management?',
+    },
+  ];
+  
 
   const handleSubmitFeedback = () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
 
     const numericFeedback = {
-      relevance: Number(feedback.relevance),
-      timeline: Number(feedback.timeline),
-      taskCompleteness: Number(feedback.taskCompleteness),
+      deleteReason: Number(feedback.deleteReason),
+      managementEase: Number(feedback.managementEase),
       clarity: Number(feedback.clarity),
       suggestion: feedback.suggestion,
     };
@@ -183,8 +182,9 @@ export default function GoalManager({ navigation }) {
           })
         )}
 
+      </ScrollView>
 
-        <FeedbackModal
+      <FeedbackModal
           visible={feedbackVisible}
           setVisible={setFeedbackVisible}
           questions={questions}
@@ -194,7 +194,6 @@ export default function GoalManager({ navigation }) {
           showFeedbackIcon={true}
         />
 
-      </ScrollView>
     </SafeAreaView>
   );
 }

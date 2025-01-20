@@ -14,7 +14,6 @@ import {
   Modal,
   ScrollView
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import {
   collection,
   addDoc,
@@ -30,6 +29,15 @@ import axios from "axios";
 
 import { EXPO_PUBLIC_OPENAI_API_KEY } from "@env";
 import styles from "../styles/RoutineBuilderStyles";
+
+import {  trackRoutineSaved,
+          trackRoutineGenerated,
+          trackRoutineNotSaved,
+          trackTaskAdded,
+          trackTaskDeleted,
+          trackRecurringRoutineToggled,
+          trackTimePickerUsed,
+ } from "../backend/apis/segment";
 
 // Days of week labels (0=Sunday, 6=Saturday)
 const DAYS_OF_WEEK = [
@@ -227,6 +235,15 @@ export default function RoutineBuilder({ route, navigation }) {
       }));
       setTasks(parsedTasks);
 
+      trackRoutineGenerated({
+        userId: auth.currentUser.uid,
+        userInput: userInput,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        numberOfTasks: parsedTasks.length,
+        routineDetails: parsedTasks, // You can customize what details to send
+      });
+
       // event logging for analytics insights
 
       // logEvent(analytics, "routine_generated", {
@@ -257,10 +274,36 @@ export default function RoutineBuilder({ route, navigation }) {
       isCompleted: false,
     };
     setTasks([newTask, ...tasks]);
+
+    trackTaskAdded({
+      userId: auth.currentUser.uid,
+      routineId: routine?.id || 'not_set', // Adjust based on your data structure
+      taskId: newTask.id,
+      taskTitle: newTask.title,
+      taskDescription: newTask.description,
+      timestamp: new Date().toISOString(),
+      routineDetails: tasks || 'not_set', // You can customize what details to send
+    });
+
   };
 
   const handleRemoveTask = (taskId) => {
+    const taskToDelete = tasks.find(t => t.id === taskId);
     setTasks(tasks.filter((task) => task.id !== taskId));
+
+    trackTaskDeleted({
+      userId: auth.currentUser.uid,
+      routineId: routine?.id || 'not_set',
+      taskId: taskToDelete.id,
+      taskTitle: taskToDelete.title,
+      taskDescription: taskToDelete.description,
+      taskStart: taskToDelete.timeRange["start"] || "not_set",
+      taskEnd: taskToDelete.timeRange["end"] || "not_set",
+      routineDetails: tasks,
+      timestamp: new Date().toISOString(),
+    });
+
+
   };
 
   // --------------- Time Picker ---------------
@@ -299,6 +342,7 @@ export default function RoutineBuilder({ route, navigation }) {
   // Handle Date Confirmation
   const handleConfirmDate = (date) => {
     setSelectedDate(date);
+
     hideDatePicker();
   };
 
@@ -306,6 +350,10 @@ export default function RoutineBuilder({ route, navigation }) {
     const hours = String(time.getHours()).padStart(2, "0");
     const minutes = String(time.getMinutes()).padStart(2, "0");
     const timeString = `${hours}:${minutes}`;
+
+    const taskDetails = selectedTaskId
+    ? tasks.find((t) => t.id === selectedTaskId)
+    : null;
 
     setTasks((prev) =>
       prev.map((task) =>
@@ -323,6 +371,17 @@ export default function RoutineBuilder({ route, navigation }) {
 
     if (timeField === "start") setStartTime(time);
     if (timeField === "end") setEndTime(time);
+
+    trackTimePickerUsed({
+      userId: auth.currentUser.uid,
+      routineId: routine?.id || "not_set",
+      taskId: selectedTaskId || "header_time",
+      taskTitle: taskDetails?.title || "Header Time",
+      taskDescription: taskDetails?.description || "N/A",
+      field: timeField, // 'start' or 'end'
+      selectedTime: timeString,
+      timestamp: new Date().toISOString(),
+    });  
 
     hideTimePicker();
   };
@@ -391,8 +450,21 @@ export default function RoutineBuilder({ route, navigation }) {
         createdDate: isRecurring ? null : formattedSelectedDate,
       };
 
-      await addDoc(routinesRef, routineData);
-      Alert.alert("Routine Saved", "Your routine has been saved successfully!");
+      docRef = await addDoc(routinesRef, routineData);
+
+      trackRoutineSaved({
+        userId: auth.currentUser.uid,
+        routineId: docRef.id, // Assuming you have the document reference
+        routineName: routineData.name,
+        numberOfTasks: tasks.length,
+        routineDetails: tasks, // You can customize what details to send
+        isRecurring: isRecurring,
+        selectedDays: isRecurring ? selectedDays : [],
+        selectedDate: isRecurring ? null : formattedSelectedDate,
+        timestamp: new Date().toISOString(),
+      });
+
+      Alert.alert("Routine Saved", "Your routine has been saved successfully! It will now display in your calendar 🗓️");
       // navigation.goBack(); // Optionally navigate back after saving
     } catch (error) {
       console.error("Error saving routine:", error);
@@ -440,7 +512,18 @@ export default function RoutineBuilder({ route, navigation }) {
             <Switch
               trackColor={{ false: "#767577", true: "#3d5afe" }}
               thumbColor={isRecurring ? "#f4f3f4" : "#f4f3f4"}
-              onValueChange={(value) => setIsRecurring(value)}
+              onValueChange={(value) => {
+                setIsRecurring(value);
+
+                // Track "Recurring Routine Toggled" event
+                trackRecurringRoutineToggled({
+                  userId: auth.currentUser.uid,
+                  isRecurring: value,
+                  routineDetails: tasks || 'not_set',
+                  selectedDays: value ? selectedDays : [],
+                  timestamp: new Date().toISOString(),
+                });
+              }}
               value={isRecurring}
             />
             <Text style={{ marginLeft: 8, color: "#fff", fontSize: 16 }}>
@@ -709,6 +792,7 @@ export default function RoutineBuilder({ route, navigation }) {
         <TextInput
           style={styles.goalInput}
           placeholder="What are your goals for this routine?"
+          placeholderTextColor={"#848484"}
           value={userInput}
           onChangeText={setUserInput}
           multiline

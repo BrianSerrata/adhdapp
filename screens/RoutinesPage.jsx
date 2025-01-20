@@ -1,11 +1,21 @@
 // screens/Routines.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import RoutineBuilder from './RoutineBuilder';
 import SMARTBuilder from './SMARTBuilder';
+import { trackPlannerTabOpened } from '../backend/apis/segment';
+import { auth } from '../firebase';
 
 const Routines = () => {
   const [activeBuilder, setActiveBuilder] = useState('routine'); // 'routine' or 'goal'
+
+  // useEffect(() => {
+  //   // Track "Resources Tab Opened" when the component mounts
+  //   trackPlannerTabOpened({
+  //     userId: auth.currentUser.uid,
+  //     timestamp: new Date().toISOString(),
+  //   });
+  // }, []);
 
   return (
     <View style={styles.container}>
