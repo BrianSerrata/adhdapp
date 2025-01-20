@@ -15,7 +15,8 @@ import PagerView from 'react-native-pager-view';
 import * as Linking from "expo-linking";
 import styles from '../styles/ResourcesStyles';
 import FeedbackModal from '../components/FeedbackModal';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { collection, addDoc} from 'firebase/firestore';
 
 // Import Tracking Functions
 import {
@@ -100,18 +101,34 @@ const ResourcesPage = ({ navigation }) => {
   ];
   
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
 
     const numericFeedback = {
       relevance: Number(feedback.relevance),
       clarity: Number(feedback.clarity),
-      usefulness: Number(feedback.usefulness),
-      resourceExpectations: feedback.resourceExpectations || '', // Open-ended question
+      usefulness: Number(feedback.usefulness), // Open-ended question
     };
 
-    console.log('Feedback submitted:', numericFeedback);
-    setFeedbackVisible(false); // Close the feedback form after submission
+    const fullFeedback = {
+      ...numericFeedback,
+      resourceExpectations: feedback.resourceExpectations,
+      timestamp: new Date().toISOString(),
+    };
+
+    const feedbackRef = collection(
+      db,
+      'users',
+      auth.currentUser.uid,
+      'feedback' // Name of the feedback collection
+    );
+  
+      // Save to Firestore
+      await addDoc(feedbackRef, fullFeedback);
+  
+      console.log('Feedback successfully submitted to Firestore:', fullFeedback);     
+      
+      setFeedbackVisible(false); // Close the feedback form after submission
   };
 
   useEffect(() => {

@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   routineContainer: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#23272F',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -120,9 +120,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
   },
-  deleteButton: {
-    marginTop: 12,
-    alignSelf: 'flex-end',
+  removeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#1F252E', // Slightly darker slate
+    borderRadius: 8,
   },
   taskListHeader: {
     flexDirection: 'row',
@@ -150,7 +154,7 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   taskItem: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2B3039',
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
@@ -240,14 +244,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     minHeight: 80,
     color: '#ffffff',
-  },
-  removeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    backgroundColor: '#3a1a1a',
-    borderRadius: 8,
   },
   removeButtonText: {
     color: '#ff4d4f',

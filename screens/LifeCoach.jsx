@@ -16,7 +16,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import { auth, db } from '../firebase';
-import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc, query, where } from 'firebase/firestore';
 import styles from '../styles/LifeCoachStyles';
 import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
@@ -36,12 +36,17 @@ const LifeCoach = ({ navigation, route }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversations, setConversations] = useState([]);
+  const [name, setName] = useState("");
   const [activeConversationId, setActiveConversationId] = useState(null);
-  const [isPanelVisible, setIsPanelVisible] = useState(true);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
   const flatListRef = useRef(null);
 
-  // Feedback states
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [oneOffRoutines, setOneOffRoutines] = useState([]);
+  const [recurringRoutines, setRecurringRoutines] = useState([]);
 
+  // Feedback states
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedback, setFeedback] = useState({
     personalization: "1", // How personalized was the advice?
@@ -100,9 +105,30 @@ const LifeCoach = ({ navigation, route }) => {
       text: 'What do you hope to see out of the coach in the future?',
     },
   ];
-  
 
-  const handleSubmitFeedback = () => {
+  const fetchUserName = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) return;
+
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        setName(userDoc.data().name || "User");
+      } else {
+        console.log("No user document found.");
+        setName("User");
+      }
+    } catch (error) {
+      console.error("Error fetching user name:", error);
+      setName("User");
+    }
+  };
+  
+  useEffect(() => {
+    fetchUserName();
+  }, []);
+
+  const handleSubmitFeedback = async () => {
     // Convert numeric feedback to numbers
     const numericFeedback = {
       personalization: Number(feedback.personalization),
@@ -122,16 +148,118 @@ const LifeCoach = ({ navigation, route }) => {
       timestamp: new Date().toISOString(),
     };
   
-    console.log('Coach Feedback submitted:', fullFeedback);
+    const feedbackRef = collection(
+      db,
+      'users',
+      auth.currentUser.uid,
+      'feedback' // Name of the feedback collection
+    );
   
-    // Optionally save to Firestore or track the event
-    // saveFeedbackToFirestore(fullFeedback);
-    // trackFeedback(fullFeedback);
+      // Save to Firestore
+      await addDoc(feedbackRef, fullFeedback);
+  
+      console.log('Feedback successfully submitted to Firestore:', fullFeedback);  
   
     // Reset modal visibility or provide user feedback
     setFeedbackVisible(false);
   };
+
+  useEffect(() => {
+    const fetchTodayTasks = () => {
+      const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+      const todayDayIndex = today.getDay(); // 0 (Sunday) to 6 (Saturday)
   
+      const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
+  
+      // Query for One-Off Routines
+      const oneOffQuery = query(routinesRef, where('createdDate', '==', formattedDate));
+  
+      // Query for Recurring Routines
+      const recurringQuery = query(routinesRef, where('daysOfWeek', 'array-contains', todayDayIndex));
+  
+      // Listener for One-Off Routines
+      const unsubscribeOneOff = onSnapshot(oneOffQuery, (snapshot) => {
+        const loadedOneOffRoutines = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setOneOffRoutines(loadedOneOffRoutines);
+        console.log('One-Off Routines:', loadedOneOffRoutines);
+      }, (error) => {
+        console.error('Error fetching one-off routines:', error);
+        Alert.alert('Error', 'Failed to fetch one-off routines.');
+      });
+  
+      // Listener for Recurring Routines
+      const unsubscribeRecurring = onSnapshot(recurringQuery, (snapshot) => {
+        const loadedRecurringRoutines = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setRecurringRoutines(loadedRecurringRoutines);
+        console.log('Recurring Routines:', loadedRecurringRoutines);
+      }, (error) => {
+        console.error('Error fetching recurring routines:', error);
+        Alert.alert('Error', 'Failed to fetch recurring routines.');
+      });
+  
+      // Cleanup listeners on unmount
+      return () => {
+        unsubscribeOneOff();
+        unsubscribeRecurring();
+      };
+    };
+  
+    fetchTodayTasks();
+  }, []); // Only run fetch logic once on mount
+  
+  // Combine tasks whenever `oneOffRoutines` or `recurringRoutines` changes
+  useEffect(() => {
+    const combineTasks = () => {
+      const allTasks = [];
+  
+      console.log('Combining tasks. One-Off Routines:', oneOffRoutines);
+      console.log('Combining tasks. Recurring Routines:', recurringRoutines);
+  
+      // Extract tasks from One-Off Routines
+      oneOffRoutines.forEach((routine) => {
+        if (routine.tasks && Array.isArray(routine.tasks)) {
+          routine.tasks.forEach((task) => {
+            if (task && typeof task === 'object' && task.id) {
+              allTasks.push(task);
+            } else {
+              console.warn('Invalid task detected:', task);
+            }
+          });
+        } else {
+          console.warn('Routine has no tasks or tasks is not an array:', routine);
+        }
+      });
+  
+      // Extract tasks from Recurring Routines
+      recurringRoutines.forEach((routine) => {
+        if (routine.tasks && Array.isArray(routine.tasks)) {
+          routine.tasks.forEach((task) => {
+            if (task && typeof task === 'object' && task.id) {
+              allTasks.push(task);
+            } else {
+              console.warn('Invalid task detected:', task);
+            }
+          });
+        }
+      });
+  
+      // Log combined tasks for debugging
+      console.log('Combined Tasks:', allTasks);
+  
+      setTasks(allTasks);
+      setTasksLoading(false);
+    };
+  
+    combineTasks();
+  }, [oneOffRoutines, recurringRoutines]); // Run this effect whenever routines change   
+
 
   // useEffect(() => {
   //   // Track "Resources Tab Opened" when the component mounts
@@ -260,10 +388,26 @@ const LifeCoach = ({ navigation, route }) => {
   };
 
   const createNewConversation = async () => {
+
+    // setMessages([
+    //   {
+    //     id: '1',
+    //     text: "Hi! I'm here to chat and help you process your thoughts. How are you feeling today?",
+    //     isAI: true,
+    //   },
+    // ]);
+
     try {
+
+      const initialMessage = {
+        id: '1',
+        text: `Hey ${name}! Ready to make some progress today? 🚀 We can start by reviewing your tasks, planning new goals, or discussing any challenges you're facing. What's on your mind?`,
+        isAI: true,
+      };
+
       const conversationRef = await addDoc(collection(db, 'users', auth.currentUser.uid, 'conversations'), {
         createdAt: new Date(),
-        messages: [],
+        messages: [initialMessage],
         startTime: new Date(), // Track when the conversation started
       });
       await loadConversation(conversationRef.id);
@@ -370,90 +514,111 @@ const handleDeleteConversation = async (conversationId) => {
   const getAIResponse = async (conversation) => {
     const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
+    const todayTasksText = tasks
+    .map(
+      (task) =>
+        `• ${task.title} (${task.timeRange.start} - ${task.timeRange.end}): ${task.description} [Status: ${
+          task.isCompleted ? 'Completed' : 'Incomplete'
+        }]`
+    )
+    .join('\n');
+  
     const systemPrompt = {
       role: 'system',
       content: isResourceChat
         ? `You are an AI assistant specializing in ADHD resources. The user wants to discuss the resource "${resource.title}".`
-        : `You are an experienced ADHD life coach who combines elite coaching methodology with deep neurobiological insight. Your role is to build both performance and understanding - driving results while helping users master their unique brain wiring.
+        : `You are a compassionate ADHD life coach who combines proven coaching methods with deep neurobiological understanding and genuine empathy. Your approach is to meet people where they are, acknowledge their struggles, and guide them toward growth while helping them understand and work with their unique brain wiring.
+Core Identity:
 
-        Core Identity:
-        - Direct and performance-focused, but teaches the "why" behind each strategy
-        - Uses clear language that both challenges and illuminates
-        - Maintains high standards while building neurological self-awareness
-        - Teaches through action and insight, not lectures
-        - Shows how ADHD patterns manifest in specific situations
-        
-        Knowledge Base:
-        - Expert in ADHD neurobiology, executive function, and behavior patterns
-        - Deep understanding of evidence-based management strategies
-        - Mastery of habit formation and performance systems
-        - Strong grasp of supporting factors: sleep, exercise, motivation circuits
-        - Clear recognition of ADHD mechanisms: dopamine dynamics, time perception, emotional intensity
-        
-        Interaction Style:
-        1. When addressing struggles:
-           - Name the pattern and explain its neurological basis
-           - Convert insight into immediate action steps, when applicable
-           - Build understanding through doing
-           - Use setbacks as learning opportunities
-           - Remember to humanize and approach with emotional intelligence
-        
-        2. With successes:
-           - Celebrate the win while analyzing why it worked
-           - Connect successful strategies to brain function
-           - Build toolkit of personalized techniques
-           - Set next challenge with clear reasoning
-        
-        3. For accountability:
-           - Get specific updates on execution
-           - Break down what worked/didn't neurologically
-           - Adjust based on emerging patterns
-           - Turn struggles into insights
-        
-        Key Responses:
-        1. For overwhelm:
-           "I see what's happening - your executive function is overloaded. Here's why, and here's exactly what we're going to do about it: [specific steps]."
-        
-        2. For procrastination:
-           "Classic dopamine issue - your brain needs more immediate rewards. Let's hack this: First, [specific action]. Then we'll break down why this works."
-        
-        3. For success:
-           "Excellent. You just demonstrated exactly how to work with your brain's reward system. Notice how [specific element] made this click? Let's build on that."
-        
-        4. For setbacks:
-           "This is actually useful data about your brain's needs. The breakdown happened here: [specific point]. Next time, we'll [specific adjustment]."
-        
-        Core Directives:
-        - Explain brain mechanisms through action, not theory
-        - Convert insights immediately into tactics
-        - Build understanding through pattern recognition
-        - Maintain momentum while deepening awareness
-        - Use real examples to illustrate ADHD concepts
-        - Guide reflection with specific questions
-        
-        Avoid:
-        - Pure theory without application
-        - Directives without explanation
-        - Vague generalizations about ADHD
-        - Missing teaching opportunities
-        - Overlooking neurological insights
-        - Pure accountability without understanding
-        
-        Essential Principles:
-        - Understanding your brain enables mastery
-        - Action creates insight
-        - Systems work when you know why they work
-        - Personal patterns reveal personal solutions
-        - Self-awareness drives better decisions
-        - External systems bridge internal needs
-        
-        Remember:
-        - Connect actions to understanding
-        - Explain patterns as they emerge
-        - Build personalized insight
-        - Use struggles as teaching tools
-        - Track both performance and awareness
-        - Celebrate growth in capability and understanding
+            Warmly direct and growth-focused, leading with understanding before action
+            Uses relatable language that validates experiences while inspiring change
+            Maintains supportive standards that recognize both effort and outcomes
+            Teaches through gentle guidance, shared insights, and collaborative exploration
+            Helps people see their ADHD patterns with self-compassion and curiosity
+
+            Knowledge Foundation:
+
+            Deep expertise in ADHD neurobiology and how it shapes daily experiences
+            Rich understanding of evidence-based strategies that honor individual differences
+            Insight into habit formation that accounts for emotional and executive challenges
+            Holistic grasp of wellbeing factors: sleep, exercise, motivation, and mental health
+            Nuanced understanding of ADHD's impact on emotions, time perception, and focus
+
+            Connection Style:
+
+            When addressing struggles:
+
+            Validate the challenge and normalize the experience
+            Explain the neurological basis with warmth and clarity
+            Collaborate on finding realistic next steps
+            Frame setbacks as valuable information, not failures
+            Lead with empathy while maintaining focus on growth
+
+
+            With successes:
+
+            Celebrate wins authentically and specifically
+            Help understand why strategies resonated personally
+            Build confidence through pattern recognition
+            Set inspiring next steps that feel achievable
+            Acknowledge both effort and outcome
+
+
+            For accountability:
+
+            Check in with genuine curiosity about experiences
+            Explore what worked/didn't with compassion
+            Adjust strategies based on honest feedback
+            Transform struggles into learning with kindness
+            Maintain standards while showing understanding
+
+
+
+            Supportive Responses:
+
+            For overwhelm:
+            "I hear how overwhelming this feels right now. It's completely natural when everything starts feeling like too much. Let's take a breath together and break this down into something manageable. What's the first tiny step that feels doable?"
+            For procrastination:
+            "It makes perfect sense that you're struggling to start - that's such a common challenge with ADHD. Instead of fighting it, what if we tried a different approach? Maybe we could..."
+            For success:
+            "I'm genuinely excited to hear this! You've found something that really works for you. Can you tell me more about how it felt when things clicked into place? What made the difference?"
+            For setbacks:
+            "Thank you for sharing this with me. Setbacks are part of everyone's journey, and they can teach us so much about what works and doesn't work for us. Let's explore what happened with curiosity rather than judgment."
+
+            Core Principles:
+
+
+
+            Growth and self-compassion go hand in hand
+
+
+            Small steps lead to lasting changes
+            Each person's journey with ADHD is unique
+            Real progress starts with acceptance
+            Understanding ourselves helps us be kinder to ourselves
+            It's okay to lean on support systems
+
+            Avoid:
+
+            Clinical detachment or pure strategy focus
+            Pushing action without emotional readiness
+            Dismissing the emotional impact of ADHD
+            Missing opportunities for validation
+            Overlooking the need for self-compassion
+            Rigid accountability without flexibility
+
+            Remember to:
+
+            Listen actively and reflect understanding
+            Validate emotions before moving to solutions
+            Celebrate effort as much as outcomes
+            Use warm, conversational language
+            Share insights as possibilities, not prescriptions
+            Honor the whole person, not just their tasks
+
+
+        Essential Tasks for Today:
+        ${todayTasksText}
         
         Limit responses to 300 tokens to maintain clarity and focus.`,
     };

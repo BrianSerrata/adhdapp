@@ -15,7 +15,8 @@ import {
   doc,
   deleteDoc,
   query, 
-  where
+  where,
+  addDoc
 } from 'firebase/firestore';
 import { auth, db } from '../firebase'; // Adjust path as needed
 import slateStyles from '../styles/RoutineCalendarStyles';
@@ -58,17 +59,33 @@ export default function GoalManager({ navigation }) {
   ];
   
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
 
     const numericFeedback = {
       deleteReason: Number(feedback.deleteReason),
       managementEase: Number(feedback.managementEase),
       clarity: Number(feedback.clarity),
-      suggestion: feedback.suggestion,
     };
 
-    console.log('Feedback submitted:', numericFeedback);
+    const fullFeedback = {
+      ...numericFeedback,
+      suggestion: feedback.suggestion,
+      timestamp: new Date().toISOString(),
+    };
+  
+    const feedbackRef = collection(
+      db,
+      'users',
+      auth.currentUser.uid,
+      'feedback' // Name of the feedback collection
+    );
+  
+      // Save to Firestore
+    await addDoc(feedbackRef, fullFeedback);
+
+    console.log('Feedback successfully submitted to Firestore:', fullFeedback);  
+
     setFeedbackVisible(false); // Close the feedback form after submission
   };
 
@@ -98,27 +115,41 @@ export default function GoalManager({ navigation }) {
   }
 
   async function handleDeleteGoal(goalId) {
-    try {
-      const goalDocRef = doc(db, 'users', auth.currentUser.uid, 'dynamicGoals', goalId);
-      await deleteDoc(goalDocRef);
-
-      setGoals((prevGoals) => prevGoals.filter((g) => g.id !== goalId));
-
-      // Query routines associated with this goal
-      const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
-      const routinesQuery = query(routinesRef, where('goalId', '==', goalId));
-      const routinesSnapshot = await getDocs(routinesQuery);
-
-      // Delete each routine document
-      const deletePromises = routinesSnapshot.docs.map((doc) => deleteDoc(doc.ref));
-      await Promise.all(deletePromises);
-
-      Alert.alert('Goal Deleted', 'The goal has been removed from the database.');
-    } catch (err) {
-      console.error('Error deleting goal:', err);
-      Alert.alert('Error', 'Could not delete goal. Please try again.');
-    }
+    Alert.alert('Delete Goal', 'Are you sure you want to delete this goal and all its associated sub-goals?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            // Reference to the goal document
+            const goalDocRef = doc(db, 'users', auth.currentUser.uid, 'dynamicGoals', goalId);
+            
+            // Delete the goal document
+            await deleteDoc(goalDocRef);
+            
+            // Update local state for goals
+            setGoals((prevGoals) => prevGoals.filter((g) => g.id !== goalId));
+            
+            // Reference to the routines collection and query routines associated with this goal
+            const routinesRef = collection(db, 'users', auth.currentUser.uid, 'routines');
+            const routinesQuery = query(routinesRef, where('goalId', '==', goalId));
+            const routinesSnapshot = await getDocs(routinesQuery);
+            
+            // Delete each routine associated with the goal
+            const deletePromises = routinesSnapshot.docs.map((doc) => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+  
+            Alert.alert('Goal Deleted', 'The goal will no longer display in your calendar.');
+          } catch (err) {
+            console.error('Error deleting goal:', err);
+            Alert.alert('Error', 'Could not delete goal and its routines. Please try again.');
+          }
+        },
+      },
+    ]);
   }
+  
 
   return (
     <SafeAreaView style={slateStyles.safeContainer}>
@@ -175,7 +206,7 @@ export default function GoalManager({ navigation }) {
                   style={[slateStyles.removeButton, { marginTop: 12 }]}
                 >
                   <MaterialIcons name="delete" size={20} color="#FF4D4F" />
-                  <Text style={slateStyles.removeButtonText}>Delete</Text>
+                  <Text style={slateStyles.removeButtonText}>Delete Goal</Text>
                 </TouchableOpacity>
               </View>
             );

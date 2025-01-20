@@ -115,7 +115,7 @@ export default function RoutineBuilder({ route, navigation }) {
   // Generate a random ID for tasks
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
 
     const numericFeedback = {
@@ -126,7 +126,18 @@ export default function RoutineBuilder({ route, navigation }) {
       suggestion: feedback.suggestion,
     };
 
-    console.log('Feedback submitted:', numericFeedback);
+    const feedbackRef = collection(
+    db,
+    'users',
+    auth.currentUser.uid,
+    'feedback' // Name of the feedback collection
+  );
+
+    // Save to Firestore
+    await addDoc(feedbackRef, numericFeedback);
+
+    console.log('Feedback successfully submitted to Firestore:', numericFeedback);
+
     setFeedbackVisible(false); // Close the feedback form after submission
   };
 
@@ -192,11 +203,11 @@ export default function RoutineBuilder({ route, navigation }) {
                           properties: {
                             start: {
                               type: "string",
-                              pattern: `^(${startTime}|${endTime}|(([0-1]\\d|2[0-3]):[0-5]\\d))$`, // Ensure time falls within bounds
+                              pattern: `^(${startTime}|(([0-1]\\d|2[0-3]):[0-5]\\d))$`, // Ensure time falls within bounds
                             },
                             end: {
                               type: "string",
-                              pattern: `^(${startTime}|${endTime}|(([0-1]\\d|2[0-3]):[0-5]\\d))$`, // Ensure time falls within bounds
+                              pattern: `^(${endTime}|(([0-1]\\d|2[0-3]):[0-5]\\d))$`, // Ensure time falls within bounds
                             },
                           },
                           required: ["start", "end"],
@@ -620,10 +631,8 @@ export default function RoutineBuilder({ route, navigation }) {
             <TouchableOpacity
               style={[
                 styles.dateButton,
-                !hasAtLeastOneTask && { opacity: 0.5 }, // grey out
               ]}
-              onPress={hasAtLeastOneTask ? showDatePicker : null}
-              disabled={!hasAtLeastOneTask}
+              onPress={showDatePicker}
             >
               <MaterialIcons name="calendar-today" size={24} color="#fff" />
               <Text style={styles.dateButtonText}>
@@ -667,10 +676,8 @@ export default function RoutineBuilder({ route, navigation }) {
             style={[
               styles.saveButton,
               { marginTop: 16 },
-              !hasAtLeastOneTask && { opacity: 0.5 },
             ]}
-            onPress={hasAtLeastOneTask ? handleSaveRoutine : null}
-            disabled={!hasAtLeastOneTask}
+            onPress={handleSaveRoutine}
           >
             <MaterialIcons name="save" size={24} color="#fff" />
             <Text style={styles.saveButtonText}>Save</Text>

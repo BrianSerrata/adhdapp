@@ -24,7 +24,8 @@ import {
   updateDoc,
   getDoc,
   getDocs,
-  setDoc
+  setDoc,
+  addDoc
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
@@ -109,17 +110,30 @@ export default function RoutineCalendar() {
   //   });
   // }, []);
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
 
+    const feedbackRef = collection(
+      db,
+      'users',
+      auth.currentUser.uid,
+      'feedback',
+    );
+
+    // Transform feedback data
     const numericFeedback = {
       usability: Number(feedback.usability),
       motivation: Number(feedback.motivation),
       engagement: Number(feedback.engagement),
       suggestion: feedback.suggestion,
+      timestamp: new Date().toISOString(), // Optional: Add a timestamp
     };
 
-    console.log('Feedback submitted:', numericFeedback);
+    // Save to Firestore
+    await addDoc(feedbackRef, numericFeedback);
+
+    console.log('Feedback successfully submitted to Firestore:', numericFeedback);
+
     setFeedbackVisible(false); // Close the feedback form after submission
   };
 

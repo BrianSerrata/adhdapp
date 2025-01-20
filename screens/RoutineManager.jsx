@@ -18,6 +18,7 @@ import {
   updateDoc,
   deleteDoc,
   onSnapshot,
+  addDoc
 } from 'firebase/firestore';
 import debounce from 'lodash.debounce'; // Install lodash.debounce
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -48,18 +49,13 @@ const RoutineManager = () => {
   // Feedback logic / states
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedback, setFeedback] = useState({
-    deleteReason: "1",
     managementEase: "1",
     clarity: "1",
+    deleteReason: "1",
     suggestion: '',
   });
 
   const questions = [
-    {
-      key: 'deleteReason',
-      text: 'If applicable, what is the primary reason for deleting a routine?',
-      labels: ['No longer needed', 'Not helpful'],
-    },
     {
       key: 'managementEase',
       text: 'How easy was it to manage and view your routines?',
@@ -71,24 +67,43 @@ const RoutineManager = () => {
       labels: ['Confusing', 'Very clear'],
     },
     {
+      key: 'deleteReason',
+      text: 'If applicable, what is the primary reason for deleting a routine?',
+    },
+    {
       key: 'suggestion',
       text: 'Is there anything you\'d like to see in the future for improving routine management?',
     },
   ];
   
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
 
     const numericFeedback = {
-      deleteReason: Number(feedback.deleteReason),
       managementEase: Number(feedback.managementEase),
       clarity: Number(feedback.clarity),
-      suggestion: feedback.suggestion,
     };
 
-    console.log('Feedback submitted:', numericFeedback);
-    setFeedbackVisible(false); // Close the feedback form after submission
+    const fullFeedback = {
+      ...numericFeedback,
+      deleteReason: feedback.deleteReason,
+      suggestion: feedback.suggestion,
+      timestamp: new Date().toISOString(),
+    };
+  
+    const feedbackRef = collection(
+      db,
+      'users',
+      auth.currentUser.uid,
+      'feedback' // Name of the feedback collection
+    );
+  
+      // Save to Firestore
+      await addDoc(feedbackRef, fullFeedback);
+  
+      console.log('Feedback successfully submitted to Firestore:', fullFeedback);  
+      setFeedbackVisible(false); // Close the feedback form after submission
   };
 
   const debounceUpdate = useRef(
@@ -312,6 +327,9 @@ const RoutineManager = () => {
             );
             await deleteDoc(routineRef);
             setRoutines((prev) => prev.filter((routine) => routine.id !== routineId));
+
+            Alert.alert('Routine Deleted', 'The routine will no longer display in your calendar.');
+
           } catch (error) {
             console.error('Error deleting routine:', error);
             Alert.alert('Error', 'Failed to delete routine.');
@@ -434,10 +452,10 @@ const RoutineManager = () => {
         )}
 
         <TouchableOpacity
-          style={styles.deleteButton}
+          style={[styles.removeButton, {marginTop: 12}]}
           onPress={() => deleteRoutine(routine.id)}
         >
-          <MaterialIcons name="delete" size={24} color="#ff5252" />
+          <MaterialIcons name="delete" size={24} color="#FF4D4F" />
           <Text style={styles.removeButtonText}>Delete Routine</Text>
         </TouchableOpacity>
       </View>

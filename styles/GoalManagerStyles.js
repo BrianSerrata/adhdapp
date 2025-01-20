@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   taskItem: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2B3039',
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',

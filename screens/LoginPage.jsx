@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,21 @@ const LoginPage = ({ navigation }) => {
   const dismissKeyboard = () => {
     Keyboard.dismiss();
   };
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        navigation.replace('MainApp'); // Navigate to the main app if authenticated
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleLogin = () => {
     if (!email || !password) {

@@ -563,10 +563,10 @@ export default function SMARTBuilder({ navigation }) {
     motivation: "1",
     customization: "1",
     overallSatisfaction: "1",
-    // improvementSuggestions: '',
+    improvementSuggestions: '',
   });  
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     // Convert numeric feedback to numbers
     const numericFeedback = {
       goalAlignment: Number(feedback.goalAlignment),
@@ -585,7 +585,17 @@ export default function SMARTBuilder({ navigation }) {
       timestamp: new Date().toISOString(),
     };
   
-    console.log('Feedback submitted:', numericFeedback);
+    const feedbackRef = collection(
+      db,
+      'users',
+      auth.currentUser.uid,
+      'feedback' // Name of the feedback collection
+    );
+  
+      // Save to Firestore
+      await addDoc(feedbackRef, fullFeedback);
+  
+      console.log('Feedback successfully submitted to Firestore:', fullFeedback);
   
     // Optionally save to Firestore or track the event
     // saveFeedbackToFirestore(fullFeedback);
