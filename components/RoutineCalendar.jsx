@@ -39,7 +39,7 @@ import { trackTaskCompletionToggled,
 const STATUS_COLORS = {
   COMPLETED: "#4CAF50",
   IN_PROGRESS: "#3d5afe",
-  FAILED: "#FF5252",
+  FAILED: "#1C1F26",
 };
 
 /* -------------------- Greeting -------------------- */
@@ -177,6 +177,13 @@ export default function RoutineCalendar() {
     return `${year}-${month}-${day}`;
   });
 
+  const normalizeDate = (date) => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  };
+  
+
   // -------------------------
   // Fetch Routines
   // -------------------------
@@ -223,16 +230,21 @@ export default function RoutineCalendar() {
     routines.forEach((routine) => {
       // For recurring routines
       if (routine.isRecurring) {
-        // Loop over +/- 30 days
         for (let i = -30; i <= 30; i++) {
           const date = new Date(today);
           date.setDate(date.getDate() + i);
   
-          // If the routine has a dateRange, skip dates outside the range
           if (routine.dateRange) {
             const startDate = new Date(routine.dateRange.start);
             const endDate = new Date(routine.dateRange.end);
             if (date < startDate || date > endDate) {
+              continue;
+            }
+          }
+  
+          if (routine.createdDate) {
+            const createdDate = new Date(`${routine.createdDate}T00:00:00`);
+            if (date < createdDate) {
               continue;
             }
           }
@@ -256,9 +268,9 @@ export default function RoutineCalendar() {
         }
       }
   
-      // For non-recurring routines
+      // For one-off routines
       else if (routine.createdDate) {
-        const createdDate = new Date(routine.createdDate);
+        const createdDate = new Date(`${routine.createdDate}T00:00:00`);
         const yyyy = createdDate.getFullYear();
         const mm = String(createdDate.getMonth() + 1).padStart(2, "0");
         const dd = String(createdDate.getDate()).padStart(2, "0");
@@ -276,7 +288,7 @@ export default function RoutineCalendar() {
     });
   
     setMarkedDates(newMarkedDates);
-  }, [routines]);  
+  }, [routines]);   
 
   const getRoutineStatus = (routine, dateStr, date) => {
     const today = new Date();
@@ -342,8 +354,22 @@ export default function RoutineCalendar() {
       if (routine.daysOfWeek?.includes(dayOfWeek)) {
         if (routine.dateRange) {
           const startDate = new Date(routine.dateRange.start);
+          const startDateOnly = new Date(
+            startDate.getFullYear(),
+            startDate.getMonth(),
+            startDate.getDate()
+          );
+  
           const endDate = new Date(routine.dateRange.end);
-          return date >= startDate && date <= endDate;
+          const endDateOnly = new Date(
+            endDate.getFullYear(),
+            endDate.getMonth(),
+            endDate.getDate()
+          );
+  
+          if (date >= startDateOnly && date <= endDateOnly) {
+            return true;
+          }
         }
         return true;
       }
