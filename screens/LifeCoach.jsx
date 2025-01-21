@@ -22,6 +22,9 @@ import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
 import FeedbackModal from '../components/FeedbackModal';
 
+import * as Notifications from 'expo-notifications';
+import * as Permissions from 'expo-permissions';
+
 import {
   trackMessageSent,
   trackAIResponse,
@@ -29,6 +32,31 @@ import {
   trackCoachTabOpened} from '../backend/apis/segment';
 
 const LifeCoach = ({ navigation, route }) => {
+
+  // TODO - ask for upon registration
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
+  const registerForPushNotificationsAsync = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    let finalStatus = status;
+
+    if (status !== 'granted') {
+      const { status: newStatus } = await Notifications.requestPermissionsAsync();
+      finalStatus = newStatus;
+    }
+
+    if (finalStatus !== 'granted') {
+      Alert.alert('Permission required', 'Enable notifications to receive reminders.');
+      return;
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log('Expo Push Token:', token);
+    // You can save the token to your backend if needed
+  };
+
   const resource = route.params?.resource;
   const isResourceChat = !!resource;
 
@@ -464,52 +492,84 @@ const handleDeleteConversation = async (conversationId) => {
   );
 };
 
-  const handleSend = async () => {
-    if (!input.trim() || !activeConversationId) return;
-    Keyboard.dismiss()
+const handleSend = async () => {
+  if (!input.trim() || !activeConversationId) return;
+  Keyboard.dismiss();
 
-    const userMessage = { id: Date.now().toString(), text: input, isAI: false };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    scrollToEnd();
-    setLoading(true);
+  const userMessage = { id: Date.now().toString(), text: input, isAI: false };
+  setMessages(prev => [...prev, userMessage]);
+  setInput('');
+  scrollToEnd();
+  setLoading(true);
 
-    trackMessageSent({
+  trackMessageSent({
+    userId: auth.currentUser.uid,
+    conversationId: activeConversationId,
+    message: input.trim(),
+    timestamp: new Date().toISOString(),
+  });
+
+  try {
+    const { aiResponse, reminder } = await getAIResponse([...messages, userMessage]);
+
+    // If a reminder is extracted, schedule the notification and save it to Firestore
+    if (reminder) {
+      const { task, time } = reminder;
+
+      // Validate and schedule the reminder
+      const triggerTime = new Date(time);
+      if (isNaN(triggerTime.getTime())) {
+        Alert.alert('Invalid Time', 'The specified time for the reminder is invalid.');
+      } else if (triggerTime < new Date()) {
+        Alert.alert('Invalid Time', 'The specified time is in the past. Please choose a future time.');
+      } else {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Reminder',
+            body: task,
+            sound: true,
+          },
+          trigger: triggerTime,
+        });
+
+        Alert.alert('Reminder Set', `I will remind you to "${task}" at ${triggerTime.toLocaleString()}.`);
+
+        // Save the reminder to Firestore
+        await addDoc(collection(db, 'users', auth.currentUser.uid, 'reminders'), {
+          task,
+          time: triggerTime,
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    // Add the AI's response to the chat
+    const aiMessage = { id: (Date.now() + 1).toString(), text: aiResponse, isAI: true };
+    const updatedMessages = [...messages, userMessage, aiMessage];
+    setMessages(updatedMessages);
+
+    // Save to Firestore
+    const conversationRef = doc(db, 'users', auth.currentUser.uid, 'conversations', activeConversationId);
+    await updateDoc(conversationRef, { 
+      messages: updatedMessages,
+      lastUpdated: new Date()
+    });
+
+    trackAIResponse({
       userId: auth.currentUser.uid,
       conversationId: activeConversationId,
-      message: input.trim(),
+      response: aiResponse,
       timestamp: new Date().toISOString(),
     });
 
-    try {
-      const aiResponse = await getAIResponse([...messages, userMessage]);
-      const aiMessage = { id: (Date.now() + 1).toString(), text: aiResponse, isAI: true };
-      
-      const updatedMessages = [...messages, userMessage, aiMessage];
-      setMessages(updatedMessages);
-
-      // Save to Firestore
-      const conversationRef = doc(db, 'users', auth.currentUser.uid, 'conversations', activeConversationId);
-      await updateDoc(conversationRef, { 
-        messages: updatedMessages,
-        lastUpdated: new Date()
-      });
-
-      trackAIResponse({
-        userId: auth.currentUser.uid,
-        conversationId: activeConversationId,
-        response: aiResponse,
-        timestamp: new Date().toISOString(),
-      });
-
-    } catch (error) {
-      console.error('Error fetching AI response:', error);
-      Alert.alert('Error', 'Failed to get AI response. Please try again.');
-    } finally {
-      setLoading(false);
-      scrollToEnd();
-    }
-  };
+  } catch (error) {
+    console.error('Error handling send:', error);
+    Alert.alert('Error', 'Failed to process your message. Please try again.');
+  } finally {
+    setLoading(false);
+    scrollToEnd();
+  }
+};
 
   const getAIResponse = async (conversation) => {
     const apiUrl = 'https://api.openai.com/v1/chat/completions';
@@ -527,8 +587,24 @@ const handleDeleteConversation = async (conversationId) => {
       role: 'system',
       content: isResourceChat
         ? `You are an AI assistant specializing in ADHD resources. The user wants to discuss the resource "${resource.title}".`
-        : `You are a compassionate ADHD life coach who combines proven coaching methods with deep neurobiological understanding and genuine empathy. Your approach is to meet people where they are, acknowledge their struggles, and guide them toward growth while helping them understand and work with their unique brain wiring.
-Core Identity:
+        : `You are a compassionate ADHD life coach who combines proven coaching methods with deep neurobiological understanding and genuine empathy. 
+        Your approach is to meet people where they are, acknowledge their struggles, and guide them toward growth while helping them understand
+        and work with their unique brain wiring.
+
+        When a user requests a reminder, extract the task and the time for the reminder. Provide your regular response, and if a reminder is detected, include a JSON object at the end of your message in the following format:
+
+        {
+          "reminder": {
+            "task": "description of the task",
+            "time": "2025-01-21T16:00:00-06:00"
+          }
+        }
+
+        If no reminder is detected, respond normally without the JSON object.
+
+        Ensure that the JSON object is the last part of your response and is properly formatted.
+            
+            Core Identity:
 
             Warmly direct and growth-focused, leading with understanding before action
             Uses relatable language that validates experiences while inspiring change
@@ -643,8 +719,32 @@ Core Identity:
       Authorization: `Bearer ${EXPO_PUBLIC_OPENAI_API_KEY}`,
     };
 
-    const response = await axios.post(apiUrl, payload, { headers });
-    return response.data.choices[0].message.content.trim();
+    try {
+      const response = await axios.post(apiUrl, payload, { headers });
+      const aiOutput = response.data.choices[0].message.content.trim();
+  
+      // Separate the AI's regular response and the JSON reminder
+      const regex = /\{[\s\S]*\}/; // Matches the JSON object
+      const match = aiOutput.match(regex);
+  
+      let reminder = null;
+      let aiResponseText = aiOutput;
+  
+      if (match) {
+        try {
+          reminder = JSON.parse(match[0]).reminder;
+          // Remove the JSON part from the AI's response
+          aiResponseText = aiOutput.replace(match[0], '').trim();
+        } catch (parseError) {
+          console.error('Error parsing reminder JSON:', parseError);
+        }
+      }
+  
+      return { aiResponse: aiResponseText, reminder };
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      throw error;
+    }
   };
 
   const renderConversationItem = ({ item }) => (

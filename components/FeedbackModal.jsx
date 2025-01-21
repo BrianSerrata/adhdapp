@@ -156,7 +156,7 @@ const FeedbackModal = ({
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Submit Feedback</Text>
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Submit Feedback (tap to close)</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>

@@ -35,8 +35,7 @@ const resourceCategories = [
     resources: [
       { title: 'What is ADHD?', url: 'https://my.clevelandclinic.org/health/diseases/4784-attention-deficithyperactivity-disorder-adhd' },
       { title: 'ADHD Symptoms', url: 'https://www.healthline.com/health/adhd/adult-adhd#disorganization' },
-      { title: 'ADHD in Adults', url: '#' },
-      { title: 'ADHD Myths and Facts', url: '#' },
+      { title: 'ADHD in Adults', url: 'https://my.clevelandclinic.org/health/diseases/5197-attention-deficit-hyperactivity-disorder-adhd-in-adults' },
     ]
   },
   {
@@ -44,11 +43,10 @@ const resourceCategories = [
     title: 'Coping Strategies',
     icon: 'bulb-outline',
     resources: [
-      { title: 'Time Management Techniques', url: '#' },
-      { title: 'Improving Focus and Concentration', url: '#' },
+      { title: 'Time Management Techniques', url: 'https://health.clevelandclinic.org/time-management-tips-with-adhd' },
+      { title: 'Improving Focus and Concentration', url: 'https://add.org/tips-for-focusing-with-adhd/' },
       { title: 'ADHD in the Workspace', url: 'https://chadd.org/for-adults/workplace-issues/' },
-      { title: 'Organizing Your Space', url: '#' },
-      { title: 'Emotional Regulation Strategies', url: '#' },
+      { title: 'Emotional Regulation Strategies', url: 'https://www.beyondbooksmart.com/executive-functioning-strategies-blog/adhd-emotional-dysregulation' },
     ]
   },
   {
@@ -56,10 +54,9 @@ const resourceCategories = [
     title: 'Useful Reads',
     icon: 'book-outline',
     resources: [
-      { title: 'Best Books on ADHD', url: '#' },
-      { title: 'ADHD Research Updates', url: '#' },
-      { title: 'Personal Stories and Experiences', url: '#' },
-      { title: 'ADHD in the Workplace', url: '#' },
+      { title: 'ADHD and Friendships', url: 'https://www.healthline.com/health/adhd/adhd-and-friendships#growing-friendships' },
+      { title: 'ADHD and Relationships', url: 'https://www.psychologytoday.com/us/basics/adhd/adhd-and-relationships' },
+      { title: 'ADHD Hypersensitivity', url: 'https://www.verywellmind.com/sensitivities-and-adhd-20473' },
     ]
   },
 ];
@@ -243,9 +240,6 @@ const ResourcesPage = ({ navigation }) => {
                 <View style={styles.tabContent}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.cardTitle}>{category.title}</Text>
-                    <Text style={styles.cardDescription}>
-                      Browse {category.title.toLowerCase()} resources
-                    </Text>
                   </View>
                   <View style={styles.resourceListContainer}>
                     {category.resources
@@ -261,12 +255,12 @@ const ResourcesPage = ({ navigation }) => {
                           <View style={styles.resourceTextContainer}>
                             <Text style={styles.resourceButtonText}>{resource.title}</Text>
                           </View>
-                          <TouchableOpacity
+                          {/* <TouchableOpacity
                             style={styles.chatIcon}
                             onPress={() => handleResourceSelect(resource)}
                           >
                             <Ionicons name="chatbubble-outline" size={24} color="#3d5afe" />
-                          </TouchableOpacity>
+                          </TouchableOpacity> */}
                         </TouchableOpacity>
                       ))}
                   </View>

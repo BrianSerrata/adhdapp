@@ -29,6 +29,31 @@ const RegisterPage = ({ navigation }) => {
     Keyboard.dismiss();
   };
 
+  const registerForPushNotificationsAsync = async () => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      let finalStatus = status;
+  
+      if (status !== 'granted') {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        finalStatus = newStatus;
+      }
+  
+      if (finalStatus !== 'granted') {
+        Alert.alert('Permission required', 'Enable notifications to receive reminders.');
+        return null;
+      }
+  
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      console.log('Expo Push Token:', token);
+      return token;
+    } catch (error) {
+      console.error('Error getting notification permissions:', error);
+      return null;
+    }
+  };
+  
+
   const handleRegister = async () => {
     if (!name || !email || !password) {
       Alert.alert('Error', 'Please enter your name, email, and password.');
@@ -48,6 +73,14 @@ const RegisterPage = ({ navigation }) => {
       await setDoc(doc(db, 'users', userId), { name, email });
 
       console.log('Registered with:', userCredential.user.email);
+
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        // Save the token to Firestore
+        await setDoc(doc(db, 'users', userId), { notificationToken: token }, { merge: true });
+        console.log('Notification token saved:', token);
+      }
+
       navigation.replace('MainApp');
     } catch (error) {
       console.error('Registration Error:', error);
