@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
     fontSize: 16, // Standard readable font size
     lineHeight: 20, // Better spacing for multiline input
     marginBottom: 16, // Space below the input
+    marginTop: 50,
     shadowColor: '#000', // Add subtle shadow for a tactile feel
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -287,6 +288,35 @@ fixedHeader: {
   zIndex: 1,
   backgroundColor: 'your-background-color',
   paddingHorizontal: 16,
+},
+reminderOptionsContainer: {
+  flexDirection: "row",
+  alignItems: "center", // Align label and buttons
+  marginTop: 8,
+  marginBottom: 15,
+},
+reminderLabel: {
+  color: "white", // Matches button text color
+  fontWeight: "600", // Slightly bold for emphasis
+  fontSize: 16, // Consistent with a modern, readable size
+  marginRight: 10, // Adds spacing between label and buttons
+},
+reminderOptionButton: {
+  paddingVertical: 6,
+  paddingHorizontal: 10,
+  borderRadius: 4,
+  backgroundColor: "#242424",
+  marginRight: 8,
+},
+reminderOptionButtonSelected: {
+  backgroundColor: "#3d5afe",
+},
+reminderOptionText: {
+  color: "white",
+  fontSize: 14, // Slightly smaller than the label
+},
+reminderOptionTextSelected: {
+  color: "#FFFFFF",
 },
 });
 

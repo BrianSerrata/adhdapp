@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  TextInput,
   Alert,
   Platform
 } from "react-native";
@@ -16,15 +15,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import ConfettiCannon from "react-native-confetti-cannon";
 import FeedbackModal from "./FeedbackModal";
 
+import { useNavigation } from "@react-navigation/native";
+
 import {
   collection,
-  query,
   onSnapshot,
   doc,
   updateDoc,
   getDoc,
-  getDocs,
-  setDoc,
   addDoc
 } from "firebase/firestore";
 
@@ -32,7 +30,6 @@ import { auth, db } from "../firebase";
 import styles from "../styles/RoutineCalendarStyles";
 import { trackTaskCompletionToggled,
          trackRoutineCompleted,
-         trackHomeTabOpened
  } from "../backend/apis/segment";
 
 /* -------------------- Status Colors -------------------- */
@@ -51,6 +48,7 @@ const getGreeting = () => {
 };
 
 export default function RoutineCalendar() {
+
   // -------------------------
   // Local State
   // -------------------------
@@ -102,13 +100,7 @@ export default function RoutineCalendar() {
     }
   ]
 
-  // useEffect(() => {
-  //   // Track "Resources Tab Opened" when the component mounts
-  //   trackHomeTabOpened({
-  //     userId: auth.currentUser.uid,
-  //     timestamp: new Date().toISOString(),
-  //   });
-  // }, []);
+  const navigation = useNavigation();
 
   const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
@@ -328,7 +320,7 @@ export default function RoutineCalendar() {
       "Small steps lead to big changes! 🌟",
       "You've got this! One task at a time. 💪",
       "Focus on progress, not perfection. 🎯",
-      "Your effort today is shaping your future. 🌈",
+      "Your effort today is shaping your future. 🚀",
       "Embrace the journey, celebrate small wins! 🎉",
     ];
     return quotes[Math.floor(Math.random() * quotes.length)];
@@ -603,6 +595,7 @@ export default function RoutineCalendar() {
   // Routines for Selected Date
   // -------------------------
   const RoutinesList = () => {
+
     return routinesForSelectedDate.map((routine) => (
       <View key={routine.id} style={styles.routineContainer}>
         <Text style={styles.routineName}>{routine.name}</Text>
@@ -623,7 +616,6 @@ export default function RoutineCalendar() {
           style={styles.greetingContainer}
         >
           <Text style={styles.greeting}>{`${greeting}, ${name || "User"}`}</Text>
-          <Text style={styles.subGreeting}>Let's make today productive</Text>
         </Animated.View>
 
         <Animated.View
@@ -641,6 +633,95 @@ export default function RoutineCalendar() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* <Animated.View
+            entering={FadeInDown.duration(1000).delay(600)}
+            style={styles.calendarContainer}
+          > */}
+            {/* <Calendar
+              onDayPress={handleDayPress}
+              markedDates={{
+                ...markedDates,
+                [selectedDate]: {
+                  ...markedDates[selectedDate],
+                  selected: true,
+                },
+              }}
+              markingType="dot"
+              theme={{
+                backgroundColor: "#1C1F26", // Match safeContainer
+                calendarBackground: "#1C1F26", // Match background
+                textSectionTitleColor: "#848484", // Muted slate for headers
+                selectedDayBackgroundColor: "#2f4156", // Blue accent for selection
+                selectedDayTextColor: "#ffffff", // White text for selected day
+                todayTextColor: "#D0CDC9", // Bright blue for today
+                dayTextColor: "#D1D5DB", // Slate white for regular days
+                textDisabledColor: "#4d4d4d", // Darker slate for disabled days
+                dotColor: "#60A5FA", // Bright blue dots
+                selectedDotColor: "#ffffff", // White dot for selected day
+                arrowColor: "#60A5FA", // Blue accent for arrows
+                monthTextColor: "#D1D5DB", // Slate white for month name
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 14,
+                textDayFontFamily: "System", // Use system font
+                textMonthFontFamily: "System",
+                textDayHeaderFontFamily: "System",
+              }}
+            /> */}
+
+          {/* </Animated.View> */}
+
+          <FeedbackModal
+            visible={feedbackVisible}
+            setVisible={setFeedbackVisible}
+            questions={questions}
+            feedback={feedback}
+            setFeedback={setFeedback}
+            handleSubmit={handleSubmitFeedback}
+            showFeedbackIcon={true}
+          />
+
+          {/* Routines for This Date */}
+          {selectedDate && (
+            <Animated.View
+              entering={FadeInDown.duration(1000).delay(800)}
+              style={styles.routinesSection}
+            >
+              {/* <Text style={styles.dateHeader}>
+                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}
+              </Text> */}
+              {routinesForSelectedDate.length === 0 ? (
+              <Animated.View
+                entering={FadeInDown.duration(1000).delay(300)}
+                style={styles.emptyStateBubble}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => navigation.navigate('Routines')}
+                  // style={styles.emptyStateTouchable}
+                >
+                    <Text style={styles.emptyStateText}>Got plans to tackle?</Text>
+                  <View style={styles.actionButtonContainer}>
+                    <Text style={styles.actionButtonText}>Plan Your Day with AI 🤖</Text>
+                  </View>
+                </TouchableOpacity>
+                </Animated.View>
+
+              ) : (
+                <View style={styles.routinesList}>
+                  <RoutinesList />
+                </View>
+              )}
+            </Animated.View>
+          )}
+
           <Animated.View
             entering={FadeInDown.duration(1000).delay(600)}
             style={styles.calendarContainer}
@@ -676,53 +757,7 @@ export default function RoutineCalendar() {
                 textDayHeaderFontFamily: "System",
               }}
             />
-
           </Animated.View>
-
-          <FeedbackModal
-            visible={feedbackVisible}
-            setVisible={setFeedbackVisible}
-            questions={questions}
-            feedback={feedback}
-            setFeedback={setFeedback}
-            handleSubmit={handleSubmitFeedback}
-            showFeedbackIcon={true}
-          />
-
-          {/* Routines for This Date */}
-          {selectedDate && (
-            <Animated.View
-              entering={FadeInDown.duration(1000).delay(800)}
-              style={styles.routinesSection}
-            >
-              <Text style={styles.dateHeader}>
-                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString(
-                  "en-US",
-                  {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  }
-                )}
-              </Text>
-
-              {routinesForSelectedDate.length === 0 ? (
-                <Animated.View
-                  entering={FadeInDown.duration(1000).delay(300)}
-                  style={styles.emptyState}
-                >
-                  <Text style={styles.emptyStateText}>No routines scheduled</Text>
-                  <Text style={styles.emptyStateSubtext}>
-                    Take a moment to reflect or plan ahead
-                  </Text>
-                </Animated.View>
-              ) : (
-                <View style={styles.routinesList}>
-                  <RoutinesList />
-                </View>
-              )}
-            </Animated.View>
-          )}
 
         </ScrollView>
 

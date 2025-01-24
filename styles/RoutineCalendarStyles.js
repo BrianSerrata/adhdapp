@@ -50,6 +50,7 @@ const slateStyles = StyleSheet.create({
   calendarContainer: {
     margin: 10,
     marginBottom: 0,
+    marginTop: 3,
     borderRadius: 15,
     overflow: 'hidden',
     backgroundColor: '#23272F', // Slightly lighter slate
@@ -58,6 +59,8 @@ const slateStyles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3.84,
     elevation: 5,
+    height: 300, 
+    overflow: "hidden"
   },
   routinesSection: {
     padding: 15,
@@ -236,6 +239,59 @@ const slateStyles = StyleSheet.create({
   checkboxCompleted: {
     backgroundColor: '#3a5a40',
   },
+  emptyStateTouchable: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    borderRadius: 20, // Rounded edges for bubble feel
+    overflow: 'hidden',
+  },
+  
+  // emptyStateBubble: {
+  //   backgroundColor: '#2B3039',
+  //   padding: 20,
+  //   borderRadius: 20,
+  //   shadowColor: '#000',
+  //   shadowOffset: { width: 0, height: 4 },
+  //   shadowOpacity: 0.25,
+  //   shadowRadius: 6,
+  //   elevation: 6, // Android shadow
+  //   alignItems: 'center', // Center text in the bubble
+  // },
+  
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#A0AEC0',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#A0AEC0',
+    textAlign: 'center',
+  },
+  
+  actionButtonContainer: {
+    marginTop: 15, // Slight overlap with bubble for integrated design
+    alignSelf: 'center', // Center the button
+    backgroundColor: '#4A90E2',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25, // Rounded button
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFF',
+    textAlign: 'center',
+  },  
 });
 
 export default slateStyles;

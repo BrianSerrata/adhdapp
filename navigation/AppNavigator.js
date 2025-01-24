@@ -11,11 +11,11 @@ import { Ionicons } from '@expo/vector-icons'; // For Expo projects
 import LoginPage from '../screens/LoginPage';
 import RegisterPage from '../screens/RegisterPage';
 import RoutineCalendar from '../components/RoutineCalendar';
-import Routines from '../screens/RoutinesPage';
 import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
 import GoalDetail from '../screens/GoalDetail';
 import GeneralManager from '../screens/GeneralManager';
+import Routines from '../screens/RoutinesPage';
 
 enableScreens();
 
@@ -219,6 +219,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Register Page" component={RegisterPage} />
       <Stack.Screen name="MainApp" component={TabNavigator} />
       <Stack.Screen name="GoalDetail" component={GoalDetail} />
+      <Stack.Screen name="Planner" component={Routines} />
     </Stack.Navigator>
   );
 };

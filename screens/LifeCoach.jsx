@@ -23,7 +23,6 @@ import Markdown from 'react-native-markdown-display';
 import FeedbackModal from '../components/FeedbackModal';
 
 import * as Notifications from 'expo-notifications';
-import * as Permissions from 'expo-permissions';
 
 import {
   trackMessageSent,
@@ -32,30 +31,6 @@ import {
   trackCoachTabOpened} from '../backend/apis/segment';
 
 const LifeCoach = ({ navigation, route }) => {
-
-  // TODO - ask for upon registration
-  useEffect(() => {
-    registerForPushNotificationsAsync();
-  }, []);
-
-  const registerForPushNotificationsAsync = async () => {
-    const { status } = await Notifications.getPermissionsAsync();
-    let finalStatus = status;
-
-    if (status !== 'granted') {
-      const { status: newStatus } = await Notifications.requestPermissionsAsync();
-      finalStatus = newStatus;
-    }
-
-    if (finalStatus !== 'granted') {
-      Alert.alert('Permission required', 'Enable notifications to receive reminders.');
-      return;
-    }
-
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log('Expo Push Token:', token);
-    // You can save the token to your backend if needed
-  };
 
   const resource = route.params?.resource;
   const isResourceChat = !!resource;
@@ -510,34 +485,43 @@ const handleSend = async () => {
   });
 
   try {
-    const { aiResponse, reminder } = await getAIResponse([...messages, userMessage]);
+    const { aiResponse, reminders } = await getAIResponse([...messages, userMessage]);
 
     // If a reminder is extracted, schedule the notification and save it to Firestore
-    if (reminder) {
-      const { task, time } = reminder;
-
-      // Validate and schedule the reminder
-      const triggerTime = new Date(time);
-      if (isNaN(triggerTime.getTime())) {
-        Alert.alert('Invalid Time', 'The specified time for the reminder is invalid.');
-      } else if (triggerTime < new Date()) {
-        Alert.alert('Invalid Time', 'The specified time is in the past. Please choose a future time.');
-      } else {
+    if (reminders && Array.isArray(reminders)) {
+      for (const reminder of reminders) {
+        const { task, time } = reminder;
+  
+        // Parse the time as local to the user's device
+        const reminderTime = new Date(time);
+  
+        // Validate the time
+        if (isNaN(reminderTime.getTime())) {
+          Alert.alert('Invalid Time', `The specified time for "${task}" is invalid.`);
+          continue; // Skip invalid reminders
+        }
+  
+        if (reminderTime < new Date()) {
+          Alert.alert('Invalid Time', `The specified time for "${task}" is in the past.`);
+          continue; // Skip past reminders
+        }
+  
+        // Schedule the notification
         await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Reminder',
             body: task,
             sound: true,
           },
-          trigger: triggerTime,
+          trigger: reminderTime,
         });
-
-        Alert.alert('Reminder Set', `I will remind you to "${task}" at ${triggerTime.toLocaleString()}.`);
-
+  
+        Alert.alert('Reminder Set', `I will remind you to "${task}" at ${reminderTime.toLocaleString()}.`);
+  
         // Save the reminder to Firestore
         await addDoc(collection(db, 'users', auth.currentUser.uid, 'reminders'), {
           task,
-          time: triggerTime,
+          time: reminderTime,
           createdAt: new Date(),
         });
       }
@@ -574,6 +558,18 @@ const handleSend = async () => {
   const getAIResponse = async (conversation) => {
     const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
+    // Get the current date
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    const day = String(currentDate.getDate()).padStart(2, '0');
+
+    const timeString = "09:00:00";
+
+    const datetimeString = `${year}-${month}-${day}T${timeString}`;
+
+
+
     const todayTasksText = tasks
     .map(
       (task) =>
@@ -591,16 +587,28 @@ const handleSend = async () => {
         Your approach is to meet people where they are, acknowledge their struggles, and guide them toward growth while helping them understand
         and work with their unique brain wiring.
 
-        When a user requests a reminder, extract the task and the time for the reminder. Provide your regular response, and if a reminder is detected, include a JSON object at the end of your message in the following format:
+        When a user requests one or more reminders, extract each task and its associated time for the reminders. Respond to the user's query normally, and if one or more reminders are detected, include a single JSON object at the very end of your response. The JSON object should have the following format:
 
         {
-          "reminder": {
-            "task": "description of the task",
-            "time": "2025-01-21T16:00:00-06:00"
-          }
+          "reminders": [
+            {
+              "task": "description of the first task",
+              "time": "${datetimeString}"
+            },
+            {
+              "task": "description of the second task",
+              "time": "${datetimeString}"
+            }
+          ]
         }
 
-        If no reminder is detected, respond normally without the JSON object.
+
+        Important:
+        - Include all reminders in a single JSON object under the "reminders" key as an array.
+        - Do not include any introductory phrases, such as "Here's the reminder information," before the JSON object.
+        - Ensure the JSON object is formatted properly and is the last part of the response, appearing immediately after your regular message.
+        - If no reminder is detected, respond to the user's query without including a JSON object.
+
 
         Ensure that the JSON object is the last part of your response and is properly formatted.
             
@@ -727,12 +735,16 @@ const handleSend = async () => {
       const regex = /\{[\s\S]*\}/; // Matches the JSON object
       const match = aiOutput.match(regex);
   
-      let reminder = null;
+      let reminders = null;
       let aiResponseText = aiOutput;
   
       if (match) {
         try {
-          reminder = JSON.parse(match[0]).reminder;
+          const parsedJson = JSON.parse(match[0]);
+
+          // Extract reminders array if present
+          reminders = parsedJson.reminders || null;
+    
           // Remove the JSON part from the AI's response
           aiResponseText = aiOutput.replace(match[0], '').trim();
         } catch (parseError) {
@@ -740,7 +752,7 @@ const handleSend = async () => {
         }
       }
   
-      return { aiResponse: aiResponseText, reminder };
+      return { aiResponse: aiResponseText, reminders };
     } catch (error) {
       console.error('Error fetching AI response:', error);
       throw error;

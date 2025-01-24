@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -50,6 +50,106 @@ const DAYS_OF_WEEK = [
   { label: "Sat", value: 6 },
 ];
 
+const REMINDER_OPTIONS = [
+  { label: "30m", value: 30 },
+  { label: "15m", value: 15 },
+  { label: "5m", value: 5 },
+];
+
+const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
+  userInput,
+  setUserInput,
+  isInputting,
+  setIsInputting,
+}) {
+  const placeholderPrompts = [
+    "What are your goals for this routine?",
+    "Describe a task you want to accomplish.",
+    "What would make your day more productive?",
+    "Add some actionable mini-goals here."
+  ];
+
+  const [dynamicPlaceholder, setDynamicPlaceholder] = useState(placeholderPrompts[0]);
+  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+  const [typing, setTyping] = useState(true);
+
+  useEffect(() => {
+    // Only animate if the user hasn't started typing real text (userInput is empty)
+    // and the input is not focused (isInputting === false).
+    if (userInput.length === 0 && !isInputting) {
+      let typingTimer;
+      let backspacingTimer;
+
+      const typeText = () => {
+        const currentPrompt = placeholderPrompts[currentPromptIndex];
+        if (dynamicPlaceholder.length < currentPrompt.length && typing) {
+          typingTimer = setTimeout(() => {
+            setDynamicPlaceholder((prev) => prev + currentPrompt[prev.length]);
+          }, 50);
+        } else if (typing) {
+          // Once fully typed, pause, then switch to backspacing
+          typingTimer = setTimeout(() => {
+            setTyping(false);
+          }, 1100);
+        }
+      };
+
+      const backspaceText = () => {
+        if (dynamicPlaceholder.length > 0 && !typing) {
+          backspacingTimer = setTimeout(() => {
+            setDynamicPlaceholder((prev) => prev.slice(0, -1));
+          }, 50);
+        } else if (!typing) {
+          // Switch to next prompt
+          setTyping(true);
+          setCurrentPromptIndex((prev) => (prev + 1) % placeholderPrompts.length);
+          setDynamicPlaceholder("");
+        }
+      };
+
+      if (typing) typeText();
+      else backspaceText();
+
+      return () => {
+        clearTimeout(typingTimer);
+        clearTimeout(backspacingTimer);
+      };
+    }
+    // Otherwise, do nothing: if userInput has content or it's focused, no placeholder animation
+  }, [
+    dynamicPlaceholder,
+    typing,
+    currentPromptIndex,
+    isInputting,
+    userInput,
+    placeholderPrompts,
+  ]);
+
+  const handleTextChange = useCallback(
+    (text) => {
+      // Once user types something, we setUserInput in parent
+      setUserInput(text);
+    },
+    [setUserInput]
+  );
+
+  return (
+    <View style={{ paddingHorizontal: 16 }}>
+      <TextInput
+        style={styles.goalInput}
+        placeholder={dynamicPlaceholder}
+        placeholderTextColor="#848484"
+        value={userInput}
+        onChangeText={handleTextChange}
+        multiline
+        numberOfLines={3}
+        onFocus={() => setIsInputting(true)}
+        onBlur={() => setIsInputting(false)}
+      />
+    </View>
+  );
+});
+
 export default function RoutineBuilder({ route, navigation }) {
   const routine = route?.params?.routine;
 
@@ -57,6 +157,8 @@ export default function RoutineBuilder({ route, navigation }) {
   const [userInput, setUserInput] = useState("");
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isInputting, setIsInputting] = useState(false);
+
 
   // Time picker state
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
@@ -67,6 +169,7 @@ export default function RoutineBuilder({ route, navigation }) {
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
   const [isSelectingStartTime, setIsSelectingStartTime] = useState(true);
+  const [reminderTaskId, setReminderTaskId] = useState(null);
 
 
   // Recurring routine state
@@ -74,10 +177,8 @@ export default function RoutineBuilder({ route, navigation }) {
   const [selectedDays, setSelectedDays] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [expandedTaskId, setExpandedTaskId] = useState(null);
-  const [isInputting, setIsInputting] = useState(false);
 
   // Feedback state
-
   const [showFeedbackIcon, setShowFeedbackIcon] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedback, setFeedback] = useState({
@@ -161,23 +262,47 @@ export default function RoutineBuilder({ route, navigation }) {
               content: `You are a helpful assistant that generates structured, single-day routines based on user goals. 
               The routine must adhere to the following rules:
 
-              1. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
-              2. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
+              1. **Task Specificity**: Each task must be a concrete, actionable mini-action that can be completed without further breakdown. For example:
+            - Instead of "Morning workout", specify "20 pushups, 30 squats, 15 burpees"
+            - Instead of "Study math", specify "Complete 10 algebra problems from Chapter 3"
+            - Instead of "Meal prep", specify "Cut vegetables for 3 days of lunches: carrots, celery, peppers"
+
+              2. **Measurable Outcomes**: Each task must have a clear completion criterion. For example:
+                - Instead of "Practice piano", specify "Practice Moonlight Sonata bars 1-20 three times"
+                - Instead of "Work on project", specify "Write introduction section (500 words) for research paper"
+                - Instead of "Clean house", specify "Vacuum living room and wipe kitchen counters"
+
+              3. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
+              4. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
                 - If the goal is fitness-related, the routine should include complementary exercises (e.g., warm-up, workout, cool-down).
                 - If the goal involves study or productivity, the routine should include time blocks for focused work, breaks, and review.
-              3. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
-              4. **Valid Time Range**: 
+              5. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
+              6. **Valid Time Range**: 
                 - Task times must use the 24-hour format ("HH:mm").
                 - If applicable, task times **must fall entirely** within the specified time bounds (${startTime} to ${endTime}) and have appropriate durations.
                 - Any task violating this range will be considered invalid and omitted.
                 - If no task times are specified, task times must fit within a single calendar day (e.g., 06:00 to 22:00), and have appropriate durations.
-              5. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
-              6. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
-              7. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
-              8. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
-              9. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
-              10. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
-              11. Avoid overscheduling. Include buffer times or flexibility in the routine.
+              7. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
+              8. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
+              9. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
+              10. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
+              11. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
+              12. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
+              13. Avoid overscheduling. Include buffer times or flexibility in the routine.
+              12. **No Vague Descriptions**: Tasks cannot use broad terms like:
+                  - "Work on..."
+                  - "Focus on..."
+                  - "Practice..."
+                  - "Review..."
+                  Without specifying exactly what actions to take.
+
+              13. **Quantifiable Elements**: Where applicable, tasks should include specific:
+                  - Numbers (repetitions, duration, word count)
+                  - Materials needed
+                  - Specific sections or components to complete
+                  - Clear start and end points
+
+              14. **Self-Contained Actions**: Each task should be completable without requiring additional planning or decision-making during execution.
               `
             },
             {
@@ -397,6 +522,30 @@ export default function RoutineBuilder({ route, navigation }) {
     hideTimePicker();
   };
 
+  const handleSetReminder = (taskId) => {
+    setReminderTaskId(taskId);
+    // Show an ActionSheet or modal with reminder options
+    // In a real app, you might use a library like react-native-action-sheet or a custom modal.
+    ActionSheet.showActionSheetWithOptions(
+      {
+        options: ["30 minutes before", "15 minutes before", "5 minutes before", "Cancel"],
+        destructiveButtonIndex: -1,
+        cancelButtonIndex: 3,
+        title: "Set Reminder",
+      },
+      (buttonIndex) => {
+        if (buttonIndex === 0) {
+          addReminderOffset(taskId, 30);
+        } else if (buttonIndex === 1) {
+          addReminderOffset(taskId, 15);
+        } else if (buttonIndex === 2) {
+          addReminderOffset(taskId, 5);
+        }
+        // if buttonIndex === 3 => Cancel
+      }
+    );
+  };
+
   const formatTimeForDisplay = (timeString) => {
     if (!timeString) return "";
 
@@ -423,6 +572,27 @@ export default function RoutineBuilder({ route, navigation }) {
         return [...prev, dayValue];
       }
     });
+  };
+
+  const toggleReminderOffset = (taskId, offset) => {
+    setTasks((prevTasks) => 
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+  
+        const currentReminders = task.reminders || [];
+        const hasOffset = currentReminders.includes(offset);
+  
+        // If offset is already in reminders, remove it; otherwise, add it
+        const updatedReminders = hasOffset
+          ? currentReminders.filter((r) => r !== offset)
+          : [...currentReminders, offset];
+  
+        return {
+          ...task,
+          reminders: updatedReminders,
+        };
+      })
+    );
   };
 
   // --------------- Save Routine ---------------
@@ -775,6 +945,32 @@ export default function RoutineBuilder({ route, navigation }) {
               }
             />
 
+            <View style={styles.reminderOptionsContainer}>
+            <Text style={styles.reminderLabel}>Set Reminders:</Text>
+                  {REMINDER_OPTIONS.map((option) => {
+                    const isSelected = item.reminders && item.reminders.includes(option.value);
+                    return (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.reminderOptionButton,
+                          isSelected && styles.reminderOptionButtonSelected
+                        ]}
+                        onPress={() => toggleReminderOffset(item.id, option.value)}
+                      >
+                        <Text
+                          style={[
+                            styles.reminderOptionText,
+                            isSelected && styles.reminderOptionTextSelected
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
             <TouchableOpacity
               style={styles.removeButton}
               onPress={() => handleRemoveTask(item.id)}
@@ -796,17 +992,12 @@ export default function RoutineBuilder({ route, navigation }) {
             ? FadeInDown.duration(1000).delay(200)
             : undefined
         }> */}
-        <TextInput
-          style={styles.goalInput}
-          placeholder="What are your goals for this routine?"
-          placeholderTextColor={"#848484"}
-          value={userInput}
-          onChangeText={setUserInput}
-          multiline
-          numberOfLines={3}
-          onFocus={() => setIsInputting(true)}
-          onEndEditing={() => setIsInputting(false)}
-        />
+      <RoutineBuilderInput
+        userInput={userInput}
+        setUserInput={setUserInput}
+        isInputting={isInputting}
+        setIsInputting={setIsInputting}
+      />
       {/* </Animated.View> */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -820,13 +1011,13 @@ export default function RoutineBuilder({ route, navigation }) {
           ListHeaderComponent={renderHeader}
           ListFooterComponent={renderFooter}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           keyboardDismissMode="none"
         />
       </KeyboardAvoidingView>
 
       {/* Feedback Icon */}
-      {showFeedbackIcon && (
+      {/* {showFeedbackIcon && (
         <TouchableOpacity
           style={{
             position: 'absolute',
@@ -840,174 +1031,9 @@ export default function RoutineBuilder({ route, navigation }) {
         >
           <MaterialIcons name="help-outline" size={30} color="white" />
         </TouchableOpacity>
-      )}
+      )} */}
 
-      {/* Feedback Modal */}
-      {feedbackVisible && (
-        <Modal
-        visible={feedbackVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setFeedbackVisible(false)}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim background
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: 'white',
-              borderRadius: 16,
-              padding: 20,
-              width: '90%',
-              maxHeight: '80%',
-            }}
-          >
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Question 1: Relevance */}
-              <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-                1. How relevant are the tasks to your goal?
-              </Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text style={{ fontSize: 14, color: 'gray' }}>Not relevant</Text>
-                <Text style={{ fontSize: 14, color: 'gray' }}>Very relevant</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <TouchableOpacity
-                    key={`relevance-${value}`}
-                    onPress={() => setFeedback({ ...feedback, relevance: value })}
-                    style={{
-                      padding: 10,
-                      backgroundColor: feedback.relevance === value ? '#3d5afe' : '#e0e0e0',
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ color: feedback.relevance === value ? 'white' : 'black' }}>
-                      {value}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-      
-              {/* Question 2: Timeline */}
-              <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-                2. How realistic is the suggested timeline for completing the tasks?
-              </Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text style={{ fontSize: 14, color: 'gray' }}>Not realistic</Text>
-                <Text style={{ fontSize: 14, color: 'gray' }}>Very realistic</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <TouchableOpacity
-                    key={`timeline-${value}`}
-                    onPress={() => setFeedback({ ...feedback, timeline: value })}
-                    style={{
-                      padding: 10,
-                      backgroundColor: feedback.timeline === value ? '#3d5afe' : '#e0e0e0',
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ color: feedback.timeline === value ? 'white' : 'black' }}>
-                      {value}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-      
-              {/* Question 3: Task Completeness */}
-              <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-                3. Do the tasks cover everything necessary for your goal?
-              </Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 10 }}>
-                <Text style={{ fontSize: 14, color: 'gray', textAlign: 'center', flex: 1 }}>Missing many critical elements</Text>
-                <Text style={{ fontSize: 14, color: 'gray', textAlign: 'center', flex: 1 }}>Completely covers all necessary aspects</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <TouchableOpacity
-                    key={`completeness-${value}`}
-                    onPress={() => setFeedback({ ...feedback, taskCompleteness: value })}
-                    style={{
-                      padding: 10,
-                      backgroundColor: feedback.taskCompleteness === value ? '#3d5afe' : '#e0e0e0',
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ color: feedback.taskCompleteness === value ? 'white' : 'black' }}>
-                      {value}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-      
-              {/* Question 4: Clarity */}
-              <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-                4. How clear and easy to follow are the tasks?
-              </Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text style={{ fontSize: 14, color: 'gray' }}>Not clear</Text>
-                <Text style={{ fontSize: 14, color: 'gray' }}>Very clear and easy</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <TouchableOpacity
-                    key={`clarity-${value}`}
-                    onPress={() => setFeedback({ ...feedback, clarity: value })}
-                    style={{
-                      padding: 10,
-                      backgroundColor: feedback.clarity === value ? '#3d5afe' : '#e0e0e0',
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ color: feedback.clarity === value ? 'white' : 'black' }}>
-                      {value}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-      
-              {/* Question 5: Suggestions */}
-              <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
-                5. Do you have any suggestions for improving this routine?
-              </Text>
-              <TextInput
-                style={{
-                  height: 80,
-                  borderColor: 'gray',
-                  borderWidth: 1,
-                  marginBottom: 20,
-                  paddingLeft: 8,
-                  textAlignVertical: 'top',
-                }}
-                value={feedback.suggestion}
-                onChangeText={(text) => setFeedback({ ...feedback, suggestion: text })}
-                placeholder="Enter your suggestion here"
-                multiline
-              />
-              {/* Submit Button */}
-              <TouchableOpacity
-                onPress={handleSubmitFeedback}
-                style={{
-                  backgroundColor: '#3d5afe',
-                  padding: 12,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>Submit Feedback</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal> 
-      
-      )}
+  
 
       <DateTimePickerModal
         isVisible={isTimePickerVisible || isDatePickerVisible}
