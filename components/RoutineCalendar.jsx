@@ -362,6 +362,7 @@ export default function RoutineCalendar() {
           if (date >= startDateOnly && date <= endDateOnly) {
             return true;
           }
+          return false;
         }
         return true;
       }

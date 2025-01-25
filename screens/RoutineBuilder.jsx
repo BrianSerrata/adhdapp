@@ -27,6 +27,8 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 
+import * as Notifications from 'expo-notifications';
+
 import { EXPO_PUBLIC_OPENAI_API_KEY } from "@env";
 import styles from "../styles/RoutineBuilderStyles";
 
@@ -54,6 +56,8 @@ const REMINDER_OPTIONS = [
   { label: "30m", value: 30 },
   { label: "15m", value: 15 },
   { label: "5m", value: 5 },
+  { label: "1m", value: 1 },
+
 ];
 
 const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
@@ -62,12 +66,27 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
   isInputting,
   setIsInputting,
 }) {
+
   const placeholderPrompts = [
-    "What are your goals for this routine?",
-    "Describe a task you want to accomplish.",
-    "What would make your day more productive?",
-    "Add some actionable mini-goals here."
-  ];
+    "I want to organize my closet this weekend.",
+    "Help me plan a productive study session.",
+    "Suggest a healthy dinner recipe I can cook in 30 minutes.",
+    "Give me steps to build a morning routine.",
+    "I need a checklist for packing for a weekend trip.",
+    "Help me prioritize my tasks for today.",
+    "Guide me through a 5-minute mindfulness exercise.",
+    "I want to improve my bedtime habits.",
+
+    "Create a workout plan for someone with no equipment.",
+    "Break down how I can declutter my workspace.",
+    "I want to create a budget for the next month.",
+    "Help me brainstorm ideas for my next creative project.",
+    "Suggest ways to stay focused while working from home.",
+    "I need steps to prepare for a job interview.",
+    "I want to create a simple meal plan for the week.",
+    "Give me tips to stay consistent with my journaling.",
+];
+
 
   const [dynamicPlaceholder, setDynamicPlaceholder] = useState(placeholderPrompts[0]);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
@@ -85,12 +104,12 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
         if (dynamicPlaceholder.length < currentPrompt.length && typing) {
           typingTimer = setTimeout(() => {
             setDynamicPlaceholder((prev) => prev + currentPrompt[prev.length]);
-          }, 50);
+          }, 25);
         } else if (typing) {
           // Once fully typed, pause, then switch to backspacing
           typingTimer = setTimeout(() => {
             setTyping(false);
-          }, 1100);
+          }, 650);
         }
       };
 
@@ -166,8 +185,8 @@ export default function RoutineBuilder({ route, navigation }) {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [timeField, setTimeField] = useState("");
   const [selectedTime, setSelectedTime] = useState(new Date());
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
   const [isSelectingStartTime, setIsSelectingStartTime] = useState(true);
   const [reminderTaskId, setReminderTaskId] = useState(null);
 
@@ -486,6 +505,7 @@ export default function RoutineBuilder({ route, navigation }) {
     const hours = String(time.getHours()).padStart(2, "0");
     const minutes = String(time.getMinutes()).padStart(2, "0");
     const timeString = `${hours}:${minutes}`;
+    console.log("Time selected (local):", timeString);
 
     const taskDetails = selectedTaskId
     ? tasks.find((t) => t.id === selectedTaskId)
@@ -521,31 +541,7 @@ export default function RoutineBuilder({ route, navigation }) {
 
     hideTimePicker();
   };
-
-  const handleSetReminder = (taskId) => {
-    setReminderTaskId(taskId);
-    // Show an ActionSheet or modal with reminder options
-    // In a real app, you might use a library like react-native-action-sheet or a custom modal.
-    ActionSheet.showActionSheetWithOptions(
-      {
-        options: ["30 minutes before", "15 minutes before", "5 minutes before", "Cancel"],
-        destructiveButtonIndex: -1,
-        cancelButtonIndex: 3,
-        title: "Set Reminder",
-      },
-      (buttonIndex) => {
-        if (buttonIndex === 0) {
-          addReminderOffset(taskId, 30);
-        } else if (buttonIndex === 1) {
-          addReminderOffset(taskId, 15);
-        } else if (buttonIndex === 2) {
-          addReminderOffset(taskId, 5);
-        }
-        // if buttonIndex === 3 => Cancel
-      }
-    );
-  };
-
+  
   const formatTimeForDisplay = (timeString) => {
     if (!timeString) return "";
 
@@ -646,12 +642,61 @@ export default function RoutineBuilder({ route, navigation }) {
       });
 
       Alert.alert("Routine Saved", "Your routine has been saved successfully! It will now display in your calendar 🗓️");
-      // navigation.goBack(); // Optionally navigate back after saving
+      
+      tasks.forEach(scheduleRemindersForTask);
+
     } catch (error) {
       console.error("Error saving routine:", error);
       Alert.alert("Error", "Failed to save routine. Please try again.");
     }
   };
+
+// Helper to get a Date object in the user's local time
+const getLocalDate = (timeString) => {
+  const [hours, minutes] = timeString.split(":").map(Number);
+  const localDate = new Date();
+  localDate.setHours(hours);
+  localDate.setMinutes(minutes);
+  localDate.setSeconds(0); // Reset seconds
+  localDate.setMilliseconds(0); // Reset milliseconds
+  return localDate;
+};
+
+// Function to schedule notifications
+const scheduleRemindersForTask = async (task) => {
+  // Convert "HH:MM" (local start time) to a Date object
+  console.log("task start:", task.timeRange.start)
+  const startDate = getLocalDate(task.timeRange.start);
+  console.log("startDate:",startDate)
+  // console.log("offset", offset)
+
+  // For each reminder offset, schedule a local notification
+  task.reminders.forEach(async (offset) => {
+    console.log("offset:", offset)
+    const reminderDate = new Date(startDate.getTime() - offset * 60000); // Subtract offset in minutes
+    console.log("reminderDate (local):", reminderDate);
+
+    // Ensure the reminder is scheduled only if it’s in the future
+    if (reminderDate > new Date()) {
+      try {
+        console.log("entered reminder service");
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Task Reminder',
+            body: task.title,
+            sound: true,
+          },
+          trigger: reminderDate,
+        });
+        console.log("reminder scheduled");
+      } catch (error) {
+        console.error("Error scheduling notification:", error);
+      }
+    } else {
+      console.log("Reminder time is in the past; not scheduling.");
+    }
+  });
+};
 
   // ---------------------------------------------
   //         RENDER FUNCTIONS FOR THE LIST

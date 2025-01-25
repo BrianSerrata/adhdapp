@@ -328,8 +328,6 @@ const RoutineManager = () => {
             await deleteDoc(routineRef);
             setRoutines((prev) => prev.filter((routine) => routine.id !== routineId));
 
-            Alert.alert('Routine Deleted', 'The routine will no longer display in your calendar.');
-
           } catch (error) {
             console.error('Error deleting routine:', error);
             Alert.alert('Error', 'Failed to delete routine.');

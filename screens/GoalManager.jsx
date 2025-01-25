@@ -140,7 +140,6 @@ export default function GoalManager({ navigation }) {
             const deletePromises = routinesSnapshot.docs.map((doc) => deleteDoc(doc.ref));
             await Promise.all(deletePromises);
   
-            Alert.alert('Goal Deleted', 'The goal will no longer display in your calendar.');
           } catch (err) {
             console.error('Error deleting goal:', err);
             Alert.alert('Error', 'Could not delete goal and its routines. Please try again.');
