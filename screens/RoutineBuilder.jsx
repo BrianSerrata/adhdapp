@@ -643,7 +643,12 @@ export default function RoutineBuilder({ route, navigation }) {
 
       Alert.alert("Routine Saved", "Your routine has been saved successfully! It will now display in your calendar 🗓️");
       
-      tasks.forEach(scheduleRemindersForTask);
+      if (!isRecurring) {
+        tasks.forEach((task) => scheduleRemindersForOneOffRoutine(task, selectedDate));
+      }
+      else {
+        tasks.forEach((task) => scheduleRemindersForRecurringRoutine(task, selectedDays));
+      }
 
     } catch (error) {
       console.error("Error saving routine:", error);
@@ -651,44 +656,28 @@ export default function RoutineBuilder({ route, navigation }) {
     }
   };
 
-// Helper to get a Date object in the user's local time
-const getLocalDate = (timeString) => {
-  const [hours, minutes] = timeString.split(":").map(Number);
-  const localDate = new Date();
-  localDate.setHours(hours);
-  localDate.setMinutes(minutes);
-  localDate.setSeconds(0); // Reset seconds
-  localDate.setMilliseconds(0); // Reset milliseconds
-  return localDate;
-};
-
-// Function to schedule notifications
-const scheduleRemindersForTask = async (task) => {
-  // Convert "HH:MM" (local start time) to a Date object
-  console.log("task start:", task.timeRange.start)
-  const startDate = getLocalDate(task.timeRange.start);
-  console.log("startDate:",startDate)
-  // console.log("offset", offset)
+// Scheduling service for one-off tasks
+const scheduleRemindersForOneOffRoutine = async (task, selectedDate) => {
+  console.log("selectedDate", selectedDate)
+  // Combine the selectedDate with the task's start time to create a Date object
+  const startDate = getLocalDateWithDate(task.timeRange.start, selectedDate);
 
   // For each reminder offset, schedule a local notification
   task.reminders.forEach(async (offset) => {
-    console.log("offset:", offset)
     const reminderDate = new Date(startDate.getTime() - offset * 60000); // Subtract offset in minutes
-    console.log("reminderDate (local):", reminderDate);
 
     // Ensure the reminder is scheduled only if it’s in the future
     if (reminderDate > new Date()) {
       try {
-        console.log("entered reminder service");
         await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Task Reminder',
             body: task.title,
             sound: true,
           },
-          trigger: reminderDate,
+          trigger: reminderDate
         });
-        console.log("reminder scheduled");
+        console.log("Reminder scheduled for:", reminderDate);
       } catch (error) {
         console.error("Error scheduling notification:", error);
       }
@@ -697,6 +686,90 @@ const scheduleRemindersForTask = async (task) => {
     }
   });
 };
+
+// Helper function to combine date and time
+const getLocalDateWithDate = (timeString, date) => {
+  const [hours, minutes] = timeString.split(":").map(Number);
+  const localDate = new Date(date); // Use the selected date as the base
+  localDate.setHours(hours);
+  localDate.setMinutes(minutes);
+  localDate.setSeconds(0);
+  localDate.setMilliseconds(0);
+  return localDate;
+};
+
+// Scheduling service for recurring tasks
+const scheduleRemindersForRecurringRoutine = async (task, selectedDays) => {
+  // if (!task.recurringDays || task.recurringDays.length === 0) {
+  //   console.error("No recurring days specified for the task.");
+  //   return;
+  // }
+
+  selectedDays.forEach(async (day) => {
+    const occurrences = getNextOccurrences(day, 5); // Get the next 5 occurrences
+
+    occurrences.forEach((occurrence) => {
+      // Combine occurrence date with the task's start time
+      const [hours, minutes] = task.timeRange.start.split(":").map(Number);
+      occurrence.setHours(hours, minutes, 0, 0);
+      console.log("occurences:",occurrences)
+
+      // Schedule reminders for each offset
+      task.reminders.forEach(async (offset) => {
+        console.log("offset:",offset)
+        const reminderDate = new Date(occurrence.getTime() - offset * 60000);
+
+        if (reminderDate > new Date()) {
+          try {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: "Task Reminder",
+                body: task.title,
+                sound: true,
+              },
+              trigger: reminderDate,
+            });
+            console.log(`Reminder scheduled for: ${reminderDate}`);
+          } catch (error) {
+            console.error("Error scheduling notification:", error);
+          }
+        } else {
+          console.log(`Reminder time (${reminderDate}) is in the past; skipping.`);
+        }
+      });
+    });
+  });
+};
+
+
+const getNextOccurrences = (dayOfWeek, numberOfOccurrences) => {
+  const today = new Date();
+  const todayIndex = today.getDay();
+  const dayIndex = DAYS_OF_WEEK[dayOfWeek].value;
+
+  const occurrences = [];
+  let currentDate = new Date(today);
+  // console.log("currentDate",currentDate)
+
+  while (occurrences.length < numberOfOccurrences) {
+    const daysUntilNext = (dayIndex - currentDate.getDay() + 7) % 7;
+    // console.log("daysUntilNext:",daysUntilNext)
+
+    // If today matches the recurrence day and we haven't scheduled it, include today
+    if (daysUntilNext === 0 && occurrences.length === 0) {
+      occurrences.push(new Date(currentDate)); // Add today
+      // console.log("if today",occurrences)
+    } else {
+      currentDate.setDate(currentDate.getDate() + daysUntilNext); // Move to the next occurrence
+      occurrences.push(new Date(currentDate));
+    }
+
+    currentDate.setDate(currentDate.getDate() + 1); // Move to the next day for further calculations
+  }
+  // console.log("occurences in function:",occurrences)
+  return occurrences;
+};
+
 
   // ---------------------------------------------
   //         RENDER FUNCTIONS FOR THE LIST
