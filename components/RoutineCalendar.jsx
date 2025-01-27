@@ -454,7 +454,21 @@ export default function RoutineCalendar() {
     const toggleTaskCompletion = async () => {
       const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
 
+      // Identify task that has been toggled
+      const taskIndex = routine.tasks.findIndex((t) => t.id === task.id);
+      if (taskIndex === -1) {
+        console.error("Task not found in routine");
+        return;
+      }
+
       const newValue = !isCompleted;
+
+      const updatedTasks = [...routine.tasks];
+      updatedTasks[taskIndex] = {
+        ...updatedTasks[taskIndex],
+        isCompleted: newValue,
+      };
+
       const updatedCompletedDates = {
         ...routine.completedDates,
         [selectedDate]: {
@@ -475,8 +489,10 @@ export default function RoutineCalendar() {
           date: selectedDate,
         });
 
-        await updateDoc(routineRef, { completedDates: updatedCompletedDates });
-
+        await updateDoc(routineRef, { 
+          tasks: updatedTasks, 
+          completedDates: updatedCompletedDates 
+        });
         // Check if all tasks are now complete
         const allTasksCompleted = routine.tasks.every(
           (t) => updatedCompletedDates[selectedDate]?.[t.id] === true

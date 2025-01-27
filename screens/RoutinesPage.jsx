@@ -5,9 +5,17 @@ import RoutineBuilder from './RoutineBuilder';
 import SMARTBuilder from './SMARTBuilder';
 import { trackPlannerTabOpened } from '../backend/apis/segment';
 import { auth } from '../firebase';
+import { useRoute } from "@react-navigation/native";
+
 
 const Routines = () => {
+  const route = useRoute()
+  const aiInput = route.params?.aiInput
+  const fromLifeCoach = route.params?.fromLifeCoach
+  const routineGenerated = route.params?.routineGenerated;
+
   const [activeBuilder, setActiveBuilder] = useState('routine'); // 'routine' or 'goal'
+  const [hasGeneratedAIRoutine, setHasGeneratedAIRoutine] = useState(false); // Persist state here
 
   // useEffect(() => {
   //   // Track "Resources Tab Opened" when the component mounts
@@ -21,8 +29,16 @@ const Routines = () => {
     <View style={styles.container}>
       {/* Content Area */}
       <View style={styles.contentContainer}>
-        {activeBuilder === 'routine' ? <RoutineBuilder /> : <SMARTBuilder />}
-      </View>
+      {activeBuilder === 'routine' ? (
+          // Only pass aiInput if fromLifeCoach is true
+          <RoutineBuilder
+            aiInput={fromLifeCoach ? aiInput : null}
+            fromLifeCoach={fromLifeCoach}
+            routineGenerated={routineGenerated} // Pass the flag
+          />          ) : (
+          <SMARTBuilder />
+        )}      
+        </View>
 
       {/* Navigation Buttons */}
       <View style={styles.buttonContainer}>

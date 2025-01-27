@@ -214,6 +214,28 @@ const styles = StyleSheet.create({
     list_item: { color: '#ffffff', fontSize: 16 },
     blockquote: { borderLeftWidth: 4, borderLeftColor: '#7c3aed', paddingLeft: 8, color: '#ffffff' },
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginTop: 10,
+  },
+  yesButton: {
+    backgroundColor: '#28a745',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  noButton: {
+    backgroundColor: '#dc3545',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });
 
 export default styles;

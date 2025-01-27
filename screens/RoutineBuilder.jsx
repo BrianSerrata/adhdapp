@@ -40,6 +40,7 @@ import {  trackRoutineSaved,
           trackRecurringRoutineToggled,
           trackTimePickerUsed,
  } from "../backend/apis/segment";
+import { useRoute } from "@react-navigation/native";
 
 // Days of week labels (0=Sunday, 6=Saturday)
 const DAYS_OF_WEEK = [
@@ -169,7 +170,25 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
   );
 });
 
-export default function RoutineBuilder({ route, navigation }) {
+export default function RoutineBuilder({
+  aiInput,
+  fromLifeCoach,
+}) {
+
+  const route = useRoute()
+
+  const routineGenerated = route?.params?.routineGenerated;
+
+  useEffect(() => {
+    // Only generate routine if it hasn't been generated yet
+    if (aiInput && !routineGenerated) {
+      handleGenerateRoutine(aiInput);
+
+      // Update the route params to mark the routine as generated
+      route.params.routineGenerated = true;
+    }
+  }, [aiInput, routineGenerated]);
+
   const routine = route?.params?.routine;
 
   // ---------------- State ----------------
@@ -262,9 +281,14 @@ export default function RoutineBuilder({ route, navigation }) {
   };
 
   // --------------- LLM Routine Generation ---------------
-  const handleGenerateRoutine = async () => {
+  const handleGenerateRoutine = async (aiInput) => {
+
+    if (aiInput) {
+      setUserInput("")
+    }
+
     Keyboard.dismiss();
-    if (!userInput.trim()) {
+    if (!userInput.trim() && !aiInput.trim()) {
       Alert.alert("Error", "Please provide a description of your goals.");
       return;
     }
@@ -326,7 +350,7 @@ export default function RoutineBuilder({ route, navigation }) {
             },
             {
               role: "user",
-              content: `Here is my goal: ${userInput}. Please ensure all tasks are scheduled between ${startTime} and ${endTime}.`
+              content: `Here is my goal: ${aiInput || userInput}. Please ensure all tasks are scheduled between ${startTime} and ${endTime}.`
             }
           ],
           functions: [
@@ -393,8 +417,8 @@ export default function RoutineBuilder({ route, navigation }) {
       trackRoutineGenerated({
         userId: auth.currentUser.uid,
         userInput: userInput,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
+        startTime: startTime?.toISOString() || "Not set",
+        endTime: endTime?.toISOString() || "Not set",
         numberOfTasks: parsedTasks.length,
         routineDetails: parsedTasks, // You can customize what details to send
       });

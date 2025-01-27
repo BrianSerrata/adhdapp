@@ -16,6 +16,7 @@ import Resources from '../screens/Resources';
 import GoalDetail from '../screens/GoalDetail';
 import GeneralManager from '../screens/GeneralManager';
 import Routines from '../screens/RoutinesPage';
+import RoutineBuilder from '../screens/RoutineBuilder';
 
 enableScreens();
 

@@ -334,6 +334,15 @@ const LifeCoach = ({ navigation, route }) => {
     return unsubscribe;
   };
 
+  const handleRoutineYes = (aiGeneratedMessage) => {
+    navigation.navigate("Routines", {
+      aiInput: aiGeneratedMessage,
+      fromLifeCoach: true, // indicate that we're coming from life coach
+      routineGenerated: false, // Add this flag to track generation status
+    });
+  };
+  
+
   const renderMessage = ({ item }) => {
     const isAI = item.isAI;
   
@@ -341,18 +350,26 @@ const LifeCoach = ({ navigation, route }) => {
       <View style={[styles.messageRow, isAI ? styles.aiRow : styles.userRow]}>
         <View style={[styles.messageBubble, isAI ? styles.aiBubble : styles.userBubble]}>
           {isAI ? (
-            <Markdown style={styles.markdown}>
-              {item.text}
-            </Markdown>
+            <Markdown style={styles.markdown}>{item.text}</Markdown>
           ) : (
-            <Text style={[styles.messageText, styles.userText]}>
-              {item.text}
-            </Text>
+            <Text style={[styles.messageText, styles.userText]}>{item.text}</Text>
           )}
         </View>
+        {/* Render Yes/No buttons for AI messages with routinePrompt */}
+        {isAI && item.routinePrompt && (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.yesButton} onPress={() => handleRoutineYes(item.text)}>
+              <Text style={styles.buttonText}>Yes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.noButton}>
+              <Text style={styles.buttonText}>No</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
-  };  
+  };
+   
 
 
   const loadConversation = async (conversationId) => {
@@ -485,7 +502,7 @@ const handleSend = async () => {
   });
 
   try {
-    const { aiResponse, reminders } = await getAIResponse([...messages, userMessage]);
+    const { aiResponse, reminders, routinePrompt } = await getAIResponse([...messages, userMessage]);
 
     // If a reminder is extracted, schedule the notification and save it to Firestore
     if (reminders && Array.isArray(reminders)) {
@@ -527,9 +544,22 @@ const handleSend = async () => {
       }
     }
 
-    // Add the AI's response to the chat
-    const aiMessage = { id: (Date.now() + 1).toString(), text: aiResponse, isAI: true };
-    const updatedMessages = [...messages, userMessage, aiMessage];
+    let updatedMessages;
+    let aiMessage;
+    if (routinePrompt) {
+      aiMessage = {
+        id: (Date.now() + 1).toString(),
+        text: aiResponse,
+        isAI: true,
+        routinePrompt: true, // Signal the UI to show Yes/No buttons
+      };
+      updatedMessages = [...messages, userMessage, aiMessage];
+    } else {
+      // Regular AI response
+      aiMessage = { id: (Date.now() + 1).toString(), text: aiResponse, isAI: true };
+      updatedMessages = [...messages, userMessage, aiMessage];
+    }
+
     setMessages(updatedMessages);
 
     // Save to Firestore
@@ -600,7 +630,17 @@ const handleSend = async () => {
               "time": "${datetimeString}"
             }
           ]
+
+        When responding to the user, if your response includes actionable suggestions that could be turned into a routine, append the following JSON snippet to your message:
+        
+        {
+          "routinePrompt": true
         }
+
+        Purpose: This JSON snippet will determine whether to display a button prompting the user to create a routine from your response.
+        When to use: Include this JSON only when your response outlines steps, tasks, or habits that can be organized into a routine.
+        Formatting: Ensure the JSON snippet appears as the last part of your response, properly formatted and without introductory text like "Here's your JSON."
+        If not applicable: If your response doesn't suggest a routine, omit the JSON snippet entirely.
 
 
         Important:
@@ -718,7 +758,6 @@ const handleSend = async () => {
     const payload = {
       model: 'gpt-4o-mini',
       messages: messagesForAI,
-      max_tokens: 350,
       temperature: 0.75,
     };
 
@@ -736,6 +775,7 @@ const handleSend = async () => {
       const match = aiOutput.match(regex);
   
       let reminders = null;
+      let routinePrompt = false;
       let aiResponseText = aiOutput;
   
       if (match) {
@@ -744,6 +784,7 @@ const handleSend = async () => {
 
           // Extract reminders array if present
           reminders = parsedJson.reminders || null;
+          routinePrompt = parsedJson.routinePrompt || false;
     
           // Remove the JSON part from the AI's response
           aiResponseText = aiOutput.replace(match[0], '').trim();
@@ -752,7 +793,7 @@ const handleSend = async () => {
         }
       }
   
-      return { aiResponse: aiResponseText, reminders };
+      return { aiResponse: aiResponseText, reminders, routinePrompt };
     } catch (error) {
       console.error('Error fetching AI response:', error);
       throw error;
