@@ -1,19 +1,23 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
   Alert,
-  Platform
+  Platform,
+  FlatList,
+  ScrollView
 } from "react-native";
-import { Calendar } from "react-native-calendars";
+import { Calendar, } from "react-native-calendars";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
 import ConfettiCannon from "react-native-confetti-cannon";
 import FeedbackModal from "./FeedbackModal";
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
+
 
 import { useNavigation } from "@react-navigation/native";
 
@@ -44,6 +48,7 @@ const getGreeting = () => {
   const hours = new Date().getHours();
   if (hours < 12) return "Good Morning";
   if (hours < 18) return "Good Afternoon";
+
   return "Good Evening";
 };
 
@@ -57,7 +62,9 @@ export default function RoutineCalendar() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [name, setName] = useState("");
-  const [quote, setQuote] = useState('');
+  const [quote, setQuote] = useState("");
+  const [numPendingTasks, setNumPendingTasks] = useState(0);
+  const [streak, setStreak] = useState(0)
 
   // For toggling expanded tasks
   const [expandedTaskId, setExpandedTaskId] = useState(null);
@@ -100,7 +107,15 @@ export default function RoutineCalendar() {
     }
   ]
 
+  const soundFiles = [
+    require('../assets/bruh.mp3'),
+    require('../assets/vine-boom.mp3'),
+  ];
+
   const navigation = useNavigation();
+
+// Calculate pending tasks on first render and whenever routines change
+const [routinesForDate, setRoutinesForSelectedDate] = useState([]);
 
   const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
@@ -150,6 +165,86 @@ export default function RoutineCalendar() {
     }
   };
 
+  const calculateStreak = (routines, completedDates) => {
+
+
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const today = new Date();
+    const todayDate = formatDate(today); // Remove time for date-only comparison
+  
+    const getRoutinesForDate = (date) => {
+      const currentDate = new Date(date);
+      return routines.filter((routine) => {
+        // Non-recurring routines
+        if (!routine.isRecurring && routine.createdDate === date) {
+          return true;
+        }
+  
+        // Recurring routines
+        if (routine.isRecurring) {
+          const dayOfWeek = currentDate.getDay();
+          if (routine.daysOfWeek?.includes(dayOfWeek)) {
+            if (routine.dateRange) {
+              const startDate = new Date(routine.dateRange.start);
+              const endDate = new Date(routine.dateRange.end);
+              return currentDate >= startDate && currentDate <= endDate;
+            }
+            return true;
+          }
+        }
+        return false;
+      });
+    };
+  
+    const dates = Object.keys(completedDates).sort((a, b) => new Date(b) - new Date(a));
+    let streak = 0;
+  
+    for (const date of dates) {
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+      const currentDate = new Date(date);
+      const routinesForDate = getRoutinesForDate(date);
+  
+      const allTasksCompleted = routinesForDate.every((routine) =>
+        routine.tasks.every((task) => completedDates[date]?.[task.id] === true)
+      );
+  
+      if (allTasksCompleted) {
+        // Increment streak if all tasks are complete
+        streak++;
+      } else if (date==todayDate) {
+        // console.log("entered here:", currentDate)
+        // console.log("streak in else if:", streak)
+        // If today is incomplete, don't break the streak
+        continue;
+      } else {
+        // Break the streak for past dates with incomplete tasks
+        console.log("normalized date time", normalizedDate.getTime())
+        console.log("today date time", today.getTime())
+        break;
+      }
+    }
+    return streak;
+  };  
+  
+
+  useEffect(() => {
+    if (routines.length > 0) {
+      const globalCompletedDates = routines.reduce((acc, routine) => {
+        return { ...acc, ...routine.completedDates };
+      }, {});
+  
+      setStreak(calculateStreak(routines, globalCompletedDates));
+    }
+  }, [routines]);
+  
+
   useEffect(() => {
     setGreeting(getGreeting());
   }, []);
@@ -168,12 +263,6 @@ export default function RoutineCalendar() {
     const day = String(now.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   });
-
-  const normalizeDate = (date) => {
-    const normalized = new Date(date);
-    normalized.setHours(0, 0, 0, 0);
-    return normalized;
-  };
   
 
   // -------------------------
@@ -210,6 +299,51 @@ export default function RoutineCalendar() {
     // Cleanup the listener on unmount
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    // if (!selectedDate) return;
+  
+    const filteredRoutines = routines.filter((routine) => {
+      const [year, month, day] = selectedDate.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+  
+      // Handle non-recurring routines
+      if (!routine.isRecurring && routine.createdDate === selectedDate) {
+        return true;
+      }
+  
+      // Handle recurring routines
+      if (routine.isRecurring) {
+        const dayOfWeek = date.getDay();
+        if (routine.daysOfWeek?.includes(dayOfWeek)) {
+          if (routine.dateRange) {
+            const startDate = new Date(routine.dateRange.start);
+            const endDate = new Date(routine.dateRange.end);
+  
+            return date >= startDate && date <= endDate;
+          }
+          return true;
+        }
+      }
+      return false;
+    });
+  
+    setRoutinesForSelectedDate(filteredRoutines);
+  }, [selectedDate, routines]);
+  
+  useEffect(() => {
+    const totalIncompleteTasks = routinesForSelectedDate.reduce((total, routine) => {
+      return (
+        total +
+        routine.tasks.filter(
+          (task) => !routine.completedDates?.[selectedDate]?.[task.id]
+        ).length
+      );
+    }, 0);
+  
+    setNumPendingTasks(totalIncompleteTasks);
+  }, [routinesForDate]);
+  
 
   // -------------------------
   // Marked Dates
@@ -331,7 +465,6 @@ export default function RoutineCalendar() {
   // -------------------------
   const routinesForSelectedDate = routines.filter((routine) => {
     if (!selectedDate) return false;
-  
     const [year, month, day] = selectedDate.split("-").map(Number);
     const date = new Date(year, month - 1, day);
   
@@ -370,7 +503,7 @@ export default function RoutineCalendar() {
   
     return false;
   });
-  
+
 
   // -------------------------
   // Time Picker Logic
@@ -448,10 +581,24 @@ export default function RoutineCalendar() {
   // Task Row with SMART Builder UI
   // -------------------------
   const TaskRow = ({ routine, task }) => {
+    
     // Completion logic
     const isCompleted = routine.completedDates?.[selectedDate]?.[task.id] === true;
 
     const toggleTaskCompletion = async () => {
+
+      const playRandomSound = async () => {
+        // Select a random sound file
+        const randomIndex = Math.floor(Math.random() * soundFiles.length);
+        const selectedSound = soundFiles[randomIndex];
+      
+        // Play the selected sound
+        const { sound } = await Audio.Sound.createAsync(selectedSound);
+        await sound.playAsync();
+        sound.unloadAsync(); // Clean up after playing
+      };
+      
+
       const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
 
       // Identify task that has been toggled
@@ -478,6 +625,10 @@ export default function RoutineCalendar() {
       };
 
       try {
+
+        // Trigger haptic feedback
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        await playRandomSound();
 
         trackTaskCompletionToggled({
           userId: auth.currentUser.uid,
@@ -622,7 +773,7 @@ export default function RoutineCalendar() {
         ))}
       </View>
     ));
-  };
+  }; 
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -633,6 +784,9 @@ export default function RoutineCalendar() {
           style={styles.greetingContainer}
         >
           <Text style={styles.greeting}>{`${greeting}, ${name || "User"}`}</Text>
+          <Text style={styles.subtext}>
+          {`${numPendingTasks} tasks pending`}
+        </Text>
         </Animated.View>
 
         <Animated.View
@@ -650,11 +804,22 @@ export default function RoutineCalendar() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* <Animated.View
+
+          <FeedbackModal
+            visible={feedbackVisible}
+            setVisible={setFeedbackVisible}
+            questions={questions}
+            feedback={feedback}
+            setFeedback={setFeedback}
+            handleSubmit={handleSubmitFeedback}
+            showFeedbackIcon={true}
+          />
+
+        <Animated.View
             entering={FadeInDown.duration(1000).delay(600)}
             style={styles.calendarContainer}
-          > */}
-            {/* <Calendar
+          >
+            <Calendar
               onDayPress={handleDayPress}
               markedDates={{
                 ...markedDates,
@@ -684,19 +849,8 @@ export default function RoutineCalendar() {
                 textMonthFontFamily: "System",
                 textDayHeaderFontFamily: "System",
               }}
-            /> */}
-
-          {/* </Animated.View> */}
-
-          <FeedbackModal
-            visible={feedbackVisible}
-            setVisible={setFeedbackVisible}
-            questions={questions}
-            feedback={feedback}
-            setFeedback={setFeedback}
-            handleSubmit={handleSubmitFeedback}
-            showFeedbackIcon={true}
-          />
+            />
+          </Animated.View>
 
           {/* Routines for This Date */}
           {selectedDate && (
@@ -738,43 +892,6 @@ export default function RoutineCalendar() {
               )}
             </Animated.View>
           )}
-
-          <Animated.View
-            entering={FadeInDown.duration(1000).delay(600)}
-            style={styles.calendarContainer}
-          >
-            <Calendar
-              onDayPress={handleDayPress}
-              markedDates={{
-                ...markedDates,
-                [selectedDate]: {
-                  ...markedDates[selectedDate],
-                  selected: true,
-                },
-              }}
-              markingType="dot"
-              theme={{
-                backgroundColor: "#1C1F26", // Match safeContainer
-                calendarBackground: "#1C1F26", // Match background
-                textSectionTitleColor: "#848484", // Muted slate for headers
-                selectedDayBackgroundColor: "#2f4156", // Blue accent for selection
-                selectedDayTextColor: "#ffffff", // White text for selected day
-                todayTextColor: "#D0CDC9", // Bright blue for today
-                dayTextColor: "#D1D5DB", // Slate white for regular days
-                textDisabledColor: "#4d4d4d", // Darker slate for disabled days
-                dotColor: "#60A5FA", // Bright blue dots
-                selectedDotColor: "#ffffff", // White dot for selected day
-                arrowColor: "#60A5FA", // Blue accent for arrows
-                monthTextColor: "#D1D5DB", // Slate white for month name
-                textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 14,
-                textDayFontFamily: "System", // Use system font
-                textMonthFontFamily: "System",
-                textDayHeaderFontFamily: "System",
-              }}
-            />
-          </Animated.View>
 
         </ScrollView>
 

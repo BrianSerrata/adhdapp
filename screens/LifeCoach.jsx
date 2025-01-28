@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  ScrollView
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,6 +32,31 @@ import {
   trackCoachTabOpened} from '../backend/apis/segment';
 
 const LifeCoach = ({ navigation, route }) => {
+
+  const SuggestionCard = ({ topic, onSelect }) => {
+    return (
+      <TouchableOpacity style={styles.suggestionCard} onPress={() => onSelect(topic)}>
+        <Text style={styles.suggestionText}>{topic}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const [showSuggestions, setShowSuggestions] = useState(true); // Track visibility of suggestions
+
+  const topicMessages = {
+    'Schedule a Reminder': "I'd like to schedule a reminder",
+    'Create a Routine': "I'd like to create a routine",
+    'Need Help': "I need some help with something",
+    'Topic 4': "Let's discuss Topic 4",
+  };
+  
+  const handleTopicSelect = (selectedTopic) => {
+    const message = topicMessages[selectedTopic]; // Get the predefined message
+    if (message) {
+      handleSend(message)
+      setShowSuggestions(false); // Optionally hide suggestions after selection
+    }
+  };
 
   const resource = route.params?.resource;
   const isResourceChat = !!resource;
@@ -62,7 +88,6 @@ const LifeCoach = ({ navigation, route }) => {
     coachingPurpose: '', // Open-ended: What did you use the coach for?
     coachingFuture: '',
   });
-  
 
   const questions = [
     {
@@ -350,25 +375,26 @@ const LifeCoach = ({ navigation, route }) => {
       <View style={[styles.messageRow, isAI ? styles.aiRow : styles.userRow]}>
         <View style={[styles.messageBubble, isAI ? styles.aiBubble : styles.userBubble]}>
           {isAI ? (
-            <Markdown style={styles.markdown}>{item.text}</Markdown>
+            <>
+              <Markdown style={styles.markdown}>{item.text}</Markdown>
+              {/* Render "Create Routine" button inside the bubble */}
+              {item.routinePrompt && (
+                <TouchableOpacity
+                  style={styles.createRoutineButtonInBubble}
+                  onPress={() => handleRoutineYes(item.text)}
+                >
+                  <Text style={styles.createRoutineButtonTextInBubble}>Create Routine</Text>
+                </TouchableOpacity>
+              )}
+            </>
           ) : (
             <Text style={[styles.messageText, styles.userText]}>{item.text}</Text>
           )}
         </View>
-        {/* Render Yes/No buttons for AI messages with routinePrompt */}
-        {isAI && item.routinePrompt && (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.yesButton} onPress={() => handleRoutineYes(item.text)}>
-              <Text style={styles.buttonText}>Yes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.noButton}>
-              <Text style={styles.buttonText}>No</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };
+  
    
 
 
@@ -424,6 +450,8 @@ const LifeCoach = ({ navigation, route }) => {
         text: `Hey ${name}! Ready to make some progress today? 🚀 We can start by reviewing your tasks, planning new goals, or discussing any challenges you're facing. What's on your mind?`,
         isAI: true,
       };
+
+      setShowSuggestions(true)
 
       const conversationRef = await addDoc(collection(db, 'users', auth.currentUser.uid, 'conversations'), {
         createdAt: new Date(),
@@ -484,15 +512,16 @@ const handleDeleteConversation = async (conversationId) => {
   );
 };
 
-const handleSend = async () => {
-  if (!input.trim() || !activeConversationId) return;
+const handleSend = async (message = input) => {
+  if (!message.trim() || !activeConversationId) return;
   Keyboard.dismiss();
 
-  const userMessage = { id: Date.now().toString(), text: input, isAI: false };
+  const userMessage = { id: Date.now().toString(), text: message, isAI: false };
   setMessages(prev => [...prev, userMessage]);
   setInput('');
   scrollToEnd();
   setLoading(true);
+  setShowSuggestions(false)
 
   trackMessageSent({
     userId: auth.currentUser.uid,
@@ -631,11 +660,20 @@ const handleSend = async () => {
             }
           ]
 
-        When responding to the user, if your response includes actionable suggestions that could be turned into a routine, append the following JSON snippet to your message:
-        
-        {
+          When responding to the user, if your response contains ANY of these patterns:
+
+          Sequential steps with timing elements
+          Repeatable actions in a specific order
+          Regular intervals or frequencies (daily, weekly, etc.)
+          Structured activities with clear start/end points
+          Numbered or bulleted lists that represent a process
+          Actions grouped into logical phases (prep, main activity, cleanup)
+          Time-blocked activities
+          Cycles of repeated actions
+          
+          Then append the JSON snippet: {
           "routinePrompt": true
-        }
+          }
 
         Purpose: This JSON snippet will determine whether to display a button prompting the user to create a routine from your response.
         When to use: Include this JSON only when your response outlines steps, tasks, or habits that can be organized into a routine.
@@ -769,10 +807,12 @@ const handleSend = async () => {
     try {
       const response = await axios.post(apiUrl, payload, { headers });
       const aiOutput = response.data.choices[0].message.content.trim();
+      console.log("output", aiOutput)
   
       // Separate the AI's regular response and the JSON reminder
       const regex = /\{[\s\S]*\}/; // Matches the JSON object
       const match = aiOutput.match(regex);
+      console.log("match", match)
   
       let reminders = null;
       let routinePrompt = false;
@@ -784,6 +824,8 @@ const handleSend = async () => {
 
           // Extract reminders array if present
           reminders = parsedJson.reminders || null;
+          console.log("here")
+          console.log("routine prompt:",parsedJson.routinePrompt)
           routinePrompt = parsedJson.routinePrompt || false;
     
           // Remove the JSON part from the AI's response
@@ -878,6 +920,26 @@ const handleSend = async () => {
                 </View>
               )}
 
+              {showSuggestions && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.suggestionsWrapper}
+                  contentContainerStyle={styles.suggestionsContainer}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {['Schedule a Reminder', 'Create a Routine', 'Need Help', 'Topic 4'].map((topic, index) => (
+                    <SuggestionCard
+                      key={index}
+                      topic={topic}
+                      onSelect={(selectedTopic) => {
+                        handleTopicSelect(selectedTopic); // Automatically send predefined message
+                      }}
+                    />
+                  ))}
+                </ScrollView>
+                )}
+
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
@@ -889,7 +951,7 @@ const handleSend = async () => {
                   autoCorrect={true}
                 />
                 <TouchableOpacity
-                  onPress={handleSend}
+                  onPress={() => handleSend(input)}
                   style={[
                     styles.sendButton,
                     { opacity: !input.trim() || loading ? 0.5 : 1 }

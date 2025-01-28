@@ -75,17 +75,17 @@ const slateStyles = StyleSheet.create({
   routinesList: {
     gap: 15,
   },
-  routineContainer: {
-    backgroundColor: '#23272F',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2.84,
-    elevation: 3,
-  },
+  // routineContainer: {
+  //   backgroundColor: '#23272F',
+  //   borderRadius: 12,
+  //   padding: 15,
+  //   marginBottom: 10,
+  //   shadowColor: '#000',
+  //   shadowOffset: { width: 0, height: 1 },
+  //   shadowOpacity: 0.2,
+  //   shadowRadius: 2.84,
+  //   elevation: 3,
+  // },
   routineName: {
     fontSize: 18,
     fontWeight: '600',
@@ -123,6 +123,10 @@ const slateStyles = StyleSheet.create({
     fontWeight: '500',
     color: '#D1D5DB',
     marginBottom: 4,
+  },
+  taskTitleCompleted: {
+    textDecorationLine: 'line-through', // Adds the strike-through effect
+    color: '#999', // Optionally change the color to indicate completion
   },
   taskTime: {
     fontSize: 14,
@@ -292,6 +296,26 @@ const slateStyles = StyleSheet.create({
     color: '#FFF',
     textAlign: 'center',
   },  
+  subtext: {
+    marginTop: 8, // Space between greeting and subtext
+    fontSize: 16,
+    color: "#848484",
+    textAlign: "center", // Center align text
+  },
+  routineContainer: {
+    backgroundColor: '#23272F', // Slightly lighter slate
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20, // Space between routines
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1, // Subtle border for separation
+    borderColor: '#3A3A3A', // Complementary border color
+  },
+  
 });
 
 export default slateStyles;

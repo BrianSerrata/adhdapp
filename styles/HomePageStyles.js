@@ -265,7 +265,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
     marginLeft: 8,
-  },    
+  },  
+  subtext: {
+    marginTop: 8, // Space between greeting and subtext
+    fontSize: 16,
+    color: "#848484",
+    textAlign: "center", // Center align text
+  },  
 });
 
 export default styles;

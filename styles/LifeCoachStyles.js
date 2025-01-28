@@ -214,28 +214,57 @@ const styles = StyleSheet.create({
     list_item: { color: '#ffffff', fontSize: 16 },
     blockquote: { borderLeftWidth: 4, borderLeftColor: '#7c3aed', paddingLeft: 8, color: '#ffffff' },
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginTop: 10,
-  },
-  yesButton: {
-    backgroundColor: '#28a745',
+  createRoutineButtonInBubble: {
+    marginTop: 12,
+    backgroundColor: "#3d5afe", // Match theme color
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: "flex-start", // Align within the text bubble
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  noButton: {
-    backgroundColor: '#dc3545',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  buttonText: {
-    color: '#fff',
+  createRoutineButtonTextInBubble: {
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
+    textAlign: "center",
   },
+  suggestionCard: {
+    backgroundColor: '#3d5afe', // Purple background
+    paddingVertical: 6, // Slightly increased height for better touch area
+    paddingHorizontal: 16, // Adjusted padding for better spacing
+    borderRadius: 20, // More rounded corners
+    marginRight: 8, // Space between cards
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+    minWidth: 80, // Ensure the cards are wide enough
+    height: 35, // Increased height for better visibility
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  suggestionText: {
+    fontSize: 14, // Slightly larger font size for readability
+    color: '#ffffff', // White text for contrast
+    textAlign: 'center', // Center the text
+  },
+  suggestionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  suggestionsWrapper: {
+    position: 'absolute',
+    bottom: 90, // Positions it just above the input container
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  }
 });
 
 export default styles;
