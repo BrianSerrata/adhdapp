@@ -318,6 +318,71 @@ reminderOptionText: {
 reminderOptionTextSelected: {
   color: "#FFFFFF",
 },
+menuIcon: {
+  position: 'absolute',
+  top: 60,
+  left: 16,
+  zIndex: 10, // Ensure it sits on top of your content
+},
+modalContainer: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.6)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+modalContent: {
+  width: '80%',
+  backgroundColor: '#1a1a1a',
+  borderRadius: 12,
+  padding: 16,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+},
+modalTitle: {
+  fontSize: 20,
+  fontWeight: '600',
+  color: '#ffffff',
+  marginBottom: 16,
+  textAlign: 'center',
+},
+routineItem: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingVertical: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: '#242424',
+},
+routineName: {
+  fontSize: 16,
+  fontWeight: '500',
+  color: '#ffffff',
+  flex: 1,
+},
+routineActions: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  // If your React Native version supports "gap", you can use it;
+  // otherwise, use marginRight on each action:
+  gap: 8,
+},
+closeButton: {
+  marginTop: 20,
+  backgroundColor: '#3d5afe',
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderRadius: 8,
+  alignSelf: 'center',
+},
+closeButtonText: {
+  color: '#ffffff',
+  fontSize: 16,
+  fontWeight: '600',
+},
+
 });
 
 export default styles;

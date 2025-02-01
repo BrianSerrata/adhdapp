@@ -893,19 +893,22 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
             showFeedbackIcon={true}
           />
 
-        <TouchableOpacity
-          style={styles.minimizeButton}
-          onPress={() => setCalendarMinimized(prev => !prev)}
-        >
-          <View>
-          <AntDesign
-            name={calendarMinimized ? "arrowsalt" : "shrink"}
-            size={10}
+          <Animated.View
+            entering={FadeInDown.duration(1000).delay(600)}
+          >
+            <TouchableOpacity
+              style={styles.minimizeButton}
+              onPress={() => setCalendarMinimized(prev => !prev)}
+            >
+              <AntDesign
+                name={calendarMinimized ? "arrowsalt" : "shrink"}
+                size={10}
 
-            color="#fff"
-          />
-          </View>
-        </TouchableOpacity>
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </Animated.View>
+
 
         {!calendarMinimized && (
           <Animated.View

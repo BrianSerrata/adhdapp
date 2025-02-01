@@ -11,14 +11,19 @@ import {
   Keyboard,
   Switch,
   KeyboardAvoidingView,
-  Modal,
-  ScrollView
+  TouchableWithoutFeedback,
+  Modal
 } from "react-native";
 import {
   collection,
   addDoc,
-  serverTimestamp
+  updateDoc,
+  serverTimestamp,
+  onSnapshot, 
+  doc, 
+  deleteDoc 
 } from "firebase/firestore";
+
 // import { logEvent } from "firebase/analytics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { auth, db, analytics } from "../firebase";
@@ -178,6 +183,11 @@ export default function RoutineBuilder({
   const route = useRoute()
 
   const routineGenerated = route?.params?.routineGenerated;
+  const [routineGeneratedState, setRoutineGeneratedState] = useState(false);
+  const [showRoutineList, setShowRoutineList] = useState(false);
+  const [fetchedRoutines, setFetchedRoutines] = useState([]);
+  const [routineId, setRoutineId] = useState(null); // Tracks the routine being edited
+
 
   useEffect(() => {
     // Only generate routine if it hasn't been generated yet
@@ -188,6 +198,40 @@ export default function RoutineBuilder({
       route.params.routineGenerated = true;
     }
   }, [aiInput, routineGenerated]);
+
+  useEffect(() => {
+    const routinesRef = collection(db, "users", auth.currentUser.uid, "routines");
+    const unsubscribe = onSnapshot(routinesRef, (snapshot) => {
+      const routinesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setFetchedRoutines(routinesData);
+    });
+  
+    return () => unsubscribe();
+  }, []);
+
+  const handleEditRoutine = (routine) => {
+    setRoutineId(routine.id); // Track the routine being edited
+    setTasks(routine.tasks);
+    setIsRecurring(routine.isRecurring || false);
+    setSelectedDays(routine.daysOfWeek || []);
+    setSelectedDate(routine.createdDate ? new Date(routine.createdDate) : new Date());
+    setShowRoutineList(false);
+  };
+
+  const handleDeleteRoutine = async (routineId) => {
+    try {
+      await deleteDoc(doc(db, "users", auth.currentUser.uid, "routines", routineId));
+      Alert.alert("Deleted", "Routine has been deleted.");
+    } catch (error) {
+      console.error("Error deleting routine:", error);
+      Alert.alert("Error", "Could not delete routine.");
+    }
+  };
+  
+  
 
   const routine = route?.params?.routine;
 
@@ -283,7 +327,6 @@ export default function RoutineBuilder({
   // --------------- LLM Routine Generation ---------------
   const handleGenerateRoutine = async (aiInput) => {
 
-    console.log("user input:",userInput)
 
     if (aiInput) {
       setUserInput("")
@@ -424,6 +467,8 @@ export default function RoutineBuilder({
         numberOfTasks: parsedTasks.length,
         routineDetails: parsedTasks, // You can customize what details to send
       });
+
+      setRoutineGeneratedState(true);
 
       // event logging for analytics insights
 
@@ -653,21 +698,32 @@ export default function RoutineBuilder({
         createdDate: isRecurring ? null : formattedSelectedDate,
       };
 
-      docRef = await addDoc(routinesRef, routineData);
+      let updatedRoutineId = routineId;
+
+      if (routineId) {
+        // If editing an existing routine, update it
+        const routineDocRef = doc(db, "users", auth.currentUser.uid, "routines", routineId);
+        await updateDoc(routineDocRef, routineData);
+        Alert.alert("Routine Updated", "Your routine has been successfully updated! ✅");
+      } else {
+        // If creating a new routine, save it as before
+        const newRoutineRef = await addDoc(routinesRef, routineData);
+        updatedRoutineId = newRoutineRef.id; // Store the new ID
+        setRoutineId(newRoutineRef.id);
+        Alert.alert("Routine Saved", "Your routine has been saved successfully! It will now display in your calendar 🗓️");
+      }
 
       trackRoutineSaved({
         userId: auth.currentUser.uid,
-        routineId: docRef.id, // Assuming you have the document reference
+        routineId: updatedRoutineId, // Use the correct ID
         routineName: routineData.name,
         numberOfTasks: tasks.length,
-        routineDetails: tasks, // You can customize what details to send
+        routineDetails: tasks,
         isRecurring: isRecurring,
         selectedDays: isRecurring ? selectedDays : [],
         selectedDate: isRecurring ? null : formattedSelectedDate,
         timestamp: new Date().toISOString(),
       });
-
-      Alert.alert("Routine Saved", "Your routine has been saved successfully! It will now display in your calendar 🗓️");
       
       if (!isRecurring) {
         tasks.forEach((task) => scheduleRemindersForOneOffRoutine(task, selectedDate));
@@ -809,6 +865,7 @@ const getNextOccurrences = (dayOfWeek, numberOfOccurrences) => {
             ? FadeInDown.duration(1000).delay(200)
             : undefined
         }> */}
+
         <View style={styles.inputContainer}>
             <TouchableOpacity
               style={[styles.generateButton, loading && styles.generateButtonDisabled]}
@@ -1130,18 +1187,29 @@ const getNextOccurrences = (dayOfWeek, numberOfOccurrences) => {
 
   // --------------- Main Render ---------------
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView style={styles.safeArea}>
       {/* <Animated.View entering={
           isFirstRender.current
             ? FadeInDown.duration(1000).delay(200)
             : undefined
         }> */}
+
+
+      <TouchableOpacity 
+        style={styles.menuIcon} 
+        onPress={() => setShowRoutineList(true)}
+      >
+        <MaterialIcons name="menu" size={28} color="#fff" />
+      </TouchableOpacity>
+
       <RoutineBuilderInput
         userInput={userInput}
         setUserInput={setUserInput}
         isInputting={isInputting}
         setIsInputting={setIsInputting}
       />
+
       {/* </Animated.View> */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -1191,7 +1259,36 @@ const getNextOccurrences = (dayOfWeek, numberOfOccurrences) => {
         display={Platform.OS === "ios" ? "spinner" : "default"}
       />
 
+      <Modal visible={showRoutineList} animationType="slide" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Your Routines</Text>
+            {fetchedRoutines.map((routine) => (
+              <View key={routine.id} style={styles.routineItem}>
+                <Text style={styles.routineName}>{routine.name}</Text>
+                <View style={styles.routineActions}>
+                  <TouchableOpacity onPress={() => handleEditRoutine(routine)}>
+                    <MaterialIcons name="edit" size={20} color="blue" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteRoutine(routine.id)}>
+                    <MaterialIcons name="delete" size={20} color="red" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowRoutineList(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+
       
     </SafeAreaView>
+  </TouchableWithoutFeedback>
   );
 }
