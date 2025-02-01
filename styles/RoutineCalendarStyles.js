@@ -64,6 +64,7 @@ const slateStyles = StyleSheet.create({
   },
   routinesSection: {
     padding: 15,
+    bottom: 30
   },
   dateHeader: {
     fontSize: 20,
@@ -331,14 +332,6 @@ const slateStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  streakText: {
-    position: "absolute",
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
-    top: 35, // Adjust to sit below the icon
-  },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -381,6 +374,20 @@ const slateStyles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
+  minimizeButton: {
+    padding: 10,
+    backgroundColor: "#2f4156",
+    alignSelf: "center",
+    borderRadius: 5,
+    marginBottom: 10,
+    alignSelf: "flex-end",
+    right: 30, // Adjust the spacing from the right
+    top: 10
+  },
+  minimizeButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+  },  
 });
 
 export default slateStyles;

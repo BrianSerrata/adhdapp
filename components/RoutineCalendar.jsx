@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { Calendar, } from "react-native-calendars";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
+import AntDesign from '@expo/vector-icons/AntDesign';
 import ConfettiCannon from "react-native-confetti-cannon";
 import FeedbackModal from "./FeedbackModal";
 import * as Haptics from 'expo-haptics';
@@ -86,6 +87,8 @@ export default function RoutineCalendar() {
     engagement: "1",
     suggestion: '',
   });
+  const [calendarMinimized, setCalendarMinimized] = useState(false);
+
 
   const questions = [
     {
@@ -140,9 +143,18 @@ useEffect(() => {
   setNumTasks(tasks);
 }, [routinesForDate]);
 
+
 // Add this component
 const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
   const chunkWidth = 100 / totalTasks;
+
+  const FireIcon = useMemo(() => (
+    <Image
+      source={require('../assets/fire-icon.png')}
+      style={styles.fireIcon}
+    />
+  ), [])
+
   return (
     <View style={styles.progressContainer}>
       <View style={styles.progressBar}>
@@ -171,10 +183,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
         ))}
       </View>
       <View style={styles.fireContainer}>
-        <Image
-          source={require('../assets/fire-icon.png')}
-          style={styles.fireIcon}
-        />
+        {FireIcon}
         <Text style={styles.streakText}>{streak}</Text>
       </View>
     </View>
@@ -842,7 +851,11 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.container}>
+      <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }} 
+          showsVerticalScrollIndicator={false}
+        >
         {/* Greeting */}
         <Animated.View
           entering={FadeInDown.duration(1000).delay(200)}
@@ -880,7 +893,22 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
             showFeedbackIcon={true}
           />
 
-        <Animated.View
+        <TouchableOpacity
+          style={styles.minimizeButton}
+          onPress={() => setCalendarMinimized(prev => !prev)}
+        >
+          <View>
+          <AntDesign
+            name={calendarMinimized ? "arrowsalt" : "shrink"}
+            size={10}
+
+            color="#fff"
+          />
+          </View>
+        </TouchableOpacity>
+
+        {!calendarMinimized && (
+          <Animated.View
             entering={FadeInDown.duration(1000).delay(600)}
             style={styles.calendarContainer}
           >
@@ -918,13 +946,18 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
             />
 
           </Animated.View>
+        )}
 
           {/* Add the progress bar */}
+          <Animated.View
+            entering={FadeInDown.duration(1000).delay(600)}
+          >
           <ProgressBar 
             totalTasks={numTasks}
             completedTasks={completedTasks}
             streak={streak}
           />
+          </Animated.View>
 
           {/* Routines for This Date */}
           {selectedDate && (
@@ -998,7 +1031,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
         themeVariant="light"
         display={Platform.OS === "ios" ? "spinner" : "default"}
       />
-      </View>
+        </ScrollView>
     </SafeAreaView>
   );
 }

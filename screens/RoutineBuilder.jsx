@@ -283,6 +283,8 @@ export default function RoutineBuilder({
   // --------------- LLM Routine Generation ---------------
   const handleGenerateRoutine = async (aiInput) => {
 
+    console.log("user input:",userInput)
+
     if (aiInput) {
       setUserInput("")
     }
@@ -350,7 +352,7 @@ export default function RoutineBuilder({
             },
             {
               role: "user",
-              content: `Here is my goal: ${aiInput || userInput}. Please ensure all tasks are scheduled between ${startTime} and ${endTime}.`
+              content: `Here is my goal: ${userInput || aiInput}. Please ensure all tasks are scheduled between ${startTime} and ${endTime}.`
             }
           ],
           functions: [
