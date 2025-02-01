@@ -73,7 +73,6 @@ function PhaseRoutineView({ phaseIndex, routine, onUpdateRoutine }) {
     const [selectedTime, setSelectedTime] = useState(new Date());
   
     useEffect(() => {
-      console.log("Routine in PhaseRoutineView:", routine);
       if (routine && routine.tasks) {
         setTasks(routine.tasks);
       }
@@ -344,7 +343,7 @@ return (
       </TouchableOpacity>
 
       {/* Render tasks via map instead of DraggableFlatList */}
-      {console.log("TASKS:",tasks)}
+      {/* {console.log("TASKS:",tasks)} */}
       {tasks.map((item) => {
         const isExpanded = expandedTaskId === item.id;
 
@@ -901,7 +900,7 @@ export default function SMARTBuilder({ navigation }) {
 
       const functionCall = response.data.choices[0].message.function_call;
       const plan = JSON.parse(functionCall.arguments);
-      console.log("AI Plan:", plan);
+      // console.log("AI Plan:", plan);
 
       if (!plan.phases || !Array.isArray(plan.phases)) {
         throw new Error("Invalid response from AI");

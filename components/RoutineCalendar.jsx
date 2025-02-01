@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   Alert,
   Platform,
   FlatList,
-  ScrollView
+  ScrollView,
+  Image
 } from "react-native";
 import { Calendar, } from "react-native-calendars";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -17,6 +18,7 @@ import ConfettiCannon from "react-native-confetti-cannon";
 import FeedbackModal from "./FeedbackModal";
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 import { useNavigation } from "@react-navigation/native";
@@ -116,6 +118,69 @@ export default function RoutineCalendar() {
 
 // Calculate pending tasks on first render and whenever routines change
 const [routinesForDate, setRoutinesForSelectedDate] = useState([]);
+
+// Add this state
+const [completedTasks, setCompletedTasks] = useState(0);
+const [numTasks, setNumTasks] = useState(0)
+
+// Add this effect to track completed tasks
+useEffect(() => {
+  const completed = routinesForSelectedDate.reduce((total, routine) => {
+    return total + routine.tasks.filter(task => 
+      routine.completedDates?.[selectedDate]?.[task.id]
+    ).length;
+  }, 0);
+  setCompletedTasks(completed);
+}, [routinesForDate, selectedDate]);
+
+useEffect(() => {
+  const tasks = routinesForSelectedDate.reduce((total, routine) => {
+    return total + routine.tasks.length;
+  }, 0);
+  setNumTasks(tasks);
+}, [routinesForDate]);
+
+// Add this component
+const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
+  const chunkWidth = 100 / totalTasks;
+  return (
+    <View style={styles.progressContainer}>
+      <View style={styles.progressBar}>
+        {Array.from({ length: totalTasks }).map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.progressChunk,
+              {
+                width: `${chunkWidth}%`,
+                overflow: 'hidden',
+              },
+            ]}
+          >
+            {index >= completedTasks ? (
+              <View style={styles.incompleteChunk} />
+            ) : (
+              <LinearGradient
+                colors={['#FFA500', '#FF8C00']}
+                style={styles.progressFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
+            )}
+          </View>
+        ))}
+      </View>
+      <View style={styles.fireContainer}>
+        <Image
+          source={require('../assets/fire-icon.png')}
+          style={styles.fireIcon}
+        />
+        <Text style={styles.streakText}>{streak}</Text>
+      </View>
+    </View>
+  );
+});
+
 
   const handleSubmitFeedback = async () => {
     // Handle feedback submission logic (e.g., saving to Firestore)
@@ -828,6 +893,7 @@ const [routinesForDate, setRoutinesForSelectedDate] = useState([]);
                   selected: true,
                 },
               }}
+              horizontal = {true}
               markingType="dot"
               theme={{
                 backgroundColor: "#1C1F26", // Match safeContainer
@@ -850,7 +916,15 @@ const [routinesForDate, setRoutinesForSelectedDate] = useState([]);
                 textDayHeaderFontFamily: "System",
               }}
             />
+
           </Animated.View>
+
+          {/* Add the progress bar */}
+          <ProgressBar 
+            totalTasks={numTasks}
+            completedTasks={completedTasks}
+            streak={streak}
+          />
 
           {/* Routines for This Date */}
           {selectedDate && (

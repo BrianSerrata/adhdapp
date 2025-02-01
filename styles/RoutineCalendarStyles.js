@@ -59,7 +59,7 @@ const slateStyles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3.84,
     elevation: 5,
-    height: 300, 
+    height: 310, 
     overflow: "hidden"
   },
   routinesSection: {
@@ -307,6 +307,7 @@ const slateStyles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 20, // Space between routines
+    marginTop: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
@@ -315,7 +316,71 @@ const slateStyles = StyleSheet.create({
     borderWidth: 1, // Subtle border for separation
     borderColor: '#3A3A3A', // Complementary border color
   },
-  
+  fireIconContainer: {
+    position: "absolute",
+    bottom: 1,
+    right: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  streakText: {
+    position: "absolute",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    top: 35, // Adjust to sit below the icon
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10,
+    marginHorizontal: 16,
+  },
+  progressBar: {
+    flex: 1,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#2A2A2A',
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  progressChunk: {
+    height: '100%',
+    borderRightWidth: 2,
+    borderRightColor: '#1C1F26',
+  },
+  incompleteChunk: {
+    flex: 1,
+    backgroundColor: '#3A3A3A', // Background for incomplete tasks
+  },
+  progressFill: {
+    flex: 1,
+  },
+  fireContainer: {
+    marginLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fireIcon: {
+    width: 24,
+    height: 24,
+    marginLeft: 4,
+  },
+  streakText: {
+    color: '#FFA500',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
 });
 
 export default slateStyles;
