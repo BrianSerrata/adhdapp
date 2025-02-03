@@ -9,58 +9,57 @@ const slateStyles = StyleSheet.create({
   },
   safeContainer: {
     flex: 1,
-    backgroundColor: '#1C1F26', // Deep slate background
+    // Dark background for the entire screen
+    backgroundColor: '#171717',
   },
   container: {
     flex: 1,
-    backgroundColor: '#1C1F26',
+    backgroundColor: '#171717',
     paddingBottom: 60, // Space for the tab bar
   },
   greetingContainer: {
-    paddingTop: 10, // Reduce top padding to move it closer to the top
-    paddingBottom: 10, // Reduce bottom padding for tighter spacing
-    paddingHorizontal: 16, // Keep some horizontal padding
-    alignItems: 'flex-start', // Align content to the left
-    backgroundColor: '#1C1F26', // Slightly lighter slate
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingHorizontal: 16,
+    alignItems: 'flex-start',
+    backgroundColor: '#171717',
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1F26',
+    borderBottomColor: '#171717',
   },  
   greeting: {
     fontSize: 24,
-    fontWeight: '600',
     fontFamily: "DM Sans",
     fontWeight: "bold",
-    color: '#D1D5DB', // Soft slate gray for text
+    // White text for the greeting
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 4,
   },
   subGreeting: {
     fontSize: 16,
-    color: '#9CA3AF', // Muted slate gray for subtler text
+    color: '#9CA3AF', // Muted gray for subtler text
     textAlign: 'center',
   },
   header: {
     fontSize: 28,
     fontWeight: '600',
-    color: '#D1D5DB',
+    // White text for larger headers
+    color: '#FFFFFF',
     padding: 20,
     paddingBottom: 10,
-    backgroundColor: '#1C1F26',
+    backgroundColor: '#111111',
   },
+  // White "card" for the calendar
   calendarContainer: {
-    margin: 10,
-    marginBottom: 0,
-    marginTop: 3,
+    margin: 16,
+    marginTop: 8,
     borderRadius: 15,
-    overflow: 'hidden',
-    backgroundColor: '#23272F', // Slightly lighter slate
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
     elevation: 5,
-    height: 310, 
-    overflow: "hidden"
   },
   routinesSection: {
     padding: 15,
@@ -76,33 +75,37 @@ const slateStyles = StyleSheet.create({
   routinesList: {
     gap: 15,
   },
-  // routineContainer: {
-  //   backgroundColor: '#23272F',
-  //   borderRadius: 12,
-  //   padding: 15,
-  //   marginBottom: 10,
-  //   shadowColor: '#000',
-  //   shadowOffset: { width: 0, height: 1 },
-  //   shadowOpacity: 0.2,
-  //   shadowRadius: 2.84,
-  //   elevation: 3,
-  // },
+  routineContainer: {
+    backgroundColor: '#252525', // Darker background to align with the black aesthetic
+    borderRadius: 15, // Slightly more rounded corners for a softer feel
+    padding: 16, // Increased padding for a more spacious layout
+    marginBottom: 16, // Reduced margin for closer stacking
+    marginTop: 16,
+    shadowColor: '#000', // Darker shadow for depth
+    shadowOffset: { width: 0, height: 2 }, // Slightly deeper shadow for better definition
+    shadowOpacity: 0.3, 
+    shadowRadius: 4,
+    elevation: 5, // Stronger elevation for a floating effect
+    borderWidth: 1, 
+    borderColor: '#2A2D34', // Subtle border for separation without being too prominent
+  },
   routineName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#D1D5DB',
-    marginBottom: 12,
+    fontWeight: 'bold', // Bold for clear visibility
+    color: '#E5E7EB', // Lighter slate gray for better contrast on a dark background
+    marginBottom: 8, // Reduced margin for tighter spacing
   },
   taskItem: {
-    backgroundColor: '#2B3039',
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
+    backgroundColor: '#2e2e2e', // Darker shade for tasks to align with the black theme
+    borderRadius: 15, // Matches the container's rounded corners
+    marginBottom: 12, // Consistent spacing between tasks
+    shadowColor: '#000', // Subtle shadow to lift tasks slightly off the background
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2.84,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4, // Slight elevation for separation
   },
+  
   draggingTask: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -126,8 +129,8 @@ const slateStyles = StyleSheet.create({
     marginBottom: 4,
   },
   taskTitleCompleted: {
-    textDecorationLine: 'line-through', // Adds the strike-through effect
-    color: '#999', // Optionally change the color to indicate completion
+    textDecorationLine: 'line-through', 
+    color: '#999', 
   },
   taskTime: {
     fontSize: 14,
@@ -141,7 +144,7 @@ const slateStyles = StyleSheet.create({
   titleInput: {
     fontSize: 16,
     padding: 12,
-    backgroundColor: '#2F3541', // Dark slate for inputs
+    backgroundColor: '#2F3541', 
     borderRadius: 8,
     marginBottom: 12,
     color: '#D1D5DB',
@@ -157,17 +160,17 @@ const slateStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#2F3541',
+    backgroundColor: '#242424',
     borderRadius: 8,
   },
   timeButtonText: {
-    color: '#60A5FA', // Subtle blue accent
+    color: '#60A5FA', // Blue accent
     fontSize: 14,
   },
   description: {
     fontSize: 16,
     padding: 12,
-    backgroundColor: '#2F3541',
+    backgroundColor: '#242424',
     borderRadius: 8,
     marginBottom: 12,
     minHeight: 80,
@@ -178,7 +181,7 @@ const slateStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#1F252E', // Slightly darker slate
+    backgroundColor: '#1F252E',
     borderRadius: 8,
   },
   removeButtonText: {
@@ -193,23 +196,12 @@ const slateStyles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 10,
   },
-  emptyStateText: {
-    fontSize: 18,
-    color: '#9CA3AF',
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
   quoteBubbleContainer: {
     marginVertical: 20,
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#23272F', // Slightly lighter slate for contrast
+    backgroundColor: '#252525',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -219,18 +211,19 @@ const slateStyles = StyleSheet.create({
   quoteText: {
     fontSize: 16,
     fontStyle: 'italic',
-    color: '#9CA3AF', // Muted slate gray for the text
+    color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 22,
   },
   monthHeader: {
     fontSize: 20,
     fontWeight: '600',
-    fontFamily: "System", // Match the rest of the calendar's style
-    color: '#D1D5DB', // Slate white text
-    textAlign: 'left', // Align text to the left
-    paddingLeft: 16, // Add padding for left alignment
-    paddingTop: 10, // Space from the top
+    fontFamily: "System", 
+    // Black text on a white background card
+    color: '#000000', 
+    textAlign: 'left', 
+    paddingLeft: 16, 
+    paddingTop: 10, 
   },
   checkbox: {
     width: 24,
@@ -247,22 +240,9 @@ const slateStyles = StyleSheet.create({
   emptyStateTouchable: {
     marginHorizontal: 16,
     marginTop: 20,
-    borderRadius: 20, // Rounded edges for bubble feel
+    borderRadius: 20,
     overflow: 'hidden',
   },
-  
-  // emptyStateBubble: {
-  //   backgroundColor: '#2B3039',
-  //   padding: 20,
-  //   borderRadius: 20,
-  //   shadowColor: '#000',
-  //   shadowOffset: { width: 0, height: 4 },
-  //   shadowOpacity: 0.25,
-  //   shadowRadius: 6,
-  //   elevation: 6, // Android shadow
-  //   alignItems: 'center', // Center text in the bubble
-  // },
-  
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
@@ -270,52 +250,35 @@ const slateStyles = StyleSheet.create({
     marginBottom: 5,
     textAlign: 'center',
   },
-  
   emptyStateSubtext: {
     fontSize: 14,
     color: '#A0AEC0',
     textAlign: 'center',
   },
-  
   actionButtonContainer: {
-    marginTop: 15, // Slight overlap with bubble for integrated design
-    alignSelf: 'center', // Center the button
+    marginTop: 15,
+    alignSelf: 'center',
     backgroundColor: '#4A90E2',
     paddingHorizontal: 30,
     paddingVertical: 12,
-    borderRadius: 25, // Rounded button
+    borderRadius: 25,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
   },
-  
   actionButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFF',
     textAlign: 'center',
-  },  
+  },
   subtext: {
-    marginTop: 8, // Space between greeting and subtext
+    marginTop: 8,
     fontSize: 16,
     color: "#848484",
-    textAlign: "center", // Center align text
-  },
-  routineContainer: {
-    backgroundColor: '#23272F', // Slightly lighter slate
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20, // Space between routines
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1, // Subtle border for separation
-    borderColor: '#3A3A3A', // Complementary border color
+    textAlign: "center",
   },
   fireIconContainer: {
     position: "absolute",
@@ -349,11 +312,11 @@ const slateStyles = StyleSheet.create({
   progressChunk: {
     height: '100%',
     borderRightWidth: 2,
-    borderRightColor: '#1C1F26',
+    borderRightColor: '#111111',
   },
   incompleteChunk: {
     flex: 1,
-    backgroundColor: '#3A3A3A', // Background for incomplete tasks
+    backgroundColor: '#3A3A3A',
   },
   progressFill: {
     flex: 1,
@@ -376,13 +339,12 @@ const slateStyles = StyleSheet.create({
   },
   minimizeButton: {
     padding: 10,
-    backgroundColor: "#2f4156",
-    alignSelf: "center",
+    backgroundColor: "#252525",
     borderRadius: 5,
     marginBottom: 10,
     alignSelf: "flex-end",
-    right: 30, // Adjust the spacing from the right
-    top: 10
+    right: 36, 
+    top: 10,
   },
   minimizeButtonText: {
     color: "#ffffff",

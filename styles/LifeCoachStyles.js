@@ -4,12 +4,12 @@ const styles = StyleSheet.create({
   // Container & Layout
   container: {
     flex: 1,
-    backgroundColor: '#1C1F26',
+    backgroundColor: '#171717',
     flexDirection: 'row',
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#1C1F26',
+    backgroundColor: '#171717',
   },
   
   // Left Panel
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   activeConversation: {
-    backgroundColor: '#3d5afe',
+    backgroundColor: '#171717',
   },
   conversationText: {
     fontSize: 16,
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   newConversationButton: {
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#2f4156',
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#1C1F26',
+    backgroundColor: '#171717',
   },
   messageList: {
     paddingVertical: 16,
@@ -149,14 +149,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#242424',
+    backgroundColor: '#171717',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    marginTop: 16,
+    marginTop: 18,
+    marginBottom: 7
   },
   input: {
     flex: 1,

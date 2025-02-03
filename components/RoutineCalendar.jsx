@@ -868,7 +868,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
         </Animated.View>
 
         <Animated.View
-        entering={FadeInDown.duration(1000).delay(600)}
+        entering={FadeInDown.duration(1000).delay(200)}
         style={styles.quoteBubbleContainer}
       >
         <Text style={styles.quoteText}>
@@ -894,7 +894,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
           />
 
           <Animated.View
-            entering={FadeInDown.duration(1000).delay(600)}
+            entering={FadeInDown.duration(1000).delay(200)}
           >
             <TouchableOpacity
               style={styles.minimizeButton}
@@ -912,7 +912,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
 
         {!calendarMinimized && (
           <Animated.View
-            entering={FadeInDown.duration(1000).delay(600)}
+            entering={FadeInDown.duration(1000).delay(200)}
             style={styles.calendarContainer}
           >
             <Calendar
@@ -924,36 +924,43 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
                   selected: true,
                 },
               }}
-              horizontal = {true}
+              horizontal={true}
               markingType="dot"
               theme={{
-                backgroundColor: "#1C1F26", // Match safeContainer
-                calendarBackground: "#1C1F26", // Match background
-                textSectionTitleColor: "#848484", // Muted slate for headers
-                selectedDayBackgroundColor: "#2f4156", // Blue accent for selection
+                backgroundColor: "#111111", // Match the dark theme
+                calendarBackground: "#111111", // Dark background
+                textSectionTitleColor: "#9CA3AF", // Muted slate gray for headers
+                selectedDayBackgroundColor: "#2f4156", // Dark blue accent for selection
                 selectedDayTextColor: "#ffffff", // White text for selected day
-                todayTextColor: "#D0CDC9", // Bright blue for today
+                todayTextColor: "#FF9800", // Orange for today's date
                 dayTextColor: "#D1D5DB", // Slate white for regular days
-                textDisabledColor: "#4d4d4d", // Darker slate for disabled days
+                textDisabledColor: "#4d4d4d", // Darker gray for disabled days
                 dotColor: "#60A5FA", // Bright blue dots
                 selectedDotColor: "#ffffff", // White dot for selected day
-                arrowColor: "#60A5FA", // Blue accent for arrows
+                arrowColor: "#60A5FA", // Bright blue accent for arrows
                 monthTextColor: "#D1D5DB", // Slate white for month name
                 textDayFontSize: 16,
-                textMonthFontSize: 18,
+                textMonthFontSize: 20,
                 textDayHeaderFontSize: 14,
-                textDayFontFamily: "System", // Use system font
-                textMonthFontFamily: "System",
-                textDayHeaderFontFamily: "System",
+                textDayFontFamily: "DM Sans", // Use a clean font for consistency
+                textMonthFontFamily: "DM Sans",
+                textDayHeaderFontFamily: "DM Sans",
+              }}
+              style={{
+                borderRadius: 15, // Match the rounded card style
+                overflow: "hidden",
+                marginHorizontal: 16, // Padding from the edges
+                elevation: 3, // Subtle shadow for depth
               }}
             />
+
 
           </Animated.View>
         )}
 
           {/* Add the progress bar */}
           <Animated.View
-            entering={FadeInDown.duration(1000).delay(600)}
+            entering={FadeInDown.duration(1000).delay(200)}
           >
           <ProgressBar 
             totalTasks={numTasks}

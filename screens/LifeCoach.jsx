@@ -402,20 +402,18 @@ const LifeCoach = ({ navigation, route }) => {
     try {
       const conversationRef = doc(db, 'users', auth.currentUser.uid, 'conversations', conversationId);
       const conversationSnapshot = await getDoc(conversationRef);
-
+  
       if (conversationSnapshot.exists()) {
         const data = conversationSnapshot.data();
-        setMessages(data.messages || []);
+        const fetchedMessages = data.messages || [];
+        setMessages(fetchedMessages);
         setActiveConversationId(conversationId);
-        setIsPanelVisible(false)
-
-        // trackConversationStarted({
-        //   userId: auth.currentUser.uid,
-        //   conversationId: conversationId,
-        //   initialMessage: data.messages?.[0]?.text || 'N/A',
-        //   timestamp: new Date().toISOString(),
-        // });
-
+        setIsPanelVisible(false);
+        // Use the locally stored fetchedMessages instead of messages
+        setShowSuggestions(true)
+        if (fetchedMessages.length > 1) {
+          setShowSuggestions(false); // Hide suggestions when loading an existing conversation
+        }
       } else {
         Alert.alert('Error', 'Conversation not found.');
       }
@@ -424,6 +422,7 @@ const LifeCoach = ({ navigation, route }) => {
       Alert.alert('Error', 'Failed to load conversation.');
     }
   };
+  
 
   const scrollToEnd = () => {
     if (flatListRef.current) {
