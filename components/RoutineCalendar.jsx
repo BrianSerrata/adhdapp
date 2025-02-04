@@ -10,6 +10,7 @@ import {
   ScrollView,
   Image
 } from "react-native";
+
 import { Calendar, } from "react-native-calendars";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -35,6 +36,7 @@ import {
 
 import { auth, db } from "../firebase";
 import styles from "../styles/RoutineCalendarStyles";
+import BadgesView from "./Badges";
 import { trackTaskCompletionToggled,
          trackRoutineCompleted,
  } from "../backend/apis/segment";
@@ -77,9 +79,12 @@ export default function RoutineCalendar() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [timeField, setTimeField] = useState("");
   const [selectedDateObj, setSelectedDateObj] = useState(new Date());
+  // At the top of your RoutineCalendar function component:
 
-  // Logic / states for feedback form
-  
+const [selectedView, setSelectedView] = useState('calendar'); // 'calendar' or 'badges'
+const [allTasksCompleted, setAllTasksCompleted] = useState(false)
+
+  // Logic / states for feedback form  
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedback, setFeedback] = useState({
     usability: "1",
@@ -112,12 +117,11 @@ export default function RoutineCalendar() {
     }
   ]
 
-  const soundFiles = [
-    require('../assets/bruh.mp3'),
-    require('../assets/vine-boom.mp3'),
-  ];
+const soundFiles = [
+  require('../assets/pop.mp3'),
+];
 
-  const navigation = useNavigation();
+const navigation = useNavigation();
 
 // Calculate pending tasks on first render and whenever routines change
 const [routinesForDate, setRoutinesForSelectedDate] = useState([]);
@@ -134,6 +138,14 @@ useEffect(() => {
     ).length;
   }, 0);
   setCompletedTasks(completed);
+
+  if (completed==numTasks) {
+    setAllTasksCompleted(true)
+  }
+  else {
+    console.log("here")
+    setAllTasksCompleted(false)
+  }
 }, [routinesForDate, selectedDate]);
 
 useEffect(() => {
@@ -293,14 +305,10 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
         // Increment streak if all tasks are complete
         streak++;
       } else if (date==todayDate) {
-        // console.log("entered here:", currentDate)
-        // console.log("streak in else if:", streak)
         // If today is incomplete, don't break the streak
         continue;
       } else {
         // Break the streak for past dates with incomplete tasks
-        console.log("normalized date time", normalizedDate.getTime())
-        console.log("today date time", today.getTime())
         break;
       }
     }
@@ -663,13 +671,16 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
 
       const playRandomSound = async () => {
         // Select a random sound file
-        const randomIndex = Math.floor(Math.random() * soundFiles.length);
-        const selectedSound = soundFiles[randomIndex];
+        const selectedSound = soundFiles[0];
       
         // Play the selected sound
         const { sound } = await Audio.Sound.createAsync(selectedSound);
         await sound.playAsync();
-        sound.unloadAsync(); // Clean up after playing
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.didJustFinish) {
+            sound.unloadAsync();
+          }
+        });
       };
       
 
@@ -868,13 +879,13 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
         </Animated.View>
 
         <Animated.View
-        entering={FadeInDown.duration(1000).delay(200)}
-        style={styles.quoteBubbleContainer}
-      >
-        <Text style={styles.quoteText}>
-          {quote}
-      </Text>
-    </Animated.View>
+          entering={FadeInDown.duration(1000).delay(200)}
+          style={styles.quoteBubbleContainer}
+        >
+          <Text style={styles.quoteText}>
+            {quote}
+          </Text>
+        </Animated.View>
 
         {/* Calendar + Scroll */}
         <ScrollView
@@ -909,54 +920,100 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
             </TouchableOpacity>
           </Animated.View>
 
-
-        {!calendarMinimized && (
           <Animated.View
             entering={FadeInDown.duration(1000).delay(200)}
-            style={styles.calendarContainer}
+            style={styles.viewToggleContainer}
           >
-            <Calendar
-              onDayPress={handleDayPress}
-              markedDates={{
-                ...markedDates,
-                [selectedDate]: {
-                  ...markedDates[selectedDate],
-                  selected: true,
-                },
-              }}
-              horizontal={true}
-              markingType="dot"
-              theme={{
-                backgroundColor: "#111111", // Match the dark theme
-                calendarBackground: "#111111", // Dark background
-                textSectionTitleColor: "#9CA3AF", // Muted slate gray for headers
-                selectedDayBackgroundColor: "#2f4156", // Dark blue accent for selection
-                selectedDayTextColor: "#ffffff", // White text for selected day
-                todayTextColor: "#FF9800", // Orange for today's date
-                dayTextColor: "#D1D5DB", // Slate white for regular days
-                textDisabledColor: "#4d4d4d", // Darker gray for disabled days
-                dotColor: "#60A5FA", // Bright blue dots
-                selectedDotColor: "#ffffff", // White dot for selected day
-                arrowColor: "#60A5FA", // Bright blue accent for arrows
-                monthTextColor: "#D1D5DB", // Slate white for month name
-                textDayFontSize: 16,
-                textMonthFontSize: 20,
-                textDayHeaderFontSize: 14,
-                textDayFontFamily: "DM Sans", // Use a clean font for consistency
-                textMonthFontFamily: "DM Sans",
-                textDayHeaderFontFamily: "DM Sans",
-              }}
-              style={{
-                borderRadius: 15, // Match the rounded card style
-                overflow: "hidden",
-                marginHorizontal: 16, // Padding from the edges
-                elevation: 3, // Subtle shadow for depth
-              }}
-            />
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                selectedView === 'calendar' && styles.activeToggleButton
+              ]}
+              onPress={() => setSelectedView('calendar')}
+            >
+              <Text
+                style={
+                  selectedView === 'calendar'
+                    ? styles.activeToggleText
+                    : styles.inactiveToggleText
+                }
+              >
+                Calendar
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                selectedView === 'badges' && styles.activeToggleButton
+              ]}
+              onPress={() => setSelectedView('badges')}
+            >
+              <Text
+                style={
+                  selectedView === 'badges'
+                    ? styles.activeToggleText
+                    : styles.inactiveToggleText
+                }
+              >
+                Badges
+              </Text>
+            </TouchableOpacity>
+            </Animated.View>
 
 
-          </Animated.View>
-        )}
+
+          {!calendarMinimized && (
+            <Animated.View
+              entering={FadeInDown.duration(1000).delay(200)}
+              style={styles.calendarContainer}
+            >
+              {selectedView === 'calendar' ? (
+                <Calendar
+                  onDayPress={handleDayPress}
+                  markedDates={{
+                    ...markedDates,
+                    [selectedDate]: {
+                      ...markedDates[selectedDate],
+                      selected: true,
+                    },
+                  }}
+                  horizontal={true}
+                  markingType="dot"
+                  theme={{
+                    backgroundColor: "#111111",
+                    calendarBackground: "#111111",
+                    textSectionTitleColor: "#9CA3AF",
+                    selectedDayBackgroundColor: "#2f4156",
+                    selectedDayTextColor: "#ffffff",
+                    todayTextColor: "#FF9800",
+                    dayTextColor: "#D1D5DB",
+                    textDisabledColor: "#4d4d4d",
+                    dotColor: "#60A5FA",
+                    selectedDotColor: "#ffffff",
+                    arrowColor: "#60A5FA",
+                    monthTextColor: "#D1D5DB",
+                    textDayFontSize: 16,
+                    textMonthFontSize: 20,
+                    textDayHeaderFontSize: 14,
+                    textDayFontFamily: "DM Sans",
+                    textMonthFontFamily: "DM Sans",
+                    textDayHeaderFontFamily: "DM Sans",
+                  }}
+                  style={{
+                    borderRadius: 15,
+                    overflow: "hidden",
+                    marginHorizontal: 16,
+                    elevation: 3,
+                  }}
+                />
+              ) : (
+                <BadgesView 
+                allTasksCompleted={allTasksCompleted}
+                tasksCompleted={completedTasks}/>
+              )}
+            </Animated.View>
+          )}
+
 
           {/* Add the progress bar */}
           <Animated.View

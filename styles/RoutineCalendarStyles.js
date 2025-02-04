@@ -349,6 +349,29 @@ const slateStyles = StyleSheet.create({
   minimizeButtonText: {
     color: "#ffffff",
     fontSize: 16,
+  },
+  // Example styles (adjust as needed)
+  viewToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  toggleButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 5,
+    borderRadius: 20,
+    backgroundColor: '#333',
+  },
+  activeToggleButton: {
+    backgroundColor: '#2f4156', // a more active color
+  },
+  activeToggleText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  inactiveToggleText: {
+    color: '#9CA3AF',
   },  
 });
 

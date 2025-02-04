@@ -1,84 +1,89 @@
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#171717", // Unified dark background
+  },
   container: {
     flex: 1,
-    backgroundColor: '#1C1F26', // Dark background for the app theme
+    backgroundColor: "#171717", // Matches Routine Builder
+    paddingBottom: 60,
   },
   headerGradient: {
     paddingBottom: 16,
-    backgroundColor: '#1a1a1a', // Darker gradient effect
+    backgroundColor: "#111111", // Consistent with Routine Builder headers
   },
   headerContent: {
     paddingTop: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ffffff', // White text for contrast
+    fontWeight: "600",
+    color: "#FFFFFF",
     paddingHorizontal: 16,
   },
   searchCard: {
-    backgroundColor: '#1a1a1a', // Card matches the dark theme
+    backgroundColor: "#252525", // Unified card styling
     margin: 16,
     borderRadius: 12,
     padding: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
     elevation: 5,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2c2c2c', // Slightly lighter for input background
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2E2E2E", // Slight contrast for input background
     borderRadius: 8,
     paddingHorizontal: 12,
   },
   searchIcon: {
     marginRight: 8,
-    color: '#848484', // Icon color for low emphasis
+    color: "#9CA3AF", // Muted icon color
   },
   searchInput: {
     flex: 1,
     height: 40,
-    color: '#ffffff', // White input text
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   tabBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     paddingVertical: 8,
     marginHorizontal: 16,
-    backgroundColor: '#1C1F26', // Matches header theme
+    backgroundColor: "#171717", // Unified background
     borderRadius: 12,
   },
   tab: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     padding: 8,
     marginHorizontal: 4,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Subtle inactive tab background
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
   activeTab: {
-    backgroundColor: '#3d5afe', // Active tab with a vibrant highlight
+    backgroundColor: "#3D5AFE",
   },
   tabText: {
-    color: 'rgba(255, 255, 255, 0.7)', // Muted white for inactive text
+    color: "#9CA3AF",
     fontSize: 12,
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   activeTabText: {
-    color: '#ffffff',
-    fontWeight: '600',
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#1C1F26', // Match main app background
+    backgroundColor: "#171717", // Unified theme
   },
   pagerView: {
     flex: 1,
@@ -90,36 +95,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tabContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: "#252525",
     margin: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2c2c2c', // Subtle border for differentiation
+    borderColor: "#2E2E2E",
   },
   cardHeader: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2c2c2c',
+    borderBottomColor: "#2E2E2E",
   },
   cardTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#ffffff', // Main text white
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   cardDescription: {
     fontSize: 14,
-    color: '#848484', // Muted text color
+    color: "#9CA3AF",
     marginTop: 4,
   },
   resourceListContainer: {
     padding: 16,
   },
   resourceButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 12,
-    backgroundColor: '#2c2c2c', // Button matches overall app theme
+    backgroundColor: "#2E2E2E",
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -128,11 +133,11 @@ const styles = StyleSheet.create({
   },
   resourceButtonText: {
     fontSize: 16,
-    color: '#ffffff', // Text aligned with app theme
+    color: "#FFFFFF",
   },
   chatIcon: {
     padding: 8,
-    color: '#3d5afe', // Highlighted color for icons
+    color: "#3D5AFE",
   },
 });
 
