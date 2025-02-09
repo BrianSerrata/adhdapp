@@ -11,10 +11,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  ScrollView
+  ScrollView,
+  Dimensions
 } from 'react-native';
+
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+
 import axios from 'axios';
 import { auth, db } from '../firebase';
 import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc, query, where } from 'firebase/firestore';
@@ -36,7 +39,14 @@ const LifeCoach = ({ navigation, route }) => {
   const SuggestionCard = ({ topic, onSelect }) => {
     return (
       <TouchableOpacity style={styles.suggestionCard} onPress={() => onSelect(topic)}>
-        <Text style={styles.suggestionText}>{topic}</Text>
+        <LinearGradient
+          colors={["#8c52ff", "#5ce1e6"]} // Gradient colors
+          start={{ x: 0, y: 1 }} 
+          end={{ x: 1, y: 0 }} 
+          style={styles.gradientBackground} // Ensures it follows shape
+        >
+          <Text style={styles.suggestionText}>{topic}</Text>
+        </LinearGradient>
       </TouchableOpacity>
     );
   };

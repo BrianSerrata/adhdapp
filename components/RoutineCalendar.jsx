@@ -8,10 +8,13 @@ import {
   Platform,
   FlatList,
   ScrollView,
-  Image
+  Image,
+  LayoutAnimation,
+  UIManager,
 } from "react-native";
 
-import { Calendar, } from "react-native-calendars";
+import { Calendar, CalendarList } from "react-native-calendars";
+import moment from 'moment'
 import Animated, { FadeInDown } from "react-native-reanimated";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -37,6 +40,7 @@ import {
 import { auth, db } from "../firebase";
 import styles from "../styles/RoutineCalendarStyles";
 import BadgesView from "./Badges";
+import WeeklyCalendar from "./WeeklyCalendar";
 import { trackTaskCompletionToggled,
          trackRoutineCompleted,
  } from "../backend/apis/segment";
@@ -70,6 +74,7 @@ export default function RoutineCalendar() {
   const [quote, setQuote] = useState("");
   const [numPendingTasks, setNumPendingTasks] = useState(0);
   const [streak, setStreak] = useState(0)
+  const [rememberWhy, setRememberWhy] = useState("");
 
   // For toggling expanded tasks
   const [expandedTaskId, setExpandedTaskId] = useState(null);
@@ -92,6 +97,9 @@ const [allTasksCompleted, setAllTasksCompleted] = useState(false)
     engagement: "1",
     suggestion: '',
   });
+
+  const startOfWeek = moment().startOf('isoWeek').format('YYYY-MM-DD');
+  const endOfWeek = moment().endOf('isoWeek').format('YYYY-MM-DD');
   const [calendarMinimized, setCalendarMinimized] = useState(false);
 
 
@@ -523,8 +531,11 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
   };
 
   const handleDayPress = useCallback((day) => {
-    setSelectedDate(day.dateString);
+    // If 'day' is already a string, use it directly; otherwise, try to access day.dateString
+    const dateString = typeof day === "string" ? day : day.dateString;
+    setSelectedDate(dateString);
   }, []);
+  
 
   const triggerConfetti = () => {
     setShowConfetti(true);
@@ -904,7 +915,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
             showFeedbackIcon={true}
           />
 
-          <Animated.View
+          {/* <Animated.View
             entering={FadeInDown.duration(1000).delay(200)}
           >
             <TouchableOpacity
@@ -918,9 +929,9 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
                 color="#fff"
               />
             </TouchableOpacity>
-          </Animated.View>
+          </Animated.View> */}
 
-          <Animated.View
+          {/* <Animated.View
             entering={FadeInDown.duration(1000).delay(200)}
             style={styles.viewToggleContainer}
           >
@@ -958,7 +969,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
                 Badges
               </Text>
             </TouchableOpacity>
-            </Animated.View>
+            </Animated.View> */}
 
 
 
@@ -968,43 +979,9 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
               style={styles.calendarContainer}
             >
               {selectedView === 'calendar' ? (
-                <Calendar
+                <WeeklyCalendar
                   onDayPress={handleDayPress}
-                  markedDates={{
-                    ...markedDates,
-                    [selectedDate]: {
-                      ...markedDates[selectedDate],
-                      selected: true,
-                    },
-                  }}
-                  horizontal={true}
-                  markingType="dot"
-                  theme={{
-                    backgroundColor: "#111111",
-                    calendarBackground: "#111111",
-                    textSectionTitleColor: "#9CA3AF",
-                    selectedDayBackgroundColor: "#2f4156",
-                    selectedDayTextColor: "#ffffff",
-                    todayTextColor: "#FF9800",
-                    dayTextColor: "#D1D5DB",
-                    textDisabledColor: "#4d4d4d",
-                    dotColor: "#60A5FA",
-                    selectedDotColor: "#ffffff",
-                    arrowColor: "#60A5FA",
-                    monthTextColor: "#D1D5DB",
-                    textDayFontSize: 16,
-                    textMonthFontSize: 20,
-                    textDayHeaderFontSize: 14,
-                    textDayFontFamily: "DM Sans",
-                    textMonthFontFamily: "DM Sans",
-                    textDayHeaderFontFamily: "DM Sans",
-                  }}
-                  style={{
-                    borderRadius: 15,
-                    overflow: "hidden",
-                    marginHorizontal: 16,
-                    elevation: 3,
-                  }}
+                  markedDates={markedDates}
                 />
               ) : (
                 <BadgesView 

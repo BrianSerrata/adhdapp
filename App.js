@@ -1,8 +1,8 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { AppState, Platform } from 'react-native'; // Import AppState
 import { NavigationContainer } from '@react-navigation/native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './navigation/AppNavigator';
 
 import { trackAppOpened } from './backend/apis/segment';

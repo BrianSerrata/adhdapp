@@ -12,7 +12,9 @@ import {
   Switch,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
-  Modal
+  Modal,
+  Image,
+  ScrollView
 } from "react-native";
 import {
   collection,
@@ -72,20 +74,20 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
   const placeholderPrompts = [
     "I want to organize my closet this weekend.",
     "Help me plan a productive study session.",
-    "Suggest a healthy dinner recipe I can cook in 30 minutes.",
+    "Give me a quick and healthy dinner recipe.",
     "Give me steps to build a morning routine.",
-    "I need a checklist for packing for a weekend trip.",
+    "I need a checklist for packing for my trip.",
     "Help me prioritize my tasks for today.",
-    "Guide me through a 5-minute mindfulness exercise.",
+    "I want a brief mindfulness exercise.",
     "I want to improve my bedtime habits.",
-    "Create a workout plan for someone with no equipment.",
-    "Break down how I can declutter my workspace.",
+    "Create a workout plan with no equipment.",
+    "How can I declutter my workspace.",
     "I want to create a budget for the next month.",
-    "Help me brainstorm ideas for my next creative project.",
-    "Suggest ways to stay focused while working from home.",
+    "Help me brainstorm ideas for my project.",
+    "Ways to stay focused working from home.",
     "I need steps to prepare for a job interview.",
-    "I want to create a simple meal plan for the week.",
-    "Give me tips to stay consistent with my journaling.",
+    "I want a simple meal plan for the week.",
+    "Tips to stay consistent with journaling.",
   ];
 
   const [dynamicPlaceholder, setDynamicPlaceholder] = useState(placeholderPrompts[0]);
@@ -789,9 +791,9 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
           disabled={loading}
         >
           <LinearGradient
-            colors={["#4c2985", "rgba(168, 18, 127, 0)"]} // Purple fading into transparency
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            colors={["#8c52ff", "#5ce1e6"]} // Bright green to light blue
+            start={{ x: 0, y: 1 }}  // Adjusted for 135-degree angle
+            end={{ x: 1, y: 0 }}  // Adjusted for 135-degree angle
             style={styles.generateButton}
           >
             {loading ? (
@@ -1017,42 +1019,70 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <SafeAreaView style={styles.safeArea}>
-        <TouchableOpacity 
-          style={styles.menuIcon} 
-          onPress={() => setShowRoutineList(true)}
-        >
-          <MaterialIcons name="menu" size={28} color="#fff" />
-        </TouchableOpacity>
-        <RoutineBuilderInput
-          userInput={userInput}
-          setUserInput={setUserInput}
-          isInputting={isInputting}
-          setIsInputting={setIsInputting}
+    <SafeAreaView style={styles.safeArea}>
+      
+      {/* Menu Icon */}
+      <TouchableOpacity 
+        style={styles.menuIcon} 
+        onPress={() => setShowRoutineList(true)}
+      >
+        <MaterialIcons name="menu" size={28} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Input & Modal */}
+
+      {tasks.length === 0 && (
+        <View style={styles.emptyBackgroundContainer}>
+          <Text style={styles.emptyHeaderText}>
+            YOUR ROUTINE SHAPES YOUR RESULTS.
+          </Text>
+          <Text style={styles.emptySubText}>
+            Start by adding tasks today!
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.emptyIconContainer}>
+        <Image 
+          source={require('../assets/target.png')} // Update with actual asset path
+          style={styles.targetIcon}
         />
-        <RoutineNameModal
-          isVisible={isRoutineNameModalVisible}
-          onClose={() => setRoutineNameModalVisible(false)}
-          onConfirm={confirmSaveRoutine}
-          routineName={routineName}
-          setRoutineName={setRoutineName}
+      </View>
+
+      <RoutineBuilderInput
+        userInput={userInput}
+        setUserInput={setUserInput}
+        isInputting={isInputting}
+        setIsInputting={setIsInputting}
+      />
+
+      <RoutineNameModal
+        isVisible={isRoutineNameModalVisible}
+        onClose={() => setRoutineNameModalVisible(false)}
+        onConfirm={confirmSaveRoutine}
+        routineName={routineName}
+        setRoutineName={setRoutineName}
+      />
+
+      {/* Background Overlay & Header (only when there are no tasks) */}
+
+      {/* Main Content */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <DraggableFlatList
+          data={tasks}
+          onDragEnd={handleDragEnd}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          ListHeaderComponent={renderHeader}
+          ListFooterComponent={renderFooter}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
         />
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <DraggableFlatList
-            data={tasks}
-            onDragEnd={handleDragEnd}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            ListHeaderComponent={renderHeader}
-            ListFooterComponent={renderFooter}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-            keyboardShouldPersistTaps="always"
-            keyboardDismissMode="none"
-          />
-        </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
         <DateTimePickerModal
           isVisible={isTimePickerVisible || isDatePickerVisible}
           mode={isTimePickerVisible ? "time" : "date"}

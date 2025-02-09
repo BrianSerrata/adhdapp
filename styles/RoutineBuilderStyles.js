@@ -18,8 +18,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
     padding: 20,
-    paddingBottom: 10,
-    backgroundColor: "#111111",
+    marginTop: 25,
   },
   subHeader: {
     fontSize: 18,
@@ -455,6 +454,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  emptyBackgroundContainer: {
+    top: 60,  // Adjust to move down from the top
+    left: 20, // Adjust to move away from the left edge
+    right: 0, 
+    backgroundColor: "transparent", // Ensure no background blocks other elements
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    marginBottom: 275,
+  },
+  emptyHeaderText: {
+    fontSize: 23,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    textAlign: "left",  // Align text to the left
+    marginBottom: 4,    // Reduced margin to bring text closer
+    marginLeft: 5,      // Slight left padding for stagger effect
+  },
+  emptySubText: {
+    fontSize: 16,
+    color: "#9CA3AF",
+    textAlign: "left",  // Align text to the left
+    marginLeft: 4,     // More left padding to create a staggered effect
+  },
+  emptyIconContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    top: -75
+  },
+  targetIcon: {
+    width: 100,  // Adjust size as needed
+    height: 100,
+    marginLeft:50,
+  },
+  // Ensure your main list and other content have a higher z-index (or are rendered later)
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#171717",
+    position: "relative",
+  },
+  targetIcon: {
+    marginTop: 20,
+    opacity: 0.3, // Adjust for subtle effect
+  },  
 });
 
 export default styles;

@@ -51,13 +51,10 @@ const slateStyles = StyleSheet.create({
   },
   // White "card" for the calendar
   calendarContainer: {
-    margin: 16,
+    margin: 1,
     marginTop: 8,
     borderRadius: 15,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
   },
@@ -76,18 +73,17 @@ const slateStyles = StyleSheet.create({
     gap: 15,
   },
   routineContainer: {
-    backgroundColor: '#252525', // Darker background to align with the black aesthetic
+    backgroundColor: '#171717', // Darker background to align with the black aesthetic
     borderRadius: 15, // Slightly more rounded corners for a softer feel
     padding: 16, // Increased padding for a more spacious layout
     marginBottom: 16, // Reduced margin for closer stacking
     marginTop: 16,
-    shadowColor: '#000', // Darker shadow for depth
-    shadowOffset: { width: 0, height: 2 }, // Slightly deeper shadow for better definition
-    shadowOpacity: 0.3, 
-    shadowRadius: 4,
+    // shadowColor: '#000', // Darker shadow for depth
+    // shadowOffset: { width: 0, height: 2 }, // Slightly deeper shadow for better definition
+    // shadowOpacity: 0.3, 
+    // shadowRadius: 4,
     elevation: 5, // Stronger elevation for a floating effect
-    borderWidth: 1, 
-    borderColor: '#2A2D34', // Subtle border for separation without being too prominent
+    // borderWidth: 1, 
   },
   routineName: {
     fontSize: 18,
@@ -97,7 +93,7 @@ const slateStyles = StyleSheet.create({
   },
   taskItem: {
     backgroundColor: '#2e2e2e', // Darker shade for tasks to align with the black theme
-    borderRadius: 15, // Matches the container's rounded corners
+    borderRadius: 100, // Matches the container's rounded corners
     marginBottom: 12, // Consistent spacing between tasks
     shadowColor: '#000', // Subtle shadow to lift tasks slightly off the background
     shadowOffset: { width: 0, height: 1 },
@@ -105,7 +101,6 @@ const slateStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4, // Slight elevation for separation
   },
-  
   draggingTask: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -198,7 +193,7 @@ const slateStyles = StyleSheet.create({
   },
   quoteBubbleContainer: {
     marginVertical: 20,
-    marginHorizontal: 16,
+    marginHorizontal: 26,
     padding: 16,
     borderRadius: 12,
     backgroundColor: '#252525',
@@ -248,6 +243,7 @@ const slateStyles = StyleSheet.create({
     fontWeight: '600',
     color: '#A0AEC0',
     marginBottom: 5,
+    marginTop: 15,
     textAlign: 'center',
   },
   emptyStateSubtext: {

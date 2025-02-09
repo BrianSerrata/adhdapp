@@ -112,11 +112,11 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   aiBubble: {
-    backgroundColor: '#242424',
+    backgroundColor: '#171717',
     borderBottomLeftRadius: 4,
   },
   userBubble: {
-    backgroundColor: '#3d5afe',
+    backgroundColor: '#242424',
     borderBottomRightRadius: 4,
   },
   messageText: {
@@ -235,25 +235,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   suggestionCard: {
-    backgroundColor: '#3d5afe', // Purple background
-    paddingVertical: 6, // Slightly increased height for better touch area
-    paddingHorizontal: 16, // Adjusted padding for better spacing
-    borderRadius: 20, // More rounded corners
+    borderRadius: 20, // Ensures rounded corners
     marginRight: 8, // Space between cards
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-    minWidth: 80, // Ensure the cards are wide enough
-    height: 35, // Increased height for better visibility
+    elevation: 3, // Better shadow effect
+  },
+  gradientBackground: {
+    paddingVertical: 6, // Height control
+    paddingHorizontal: 16, // Adjusted padding for better spacing
+    borderRadius: 20, // Ensures rounded edges match parent
     justifyContent: 'center',
     alignItems: 'center',
+    minWidth: 80, // Minimum width for consistency
+    height: 35, // Fixed height
   },
   suggestionText: {
-    fontSize: 14, // Slightly larger font size for readability
-    color: '#ffffff', // White text for contrast
-    textAlign: 'center', // Center the text
+    color: '#fff', // Ensures text is readable on gradient
+    fontSize: 14,
+    fontWeight: '600',
   },
   suggestionsContainer: {
     flexDirection: 'row',

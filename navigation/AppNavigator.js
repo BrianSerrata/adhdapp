@@ -1,11 +1,13 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Animated, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CardStyleInterpolators } from '@react-navigation/stack';
 import { enableScreens } from 'react-native-screens';
 import { Ionicons } from '@expo/vector-icons'; // For Expo projects
+import SplashScreen from '../components/SplashScreen';
 
 // Import your screens
 import LoginPage from '../screens/LoginPage';
@@ -208,9 +210,14 @@ const TabNavigator = () => {
 
 // Root Navigator
 const AppNavigator = () => {
-  return (
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Removed the NavigationContainer here, as the main App already provides it.
+  return showSplash ? (
+    <SplashScreen onFinish={() => setShowSplash(false)} />
+  ) : (
     <Stack.Navigator
-      initialRouteName="Login Page"
+      initialRouteName="MainApp"
       screenOptions={{
         headerShown: false,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
