@@ -24,6 +24,8 @@ import FeedbackModal from "./FeedbackModal";
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
+import ProgressBar from "./ProgressBar";
+import TaskRow from "./TaskRow";
 
 
 import { useNavigation } from "@react-navigation/native";
@@ -125,10 +127,6 @@ const [allTasksCompleted, setAllTasksCompleted] = useState(false)
     }
   ]
 
-const soundFiles = [
-  require('../assets/pop.mp3'),
-];
-
 const navigation = useNavigation();
 
 // Calculate pending tasks on first render and whenever routines change
@@ -162,53 +160,6 @@ useEffect(() => {
   }, 0);
   setNumTasks(tasks);
 }, [routinesForDate]);
-
-
-// Add this component
-const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
-  const chunkWidth = 100 / totalTasks;
-
-  const FireIcon = useMemo(() => (
-    <Image
-      source={require('../assets/fire-icon.png')}
-      style={styles.fireIcon}
-    />
-  ), [])
-
-  return (
-    <View style={styles.progressContainer}>
-      <View style={styles.progressBar}>
-        {Array.from({ length: totalTasks }).map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.progressChunk,
-              {
-                width: `${chunkWidth}%`,
-                overflow: 'hidden',
-              },
-            ]}
-          >
-            {index >= completedTasks ? (
-              <View style={styles.incompleteChunk} />
-            ) : (
-              <LinearGradient
-                colors={['#FFA500', '#FF8C00']}
-                style={styles.progressFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              />
-            )}
-          </View>
-        ))}
-      </View>
-      <View style={styles.fireContainer}>
-        {FireIcon}
-        <Text style={styles.streakText}>{streak}</Text>
-      </View>
-    </View>
-  );
-});
 
 
   const handleSubmitFeedback = async () => {
@@ -671,191 +622,6 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
   };
 
   // -------------------------
-  // Task Row with SMART Builder UI
-  // -------------------------
-  const TaskRow = ({ routine, task }) => {
-    
-    // Completion logic
-    const isCompleted = routine.completedDates?.[selectedDate]?.[task.id] === true;
-
-    const toggleTaskCompletion = async () => {
-
-      const playRandomSound = async () => {
-        // Select a random sound file
-        const selectedSound = soundFiles[0];
-      
-        // Play the selected sound
-        const { sound } = await Audio.Sound.createAsync(selectedSound);
-        await sound.playAsync();
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.didJustFinish) {
-            sound.unloadAsync();
-          }
-        });
-      };
-      
-
-      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
-
-      // Identify task that has been toggled
-      const taskIndex = routine.tasks.findIndex((t) => t.id === task.id);
-      if (taskIndex === -1) {
-        console.error("Task not found in routine");
-        return;
-      }
-
-      const newValue = !isCompleted;
-
-      const updatedTasks = [...routine.tasks];
-      updatedTasks[taskIndex] = {
-        ...updatedTasks[taskIndex],
-        isCompleted: newValue,
-      };
-
-      const updatedCompletedDates = {
-        ...routine.completedDates,
-        [selectedDate]: {
-          ...(routine.completedDates?.[selectedDate] || {}),
-          [task.id]: newValue,
-        },
-      };
-
-      try {
-
-        // Trigger haptic feedback
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        await playRandomSound();
-
-        trackTaskCompletionToggled({
-          userId: auth.currentUser.uid,
-          routineId: routine.id,
-          taskId: task.id,
-          taskTitle: task.title,
-          completed: newValue,
-          timestamp: new Date().toISOString(),
-          date: selectedDate,
-        });
-
-        await updateDoc(routineRef, { 
-          tasks: updatedTasks, 
-          completedDates: updatedCompletedDates 
-        });
-        // Check if all tasks are now complete
-        const allTasksCompleted = routine.tasks.every(
-          (t) => updatedCompletedDates[selectedDate]?.[t.id] === true
-        );
-
-        if (newValue && allTasksCompleted) {
-
-          trackRoutineCompleted({
-            userId: auth.currentUser.uid,
-            routineId: routine.id,
-            routineName: routine.name,
-            routineDetails: routine,
-            numTasks: routine.tasks.length,
-            timestamp: new Date().toISOString(),
-            date: selectedDate,
-            totalTasks: routine.tasks.length,
-          });
-
-          triggerConfetti();
-        }
-      } catch (err) {
-        console.error("Error updating completion:", err);
-        Alert.alert("Error", "Could not update completion.");
-      }
-    };
-
-    // Expanded logic
-    const isExpanded = expandedTaskId === task.id;
-    const toggleExpanded = () => {
-      setExpandedTaskId(isExpanded ? null : task.id);
-    };
-
-    const handleTitleChange = async (text) => {
-      const updatedTasks = routine.tasks.map((t) =>
-        t.id === task.id ? { ...t, title: text } : t
-      );
-      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
-      try {
-        await updateDoc(routineRef, { tasks: updatedTasks });
-      } catch (err) {
-        console.error("Error updating title:", err);
-        Alert.alert("Error", "Could not update title.");
-      }
-    };
-
-    return (
-      <Animated.View style={styles.taskItem}>
-        {/* Header */}
-        <TouchableOpacity
-          style={styles.taskHeader}
-          onPress={toggleExpanded}
-          activeOpacity={0.7}
-        >
-          <TouchableOpacity
-            style={[styles.checkbox, isCompleted && styles.checkboxCompleted]}
-            onPress={(e) => {
-              e.stopPropagation();
-              toggleTaskCompletion();
-            }}
-          >
-            {isCompleted && <MaterialIcons name="check" size={16} color="#fff" />}
-          </TouchableOpacity>
-
-          <View style={styles.taskTitleContainer}>
-            <Text
-              style={[styles.taskTitle, isCompleted && styles.taskTitleCompleted]}
-              numberOfLines={1}
-            >
-              {task.title}
-            </Text>
-            <Text style={styles.taskTime}>
-              {formatTimeForDisplay(task.timeRange.start)} - {formatTimeForDisplay(task.timeRange.end)}
-            </Text>
-          </View>
-
-          <MaterialIcons
-            name={isExpanded ? "expand-less" : "expand-more"}
-            size={24}
-            color="#666"
-          />
-        </TouchableOpacity>
-
-        {/* Expanded Content */}
-        {isExpanded && (
-          <View style={styles.expandedContent}>
-            {/* Time Inputs */}
-            <View style={styles.timeInputsContainer}>
-              <TouchableOpacity
-                style={styles.timeButton}
-                onPress={() => showTimePicker(routine, task.id, "start")}
-              >
-                <MaterialIcons name="access-time" size={20} color="#007AFF" />
-                <Text style={styles.timeButtonText}>
-                  {formatTimeForDisplay(task.timeRange.start) || "Start Time"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.timeButton}
-                onPress={() => showTimePicker(routine, task.id, "end")}
-              >
-                <MaterialIcons name="access-time" size={20} color="#007AFF" />
-                <Text style={styles.timeButtonText}>
-                  {formatTimeForDisplay(task.timeRange.end) || "End Time"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.description}>{task.description}</Text>
-          </View>
-        )}
-      </Animated.View>
-    );
-  };
-
-  // -------------------------
   // Routines for Selected Date
   // -------------------------
   const RoutinesList = () => {
@@ -865,7 +631,15 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
         <Text style={styles.routineName}>{routine.name}</Text>
 
         {routine.tasks.map((task) => (
-          <TaskRow key={task.id} routine={routine} task={task} />
+          <TaskRow key={task.id} 
+           routine={routine} 
+           task={task} selectedDate={selectedDate}
+           expandedTaskId = {expandedTaskId}
+           setExpandedTaskId = {setExpandedTaskId}
+           formatTimeForDisplay={formatTimeForDisplay}
+           setTimePickerVisible={setTimePickerVisible}
+           triggerConfetti={triggerConfetti}
+           />
         ))}
       </View>
     ));
@@ -1006,7 +780,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
           {/* Routines for This Date */}
           {selectedDate && (
             <Animated.View
-              entering={FadeInDown.duration(1000).delay(800)}
+              entering={FadeInDown.duration(1000).delay(200)}
               style={styles.routinesSection}
             >
               {/* <Text style={styles.dateHeader}>
@@ -1021,7 +795,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
               </Text> */}
               {routinesForSelectedDate.length === 0 ? (
               <Animated.View
-                entering={FadeInDown.duration(1000).delay(300)}
+                entering={FadeInDown.duration(1000).delay(200)}
                 style={styles.emptyStateBubble}
               >
                 <TouchableOpacity

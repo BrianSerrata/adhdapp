@@ -1,13 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Animated, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CardStyleInterpolators } from '@react-navigation/stack';
 import { enableScreens } from 'react-native-screens';
 import { Ionicons } from '@expo/vector-icons'; // For Expo projects
-import SplashScreen from '../components/SplashScreen';
 
 // Import your screens
 import LoginPage from '../screens/LoginPage';
@@ -19,6 +17,7 @@ import GoalDetail from '../screens/GoalDetail';
 import GeneralManager from '../screens/GeneralManager';
 import Routines from '../screens/RoutinesPage';
 import RoutineBuilder from '../screens/RoutineBuilder';
+import SplashScreen from '../components/SplashScreen';
 
 enableScreens();
 
@@ -190,39 +189,21 @@ const TabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen
-        name="Manager"
-        component={(props) => (
-          <AnimatedScreen>
-            <GeneralManager {...props} />
-          </AnimatedScreen>
-        )}
-        options={{
-          tabBarLabel: 'Routines',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bookmark-outline" size={size} color={color} />
-          ),
-        }}
-      />
     </Tab.Navigator>
   );
 };
 
 // Root Navigator
 const AppNavigator = () => {
-  const [showSplash, setShowSplash] = useState(true);
-
-  // Removed the NavigationContainer here, as the main App already provides it.
-  return showSplash ? (
-    <SplashScreen onFinish={() => setShowSplash(false)} />
-  ) : (
+  return (
     <Stack.Navigator
-      initialRouteName="MainApp"
+      initialRouteName="SplashScreen" // Show Splash Screen first
       screenOptions={{
         headerShown: false,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
+      <Stack.Screen name="SplashScreen" component={SplashScreen} />
       <Stack.Screen name="Login Page" component={LoginPage} />
       <Stack.Screen name="Register Page" component={RegisterPage} />
       <Stack.Screen name="MainApp" component={TabNavigator} />
@@ -231,5 +212,6 @@ const AppNavigator = () => {
     </Stack.Navigator>
   );
 };
+
 
 export default AppNavigator;

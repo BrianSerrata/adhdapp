@@ -93,7 +93,7 @@ const slateStyles = StyleSheet.create({
   },
   taskItem: {
     backgroundColor: '#2e2e2e', // Darker shade for tasks to align with the black theme
-    borderRadius: 100, // Matches the container's rounded corners
+    borderRadius: 50, // Matches the container's rounded corners
     marginBottom: 12, // Consistent spacing between tasks
     shadowColor: '#000', // Subtle shadow to lift tasks slightly off the background
     shadowOffset: { width: 0, height: 1 },

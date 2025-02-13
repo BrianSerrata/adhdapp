@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     position: "absolute",
-    top: 60,
+    top: 10,
     left: 16,
     zIndex: 10,
   },
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   targetIcon: {
     marginTop: 20,
-    opacity: 0.3, // Adjust for subtle effect
+    opacity: 1, // Adjust for subtle effect
   },  
 });
 

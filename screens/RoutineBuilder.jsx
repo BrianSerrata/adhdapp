@@ -25,7 +25,11 @@ import {
   doc, 
   deleteDoc 
 } from "firebase/firestore";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { 
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring, } from "react-native-reanimated";
 import { auth, db, analytics } from "../firebase";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -69,8 +73,8 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
   setUserInput,
   isInputting,
   setIsInputting,
+  taskCount = 0, // Add taskCount prop to check if tasks exist
 }) {
-  // (Placeholder animation logic omitted for brevity)
   const placeholderPrompts = [
     "I want to organize my closet this weekend.",
     "Help me plan a productive study session.",
@@ -93,11 +97,57 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
   const [dynamicPlaceholder, setDynamicPlaceholder] = useState(placeholderPrompts[0]);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [typing, setTyping] = useState(true);
+  
+  // Create a shared value for the bottom offset
+  const keyboardHeight = useSharedValue(0);
+  const shouldAnimatePosition = taskCount === 0; // Only animate if no tasks exist
+
+  // Pre-create the keyboard show/hide callbacks using useCallback
+  const onKeyboardShow = useCallback(() => {
+    if (shouldAnimatePosition) {
+      keyboardHeight.value = withSpring(150, {
+        mass: 1,
+        damping: 15,
+        stiffness: 120,
+        overshootClamping: false,
+        restSpeedThreshold: 0.001,
+        restDisplacementThreshold: 0.001,
+      });
+    }
+  }, [keyboardHeight, shouldAnimatePosition]);
+
+  const onKeyboardHide = useCallback(() => {
+    if (shouldAnimatePosition) {
+      keyboardHeight.value = withSpring(0, {
+        mass: 1,
+        damping: 15,
+        stiffness: 120,
+        overshootClamping: false,
+        restSpeedThreshold: 0.001,
+        restDisplacementThreshold: 0.001,
+      });
+    }
+  }, [keyboardHeight, shouldAnimatePosition]);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardWillShow", onKeyboardShow);
+    const hideSubscription = Keyboard.addListener("keyboardWillHide", onKeyboardHide);
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [onKeyboardShow, onKeyboardHide]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    bottom: shouldAnimatePosition ? keyboardHeight.value : 0,
+  }));
 
   useEffect(() => {
     if (userInput.length === 0 && !isInputting) {
       let typingTimer;
       let backspacingTimer;
+
       const typeText = () => {
         const currentPrompt = placeholderPrompts[currentPromptIndex];
         if (dynamicPlaceholder.length < currentPrompt.length && typing) {
@@ -110,6 +160,7 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
           }, 650);
         }
       };
+
       const backspaceText = () => {
         if (dynamicPlaceholder.length > 0 && !typing) {
           backspacingTimer = setTimeout(() => {
@@ -121,8 +172,10 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
           setDynamicPlaceholder("");
         }
       };
+
       if (typing) typeText();
       else backspaceText();
+
       return () => {
         clearTimeout(typingTimer);
         clearTimeout(backspacingTimer);
@@ -143,7 +196,7 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
   );
 
   return (
-    <View style={{ paddingHorizontal: 16 }}>
+    <Animated.View style={[{ paddingHorizontal: 16 }, animatedStyle]}>
       <TextInput
         style={styles.goalInput}
         placeholder={dynamicPlaceholder}
@@ -155,7 +208,7 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
         onFocus={() => setIsInputting(true)}
         onBlur={() => setIsInputting(false)}
       />
-    </View>
+    </Animated.View>
   );
 });
 
@@ -603,10 +656,10 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
       Alert.alert("Error", "No tasks to save.");
       return;
     }
-    if (isRecurring && !selectedDays.length) {
-      Alert.alert("Days Not Selected", "Please select at least one day of the week.");
-      return;
-    }
+    // if (isRecurring && !selectedDays.length &&) {
+    //   Alert.alert("Days Not Selected", "Please select at least one day of the week.");
+    //   return;
+    // }
     setRoutineNameModalVisible(true);
   };
 
@@ -1018,109 +1071,117 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
     <SafeAreaView style={styles.safeArea}>
-      
-      {/* Menu Icon */}
-      <TouchableOpacity 
-        style={styles.menuIcon} 
-        onPress={() => setShowRoutineList(true)}
-      >
-        <MaterialIcons name="menu" size={28} color="#fff" />
-      </TouchableOpacity>
-
-      {/* Input & Modal */}
-
-      {tasks.length === 0 && (
-        <View style={styles.emptyBackgroundContainer}>
-          <Text style={styles.emptyHeaderText}>
-            YOUR ROUTINE SHAPES YOUR RESULTS.
-          </Text>
-          <Text style={styles.emptySubText}>
-            Start by adding tasks today!
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.emptyIconContainer}>
-        <Image 
-          source={require('../assets/target.png')} // Update with actual asset path
-          style={styles.targetIcon}
-        />
-      </View>
-
-      <RoutineBuilderInput
-        userInput={userInput}
-        setUserInput={setUserInput}
-        isInputting={isInputting}
-        setIsInputting={setIsInputting}
-      />
-
-      <RoutineNameModal
-        isVisible={isRoutineNameModalVisible}
-        onClose={() => setRoutineNameModalVisible(false)}
-        onConfirm={confirmSaveRoutine}
-        routineName={routineName}
-        setRoutineName={setRoutineName}
-      />
-
-      {/* Background Overlay & Header (only when there are no tasks) */}
-
-      {/* Main Content */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <DraggableFlatList
-          data={tasks}
-          onDragEnd={handleDragEnd}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ListHeaderComponent={renderHeader}
-          ListFooterComponent={renderFooter}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
-        />
-      </KeyboardAvoidingView>
-        <DateTimePickerModal
-          isVisible={isTimePickerVisible || isDatePickerVisible}
-          mode={isTimePickerVisible ? "time" : "date"}
-          onConfirm={isTimePickerVisible ? handleConfirmTime : handleConfirmDate}
-          onCancel={isTimePickerVisible ? hideTimePicker : hideDatePicker}
-          date={isTimePickerVisible ? selectedTime : selectedDate}
-          isDarkModeEnabled={true}
-          textColor={Platform.OS === "ios" ? "white" : "black"}
-          themeVariant="light"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-        />
-        <Modal visible={showRoutineList} animationType="slide" transparent={true}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Your Routines</Text>
-              {fetchedRoutines.map((routine) => (
-                <View key={routine.id} style={styles.routineItem}>
-                  <Text style={styles.routineName}>{routine.name}</Text>
-                  <View style={styles.routineActions}>
-                    <TouchableOpacity onPress={() => handleEditRoutine(routine)}>
-                      <MaterialIcons name="edit" size={20} color="blue" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDeleteRoutine(routine.id)}>
-                      <MaterialIcons name="delete" size={20} color="red" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setShowRoutineList(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={{ flex: 1 }}>
+          {/* Menu Icon */}
+          <TouchableOpacity
+            style={styles.menuIcon}
+            onPress={() => setShowRoutineList(true)}
+          >
+            <MaterialIcons name="menu" size={28} color="#fff" />
+          </TouchableOpacity>
+  
+          {/* Empty State */}
+          {tasks.length === 0 && (
+            <>
+              <View style={styles.emptyBackgroundContainer}>
+                <Text style={styles.emptyHeaderText}>
+                  YOUR ROUTINE SHAPES YOUR RESULTS.
+                </Text>
+                <Text style={styles.emptySubText}>
+                  Start by adding tasks today!
+                </Text>
+              </View>
+              <View style={styles.emptyIconContainer}>
+                <Image
+                  source={require('../assets/target.png')}
+                  style={styles.targetIcon}
+                />
+              </View>
+            </>
+          )}
+  
+          {/* Input & Routine Name Modal */}
+          <RoutineBuilderInput
+            userInput={userInput}
+            setUserInput={setUserInput}
+            isInputting={isInputting}
+            setIsInputting={setIsInputting}
+            taskCount = {tasks.length}
+          />
+          <RoutineNameModal
+            isVisible={isRoutineNameModalVisible}
+            onClose={() => setRoutineNameModalVisible(false)}
+            onConfirm={confirmSaveRoutine}
+            routineName={routineName}
+            setRoutineName={setRoutineName}
+          />
+  
+          {/* Main Content */}
+          <View style={{ flex: 1 }}>
+            <DraggableFlatList
+              data={tasks}
+              onDragEnd={handleDragEnd}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+              ListHeaderComponent={renderHeader}
+              ListFooterComponent={renderFooter}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+            />
           </View>
-        </Modal>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+  
+          {/* Time/Date Picker Modal - Moved outside KeyboardAvoidingView */}
+          {(isTimePickerVisible || isDatePickerVisible) && (
+            <DateTimePickerModal
+              isVisible={true}
+              mode={isTimePickerVisible ? "time" : "date"}
+              onConfirm={isTimePickerVisible ? handleConfirmTime : handleConfirmDate}
+              onCancel={isTimePickerVisible ? hideTimePicker : hideDatePicker}
+              date={isTimePickerVisible ? selectedTime : selectedDate}
+              isDarkModeEnabled={true}
+              textColor={Platform.OS === "ios" ? "white" : "black"}
+              themeVariant="light"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+            />
+          )}
+  
+          {/* Routines List Modal */}
+          <Modal 
+            visible={showRoutineList} 
+            animationType="slide" 
+            transparent={true}
+            statusBarTranslucent={true}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Your Routines</Text>
+                {fetchedRoutines.map((routine) => (
+                  <View key={routine.id} style={styles.routineItem}>
+                    <Text style={styles.routineName}>{routine.name}</Text>
+                    <View style={styles.routineActions}>
+                      <TouchableOpacity onPress={() => handleEditRoutine(routine)}>
+                        <MaterialIcons name="edit" size={20} color="blue" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteRoutine(routine.id)}>
+                        <MaterialIcons name="delete" size={20} color="red" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowRoutineList(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        </View>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 }

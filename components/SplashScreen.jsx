@@ -1,36 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import Video from 'react-native-video';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import { Video } from 'expo-av';
+import { useNavigation } from '@react-navigation/native';
 
-const SplashScreen = ({ onFinish }) => {
-  const [isLoading, setIsLoading] = useState(true);
+const SplashScreen = () => {
+  const navigation = useNavigation();
+  const videoRef = useRef(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+
+  const handleVideoFinish = () => {
+    navigation.replace('MainApp'); // Navigate to Home screen
+  };
 
   return (
     <View style={styles.container}>
-      {isLoading && <ActivityIndicator size="large" color="#fff" />}
       <Video
-        source={require('../assets/FocusAI.mp4')} // Add your video in assets folder
+        ref={videoRef}
+        source={require('../assets/FocusAI.mp4')} // Place video inside `assets/`
         style={styles.video}
         resizeMode="cover"
-        onLoad={() => setIsLoading(false)}
-        onEnd={onFinish} // Trigger the transition when the video finishes
-        muted={false}
-        repeat={false}
+        shouldPlay
+        isLooping={false}
+        onPlaybackStatusUpdate={(status) => {
+          if (status.didJustFinish) {
+            handleVideoFinish();
+          }
+        }}
       />
     </View>
   );
 };
 
+const { width, height } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'black',
   },
   video: {
-    width: '100%',
-    height: '100%',
+    width: width,
+    height: height,
     position: 'absolute',
   },
 });
