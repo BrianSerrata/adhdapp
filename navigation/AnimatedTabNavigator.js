@@ -47,8 +47,7 @@ const AnimatedTabNavigator = () => {
           { name: 'Home', icon: 'home' },
           { name: 'Routines', icon: 'schedule' },
           { name: 'AI Coach', icon: 'chat' },
-          { name: 'Resources', icon: 'library-books' },
-          { name: 'Manager', icon: 'settings' },
+          { name: 'Resources', icon: 'favorite' },
         ].map((tab, index) => (
           <TouchableOpacity
             key={index}

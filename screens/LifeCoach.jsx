@@ -25,8 +25,9 @@ import styles from '../styles/LifeCoachStyles';
 import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
 import FeedbackModal from '../components/FeedbackModal';
-
+import { TaskChatModal } from '../components/TaskChatModal';
 import * as Notifications from 'expo-notifications';
+import HTMLParser from 'react-native-html-parser';
 
 import {
   trackMessageSent,
@@ -36,28 +37,23 @@ import {
 
 const LifeCoach = ({ navigation, route }) => {
 
-  const SuggestionCard = ({ topic, onSelect }) => {
-    return (
-      <TouchableOpacity style={styles.suggestionCard} onPress={() => onSelect(topic)}>
-        <LinearGradient
-          colors={["#8c52ff", "#5ce1e6"]} // Gradient colors
-          start={{ x: 0, y: 1 }} 
-          end={{ x: 1, y: 0 }} 
-          style={styles.gradientBackground} // Ensures it follows shape
-        >
-          <Text style={styles.suggestionText}>{topic}</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  };
+const SuggestionCard = ({ topic, onSelect }) => {
+  return (
+    <TouchableOpacity style={styles.suggestionCard} onPress={() => onSelect(topic)}>
+      <View style={styles.gradientBackground}> 
+        <Text style={styles.suggestionText}>{topic}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 
   const [showSuggestions, setShowSuggestions] = useState(true); // Track visibility of suggestions
 
   const topicMessages = {
     'Schedule a Reminder': "I'd like to schedule a reminder",
     'Create a Routine': "I'd like to create a routine",
-    'Need Help': "I need some help with something",
-    'Topic 4': "Let's discuss Topic 4",
+    'Need Help with Tasks': "I need some help with my tasks for  today",
   };
   
   const handleTopicSelect = (selectedTopic) => {
@@ -71,6 +67,7 @@ const LifeCoach = ({ navigation, route }) => {
   const resource = route.params?.resource;
   const isResourceChat = !!resource;
 
+  const [resourceText, setResourceText] = useState("")
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,6 +81,16 @@ const LifeCoach = ({ navigation, route }) => {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [oneOffRoutines, setOneOffRoutines] = useState([]);
   const [recurringRoutines, setRecurringRoutines] = useState([]);
+
+  const handleDiscussTask = (task) => {
+    console.log("break")
+    console.log("TRASK IN CHAT",task)
+    // Format the task information as you want it to appear in the input box
+    const taskDiscussText = `I need help with my task ${task.title}.\n\nTask details: ${task.description}`
+    
+    // Set the formatted text as the input value
+    setInput(taskDiscussText);
+  };
 
   // Feedback states
   const [feedbackVisible, setFeedbackVisible] = useState(false);
@@ -166,6 +173,17 @@ const LifeCoach = ({ navigation, route }) => {
     fetchUserName();
   }, []);
 
+  useEffect(() => {
+    if (route.params?.newChat && route.params?.resource) {
+      // If we're coming from a resource selection, create a new conversation
+      createNewConversation();
+    } else {
+      // Otherwise, load existing conversations or create one if none exist
+      const unsubscribe = fetchConversations();
+      return () => unsubscribe();
+    }
+  }, []);
+
   const handleSubmitFeedback = async () => {
     // Convert numeric feedback to numbers
     const numericFeedback = {
@@ -223,7 +241,6 @@ const LifeCoach = ({ navigation, route }) => {
           ...doc.data(),
         }));
         setOneOffRoutines(loadedOneOffRoutines);
-        console.log('One-Off Routines:', loadedOneOffRoutines);
       }, (error) => {
         console.error('Error fetching one-off routines:', error);
         Alert.alert('Error', 'Failed to fetch one-off routines.');
@@ -236,7 +253,6 @@ const LifeCoach = ({ navigation, route }) => {
           ...doc.data(),
         }));
         setRecurringRoutines(loadedRecurringRoutines);
-        console.log('Recurring Routines:', loadedRecurringRoutines);
       }, (error) => {
         console.error('Error fetching recurring routines:', error);
         Alert.alert('Error', 'Failed to fetch recurring routines.');
@@ -256,9 +272,6 @@ const LifeCoach = ({ navigation, route }) => {
   useEffect(() => {
     const combineTasks = () => {
       const allTasks = [];
-  
-      console.log('Combining tasks. One-Off Routines:', oneOffRoutines);
-      console.log('Combining tasks. Recurring Routines:', recurringRoutines);
   
       // Extract tasks from One-Off Routines
       oneOffRoutines.forEach((routine) => {
@@ -287,9 +300,6 @@ const LifeCoach = ({ navigation, route }) => {
           });
         }
       });
-  
-      // Log combined tasks for debugging
-      console.log('Combined Tasks:', allTasks);
   
       setTasks(allTasks);
       setTasksLoading(false);
@@ -443,30 +453,46 @@ const LifeCoach = ({ navigation, route }) => {
   };
 
   const createNewConversation = async () => {
-
-    // setMessages([
-    //   {
-    //     id: '1',
-    //     text: "Hi! I'm here to chat and help you process your thoughts. How are you feeling today?",
-    //     isAI: true,
-    //   },
-    // ]);
-
-    try {
-
-      const initialMessage = {
+    const resource = route.params?.resource;
+    let initialMessage;
+  
+    if (resource) {
+      let articleContent = '';
+      try {
+        // Fetch the article's HTML content
+        // console.log("resource:",resource)
+        const response = await axios.get(resource.url,{ responseType: 'text' });
+        const text = response.data
+        setResourceText(text)
+      } catch (error) {
+        console.error('Error fetching article:', error);
+        articleContent = 'Unable to fetch article content.';
+      }
+  
+      initialMessage = {
+        id: '1',
+        text: `Hey ${name}! I noticed you selected "${resource.title}". How can I help you dive deeper into this topic?`,
+        isAI: true,
+      };
+    } else {
+      initialMessage = {
         id: '1',
         text: `Hey ${name}! Ready to make some progress today? 🚀 We can start by reviewing your tasks, planning new goals, or discussing any challenges you're facing. What's on your mind?`,
         isAI: true,
       };
+    }
 
-      setShowSuggestions(true)
-
-      const conversationRef = await addDoc(collection(db, 'users', auth.currentUser.uid, 'conversations'), {
-        createdAt: new Date(),
-        messages: [initialMessage],
-        startTime: new Date(), // Track when the conversation started
-      });
+    setShowSuggestions(true)
+  
+    try {
+      const conversationRef = await addDoc(
+        collection(db, 'users', auth.currentUser.uid, 'conversations'),
+        {
+          createdAt: new Date(),
+          messages: [initialMessage],
+          startTime: new Date(),
+        }
+      );
       await loadConversation(conversationRef.id);
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -650,24 +676,33 @@ const handleSend = async (message = input) => {
     const systemPrompt = {
       role: 'system',
       content: isResourceChat
-        ? `You are an AI assistant specializing in ADHD resources. The user wants to discuss the resource "${resource.title}".`
+        ? `You are an AI assistant specializing in ADHD resources. The user wants to discuss the resource "${resource.title}". Before proceeding, make sure to parse the article by parsing the text ${resourceText}.
+           Provide information, answer questions, and offer insights related to this specific resource. 
+           Limit responses to 300 tokens to maintain clarity and focus.`
         : `You are a compassionate ADHD life coach who combines proven coaching methods with deep neurobiological understanding and genuine empathy. 
         Your approach is to meet people where they are, acknowledge their struggles, and guide them toward growth while helping them understand
         and work with their unique brain wiring.
 
-        When a user requests one or more reminders, extract each task and its associated time for the reminders. Respond to the user's query normally, and if one or more reminders are detected, include a single JSON object at the very end of your response. The JSON object should have the following format:
+        When a user EXPLICITLY requests one or more NEW reminders, 
+        extract each new task and its associated time. Respond to the user's query normally, and if new reminders are detected, include a single JSON object 
+        at the very end of your response. The JSON object should have the following format:
 
         {
           "reminders": [
             {
-              "task": "description of the first task",
-              "time": "${datetimeString}"
-            },
-            {
-              "task": "description of the second task",
+              "task": "description of the first NEW task",
               "time": "${datetimeString}"
             }
           ]
+        }
+
+        Important Reminder Rules:
+        - ONLY check the user's LATEST message for reminder requests
+        - IGNORE any reminder-related content from previous messages in the conversation
+        - ONLY create reminders when the latest message EXPLICITLY requests them using words like "remind me", "set a reminder", "add a reminder"
+        - ONLY create reminders when the user explicitly asks for them
+        - NEVER convert existing tasks into reminders automatically
+        - If discussing existing tasks, simply reference them without creating new reminders
 
           When responding to the user, if your response contains ANY of these patterns:
 
@@ -786,10 +821,6 @@ const handleSend = async (message = input) => {
             Use warm, conversational language
             Share insights as possibilities, not prescriptions
             Honor the whole person, not just their tasks
-
-
-        Essential Tasks for Today:
-        ${todayTasksText}
         
         Limit responses to 300 tokens to maintain clarity and focus.`,
     };
@@ -816,12 +847,10 @@ const handleSend = async (message = input) => {
     try {
       const response = await axios.post(apiUrl, payload, { headers });
       const aiOutput = response.data.choices[0].message.content.trim();
-      console.log("output", aiOutput)
   
       // Separate the AI's regular response and the JSON reminder
       const regex = /\{[\s\S]*\}/; // Matches the JSON object
       const match = aiOutput.match(regex);
-      console.log("match", match)
   
       let reminders = null;
       let routinePrompt = false;
@@ -833,8 +862,6 @@ const handleSend = async (message = input) => {
 
           // Extract reminders array if present
           reminders = parsedJson.reminders || null;
-          console.log("here")
-          console.log("routine prompt:",parsedJson.routinePrompt)
           routinePrompt = parsedJson.routinePrompt || false;
     
           // Remove the JSON part from the AI's response
@@ -929,6 +956,10 @@ const handleSend = async (message = input) => {
                 </View>
               )}
 
+              <View style={{right: 15, position: "absolute"}}>
+                <TaskChatModal onDiscussTask={handleDiscussTask}/>
+              </View>
+
               {showSuggestions && (
                 <ScrollView
                   horizontal
@@ -937,7 +968,7 @@ const handleSend = async (message = input) => {
                   contentContainerStyle={styles.suggestionsContainer}
                   keyboardShouldPersistTaps="handled"
                 >
-                  {['Schedule a Reminder', 'Create a Routine', 'Need Help', 'Topic 4'].map((topic, index) => (
+                  {['Schedule a Reminder', 'Create a Routine', 'Need Help with Tasks'].map((topic, index) => (
                     <SuggestionCard
                       key={index}
                       topic={topic}
@@ -972,7 +1003,7 @@ const handleSend = async (message = input) => {
               </View>
             </KeyboardAvoidingView>
 
-          <View style={{marginBottom: 70}}>
+          {/* <View style={{marginBottom: 70}}>
             <FeedbackModal
                 visible={feedbackVisible}
                 setVisible={setFeedbackVisible}
@@ -982,7 +1013,7 @@ const handleSend = async (message = input) => {
                 handleSubmit={handleSubmitFeedback}
                 showFeedbackIcon={true}
               />
-          </View>
+          </View> */}
 
           </View>
         </View>

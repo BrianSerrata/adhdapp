@@ -361,13 +361,13 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
     setFeedbackVisible(false);
   };
 
-  // LLM routine generation function (simplified)
+
   const handleGenerateRoutine = async (aiInput) => {
 
-    if (!aiInput && !startTime || !endTime) {
-      Alert.alert("Time Not Set", "Please select both a start and end time before creating a routine.");
-      return;
-    }
+    // if (!aiInput && !startTime || !endTime) {
+    //   Alert.alert("Time Not Set", "Please select both a start and end time before creating a routine.");
+    //   return;
+    // }
 
     if (aiInput) {
       setUserInput("");
@@ -656,7 +656,7 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
       Alert.alert("Error", "No tasks to save.");
       return;
     }
-    // if (isRecurring && !selectedDays.length &&) {
+    // if (isRecurring && !selectedDays.length) {
     //   Alert.alert("Days Not Selected", "Please select at least one day of the week.");
     //   return;
     // }
@@ -863,7 +863,7 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
         {tasks.length > 0 && (
           <View>
             <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 16 }}>
-              <Switch
+              {/* <Switch
                 trackColor={{ false: "#767577", true: "#3d5afe" }}
                 thumbColor={isRecurring ? "#f4f3f4" : "#f4f3f4"}
                 onValueChange={(value) => {
@@ -877,12 +877,12 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
                   });
                 }}
                 value={isRecurring}
-              />
-              <Text style={{ marginLeft: 8, color: "#fff", fontSize: 16 }}>
+              /> */}
+              {/* <Text style={{ marginLeft: 8, color: "#fff", fontSize: 16 }}>
                 Recurring Routine
-              </Text>
+              </Text> */}
             </View>
-            {isRecurring ? (
+            {/* {isRecurring ? (
               <View>
                 <Text style={styles.subHeader}>Select Days of the Week</Text>
                 <View style={styles.daysContainer}>
@@ -924,7 +924,7 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
                   </Text>
                 </TouchableOpacity>
               </View>
-            )}
+            )} */}
             <View style={styles.taskListHeader}>
               <Text style={styles.taskListTitle}>Tasks</Text>
               <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
@@ -942,10 +942,66 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
   const renderFooter = () => {
     if (tasks.length === 0) return null;
     return (
-        <View style={{ marginBottom: 40 }}>
-          <TouchableOpacity
-            onPress={handleSaveRoutine}
-          >
+      <View style={{ marginBottom: 40 }}>
+        {/* Recurring Routine Toggle */}
+        <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 16 }}>
+          <Switch
+            trackColor={{ false: "#767577", true: "#3d5afe" }}
+            thumbColor={isRecurring ? "#f4f3f4" : "#f4f3f4"}
+            onValueChange={(value) => {
+              setIsRecurring(value);
+              trackRecurringRoutineToggled({
+                userId: auth.currentUser.uid,
+                isRecurring: value,
+                routineDetails: tasks || "not_set",
+                selectedDays: value ? selectedDays : [],
+                timestamp: new Date().toISOString(),
+              });
+            }}
+            value={isRecurring}
+          />
+          <Text style={{ marginLeft: 8, color: "#fff", fontSize: 16 }}>Recurring Routine</Text>
+        </View>
+  
+        {/* Conditional Rendering for Recurring vs One-Time Routine */}
+        {isRecurring ? (
+          <View>
+            <Text style={styles.subHeader}>Select Days of the Week</Text>
+            <View style={styles.daysContainer}>
+              {DAYS_OF_WEEK.map((day) => {
+                const isSelected = selectedDays.includes(day.value);
+                return (
+                  <TouchableOpacity
+                    key={day.value}
+                    style={[styles.dayButton, isSelected && styles.dayButtonSelected]}
+                    onPress={() => toggleDaySelection(day.value)}
+                  >
+                    <Text style={[styles.dayButtonText, isSelected && styles.dayButtonTextSelected]}>
+                      {day.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ) : (
+          <View>
+            <Text style={styles.subHeader}>Select Date for Routine</Text>
+            <TouchableOpacity style={styles.dateButton} onPress={showDatePicker}>
+              <MaterialIcons name="calendar-today" size={24} color="#fff" />
+              <Text style={styles.dateButtonText}>
+                {selectedDate.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+  
+        {/* Save Button */}
+        <TouchableOpacity onPress={handleSaveRoutine}>
           <LinearGradient
             colors={["#4c2985", "rgba(168, 18, 127, 0)"]} // Purple fading into transparency
             start={{ x: 0, y: 0 }}
@@ -954,11 +1010,12 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
           >
             <MaterialIcons name="save" size={24} color="#fff" />
             <Text style={styles.saveButtonText}>Save</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     );
   };
+  
 
   // *** Render each Task Item ***
   const renderItem = ({ item, drag, isActive }) => {
@@ -1132,6 +1189,8 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
               keyboardDismissMode="interactive"
             />
           </View>
+
+          
   
           {/* Time/Date Picker Modal - Moved outside KeyboardAvoidingView */}
           {(isTimePickerVisible || isDatePickerVisible) && (

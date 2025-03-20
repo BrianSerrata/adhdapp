@@ -46,7 +46,7 @@ const ProgressBar = React.memo(({ totalTasks, completedTasks, streak }) => {
       </View>
       <View style={styles.fireContainer}>
         {FireIcon}
-        <Text style={styles.streakText}>{streak}</Text>
+        {/* <Text style={styles.streakText}>{streak}</Text> */}
       </View>
     </View>
   );

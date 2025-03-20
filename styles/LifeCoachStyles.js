@@ -15,7 +15,7 @@ const styles = StyleSheet.create({
   // Left Panel
   panelToggle: {
     position: 'absolute',
-    top: 20,
+    top: 5,
     left: 10,
     zIndex: 10,
     backgroundColor: '#242424',
@@ -26,6 +26,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
+    opacity: 0.5,
     shadowRadius: 3.84,
     elevation: 5,
   },
@@ -238,6 +239,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, // Ensures rounded corners
     marginRight: 8, // Space between cards
     elevation: 3, // Better shadow effect
+    backgroundColor:"#242424"
   },
   gradientBackground: {
     paddingVertical: 6, // Height control
@@ -246,7 +248,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 80, // Minimum width for consistency
-    height: 35, // Fixed height
+    height: 35, // Fixed height 
   },
   suggestionText: {
     color: '#fff', // Ensures text is readable on gradient
@@ -262,7 +264,6 @@ const styles = StyleSheet.create({
     bottom: 90, // Positions it just above the input container
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
   }
 });
 

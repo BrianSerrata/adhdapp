@@ -13,9 +13,11 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { doc, setDoc } from "firebase/firestore";
+import { connectFirestoreEmulator, doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import * as Notifications from 'expo-notifications'; // Make sure this import is added
+import Constants from 'expo-constants'; // You'll need this package too
 import styles from '../styles/RegisterPageStyles';
 
 const RegisterPage = ({ navigation }) => {
@@ -30,25 +32,48 @@ const RegisterPage = ({ navigation }) => {
   };
 
   const registerForPushNotificationsAsync = async () => {
-    try {
-      const { status } = await Notifications.getPermissionsAsync();
-      let finalStatus = status;
-  
-      if (status !== 'granted') {
-        const { status: newStatus } = await Notifications.requestPermissionsAsync();
-        finalStatus = newStatus;
+
+    let token;
+
+    if (Platform.OS === 'ios') {
+      // iOS-specific settings
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      console.log("final status:",finalStatus)
+      
+      if (existingStatus !== 'granted') {
+        console.log("requesting access")
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+            allowAnnouncements: true,
+          },
+        });
+        finalStatus = status;
       }
-  
+      
       if (finalStatus !== 'granted') {
-        Alert.alert('Permission required', 'Enable notifications to receive reminders.');
+        Alert.alert(
+          'Notifications Disabled',
+          'You will not receive task reminders. You can enable notifications in your device settings.',
+          [{ text: 'OK', style: 'default' }]
+        );
         return null;
       }
-  
-      const token = (await Notifications.getExpoPushTokenAsync()).data;
+    }
+
+    try {
+      // Get the Expo push token
+      token = (await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      })).data;
+      
       console.log('Expo Push Token:', token);
       return token;
     } catch (error) {
-      console.error('Error getting notification permissions:', error);
+      console.error('Error getting push token:', error);
       return null;
     }
   };

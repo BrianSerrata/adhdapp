@@ -73,7 +73,7 @@ const slateStyles = StyleSheet.create({
     gap: 15,
   },
   routineContainer: {
-    backgroundColor: '#171717', // Darker background to align with the black aesthetic
+    backgroundColor: '#252525', // Darker background to align with the black aesthetic
     borderRadius: 15, // Slightly more rounded corners for a softer feel
     padding: 16, // Increased padding for a more spacious layout
     marginBottom: 16, // Reduced margin for closer stacking

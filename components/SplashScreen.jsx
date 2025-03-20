@@ -9,7 +9,7 @@ const SplashScreen = () => {
   const [isVideoReady, setIsVideoReady] = useState(false);
 
   const handleVideoFinish = () => {
-    navigation.replace('MainApp'); // Navigate to Home screen
+    navigation.replace('Login Page'); // Navigate to Home screen
   };
 
   return (

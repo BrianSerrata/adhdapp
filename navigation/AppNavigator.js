@@ -162,7 +162,7 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="ADHD Life Coach"
+        name="Life Coach"
         component={(props) => (
           <AnimatedScreen>
             <LifeCoach {...props} />
@@ -185,7 +185,7 @@ const TabNavigator = () => {
         options={{
           tabBarLabel: 'Resources',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="library-books" size={size} color={color} />
+            <MaterialIcons name="favorite" size={size} color={color} />
           ),
         }}
       />
@@ -195,6 +195,9 @@ const TabNavigator = () => {
 
 // Root Navigator
 const AppNavigator = () => {
+
+  
+
   return (
     <Stack.Navigator
       initialRouteName="SplashScreen" // Show Splash Screen first
@@ -209,6 +212,7 @@ const AppNavigator = () => {
       <Stack.Screen name="MainApp" component={TabNavigator} />
       <Stack.Screen name="GoalDetail" component={GoalDetail} />
       <Stack.Screen name="Planner" component={Routines} />
+      <Stack.Screen name="AI Coach" component={LifeCoach} />
     </Stack.Navigator>
   );
 };

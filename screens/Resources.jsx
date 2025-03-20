@@ -155,7 +155,7 @@ const ResourcesPage = ({ navigation }) => {
   };
 
   const handleResourceSelect = (resource) => {
-    navigation.navigate('Therapy Chat', { resource });
+    navigation.navigate('Life Coach', { resource, newChat: true });
 
     // Optionally, track when a user navigates to Therapy Chat via a resource
     trackResourceLinkClicked({
@@ -255,12 +255,12 @@ const ResourcesPage = ({ navigation }) => {
                           <View style={styles.resourceTextContainer}>
                             <Text style={styles.resourceButtonText}>{resource.title}</Text>
                           </View>
-                          {/* <TouchableOpacity
+                          <TouchableOpacity
                             style={styles.chatIcon}
                             onPress={() => handleResourceSelect(resource)}
                           >
                             <Ionicons name="chatbubble-outline" size={24} color="#3d5afe" />
-                          </TouchableOpacity> */}
+                          </TouchableOpacity>
                         </TouchableOpacity>
                       ))}
                   </View>
