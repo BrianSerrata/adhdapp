@@ -16,8 +16,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { connectFirestoreEmulator, doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import * as Notifications from 'expo-notifications'; // Make sure this import is added
-import Constants from 'expo-constants'; // You'll need this package too
+// import * as Notifications from 'expo-notifications'; // Make sure this import is added
+// import Constants from 'expo-constants'; // You'll need this package too
 import styles from '../styles/RegisterPageStyles';
 
 const RegisterPage = ({ navigation }) => {
@@ -99,12 +99,12 @@ const RegisterPage = ({ navigation }) => {
 
       console.log('Registered with:', userCredential.user.email);
 
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        // Save the token to Firestore
-        await setDoc(doc(db, 'users', userId), { notificationToken: token }, { merge: true });
-        console.log('Notification token saved:', token);
-      }
+      // const token = await registerForPushNotificationsAsync();
+      // if (token) {
+      //   // Save the token to Firestore
+      //   await setDoc(doc(db, 'users', userId), { notificationToken: token }, { merge: true });
+      //   console.log('Notification token saved:', token);
+      // }
 
       navigation.replace('MainApp');
     } catch (error) {

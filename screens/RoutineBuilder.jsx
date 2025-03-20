@@ -389,15 +389,10 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
               content: `You are a helpful assistant that generates structured, single-day routines based on user goals. 
               The routine must adhere to the following rules:
 
-              1. **Task Specificity**: Each task must be a concrete, actionable mini-action that can be completed without further breakdown. For example:
-            - Instead of "Morning workout", specify "20 pushups, 30 squats, 15 burpees"
-            - Instead of "Study math", specify "Complete 10 algebra problems from Chapter 3"
-            - Instead of "Meal prep", specify "Cut vegetables for 3 days of lunches: carrots, celery, peppers"
+              // 1. **Task Specificity**: Each task must be a concrete, actionable mini-action that can be completed without further breakdown.
+                
 
-              2. **Measurable Outcomes**: Each task must have a clear completion criterion. For example:
-                - Instead of "Practice piano", specify "Practice Moonlight Sonata bars 1-20 three times"
-                - Instead of "Work on project", specify "Write introduction section (500 words) for research paper"
-                - Instead of "Clean house", specify "Vacuum living room and wipe kitchen counters"
+              2. **Measurable Outcomes**: Each task must have a clear completion criterion.
 
               3. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
               4. **Logical Flow**: Tasks must make sense together in a single day's context. For example:

@@ -20,7 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import axios from 'axios';
 import { auth, db } from '../firebase';
-import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc, query, where, connectFirestoreEmulator } from 'firebase/firestore';
 import styles from '../styles/LifeCoachStyles';
 import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
@@ -150,28 +150,6 @@ const SuggestionCard = ({ topic, onSelect }) => {
       text: 'What do you hope to see out of the coach in the future?',
     },
   ];
-
-  const fetchUserName = async () => {
-    try {
-      const userId = auth.currentUser?.uid;
-      if (!userId) return;
-
-      const userDoc = await getDoc(doc(db, "users", userId));
-      if (userDoc.exists()) {
-        setName(userDoc.data().name || "User");
-      } else {
-        console.log("No user document found.");
-        setName("User");
-      }
-    } catch (error) {
-      console.error("Error fetching user name:", error);
-      setName("User");
-    }
-  };
-  
-  useEffect(() => {
-    fetchUserName();
-  }, []);
 
   useEffect(() => {
     if (route.params?.newChat && route.params?.resource) {
@@ -453,11 +431,34 @@ const SuggestionCard = ({ topic, onSelect }) => {
   };
 
   const createNewConversation = async () => {
+    console.log('NEW CONVO BEING CREATED')
     const resource = route.params?.resource;
     let initialMessage;
+
+  //   if (!name) {
+  //   try {
+  //     const userId = auth.currentUser?.uid;
+  //     console.log("USER ID",userId)
+  //     if (!userId) {
+  //       setName("User");
+  //       return;
+  //     }
+  //     const userDoc = await getDoc(doc(db, "users", userId));
+  //     console.log("doc",userDoc.data().name)
+  //     if (userDoc.exists()) {
+  //       setName(userDoc.data().name || "User");
+  //     } else {
+  //       console.log("No user document found.");
+  //       setName("User");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching user name:", error);
+  //     setName("User");
+  //     return;
+  //   }
+  // }
   
     if (resource) {
-      let articleContent = '';
       try {
         // Fetch the article's HTML content
         // console.log("resource:",resource)
@@ -466,18 +467,21 @@ const SuggestionCard = ({ topic, onSelect }) => {
         setResourceText(text)
       } catch (error) {
         console.error('Error fetching article:', error);
-        articleContent = 'Unable to fetch article content.';
       }
+
+
+      // console.log("NAME IN RESOURCE",userDoc.data().name)
+      // console.log("NAME IN RESOURCE",name)
   
       initialMessage = {
         id: '1',
-        text: `Hey ${name}! I noticed you selected "${resource.title}". How can I help you dive deeper into this topic?`,
+        text: `Hey 👋! I noticed you wanted to talk about the resource "${resource.title}". What do you want to know this topic?`,
         isAI: true,
       };
     } else {
       initialMessage = {
         id: '1',
-        text: `Hey ${name}! Ready to make some progress today? 🚀 We can start by reviewing your tasks, planning new goals, or discussing any challenges you're facing. What's on your mind?`,
+        text: `Hey 👋! Ready to make some progress today? 🚀 We can start by reviewing your tasks, planning new goals, or discussing any challenges you're facing. What's on your mind?`,
         isAI: true,
       };
     }
@@ -680,21 +684,21 @@ const handleSend = async (message = input) => {
            Provide information, answer questions, and offer insights related to this specific resource. 
            Limit responses to 300 tokens to maintain clarity and focus.`
         : `You are a compassionate ADHD life coach who combines proven coaching methods with deep neurobiological understanding and genuine empathy. 
-        Your approach is to meet people where they are, acknowledge their struggles, and guide them toward growth while helping them understand
-        and work with their unique brain wiring.
+          Your approach is to meet people where they are, acknowledge their struggles, and guide them toward growth while helping them understand
+          and work with their unique brain wiring.
 
-        When a user EXPLICITLY requests one or more NEW reminders, 
-        extract each new task and its associated time. Respond to the user's query normally, and if new reminders are detected, include a single JSON object 
-        at the very end of your response. The JSON object should have the following format:
+          When a user EXPLICITLY requests one or more NEW reminders, 
+          extract each new task and its associated time. Respond to the user's query normally, and if new reminders are detected, include a single JSON object 
+          at the very end of your response. The JSON object should have the following format:
 
-        {
-          "reminders": [
-            {
-              "task": "description of the first NEW task",
-              "time": "${datetimeString}"
-            }
-          ]
-        }
+          {
+            "reminders": [
+              {
+                "task": "description of the first NEW task",
+                "time": "${datetimeString}"
+              }
+            ]
+          }
 
         Important Reminder Rules:
         - ONLY check the user's LATEST message for reminder requests
@@ -704,25 +708,22 @@ const handleSend = async (message = input) => {
         - NEVER convert existing tasks into reminders automatically
         - If discussing existing tasks, simply reference them without creating new reminders
 
-          When responding to the user, if your response contains ANY of these patterns:
+        IMPORTANT - DO NOT IGNORE: When your response includes ANY steps, sequence, habits, schedule, or process-related content, ALWAYS include this JSON at the end:
+        {"routinePrompt": true}
 
-          Sequential steps with timing elements
-          Repeatable actions in a specific order
-          Regular intervals or frequencies (daily, weekly, etc.)
-          Structured activities with clear start/end points
-          Numbered or bulleted lists that represent a process
-          Actions grouped into logical phases (prep, main activity, cleanup)
-          Time-blocked activities
-          Cycles of repeated actions
-          
-          Then append the JSON snippet: {
-          "routinePrompt": true
-          }
+        This includes:
+        - Brainstorming ideas for routines.
+        - Suggesting areas for improvement in daily habits.
+        - Outlining steps or tasks for a routine, even if they are not explicitly listed.
+        
+        DO NOT HESITATE TO BE LIBERAL WITH INCLUDING JSON AT THE END - ERR ON FALSE POSITIVES WHEN UNSURE
 
         Purpose: This JSON snippet will determine whether to display a button prompting the user to create a routine from your response.
         When to use: Include this JSON only when your response outlines steps, tasks, or habits that can be organized into a routine.
         Formatting: Ensure the JSON snippet appears as the last part of your response, properly formatted and without introductory text like "Here's your JSON."
         If not applicable: If your response doesn't suggest a routine, omit the JSON snippet entirely.
+
+        Ensure that the JSON object is the last part of your response and is properly formatted.
 
 
         Important:
@@ -822,7 +823,7 @@ const handleSend = async (message = input) => {
             Share insights as possibilities, not prescriptions
             Honor the whole person, not just their tasks
         
-        Limit responses to 300 tokens to maintain clarity and focus.`,
+        Limit responses to an appropriate and reasomable number of tokens to maintain clarity and focus, unless a routine is being created.`,
     };
 
     const messagesForAI = [
@@ -836,7 +837,7 @@ const handleSend = async (message = input) => {
     const payload = {
       model: 'gpt-4o-mini',
       messages: messagesForAI,
-      temperature: 0.75,
+      temperature: 0.8,
     };
 
     const headers = {
@@ -847,6 +848,7 @@ const handleSend = async (message = input) => {
     try {
       const response = await axios.post(apiUrl, payload, { headers });
       const aiOutput = response.data.choices[0].message.content.trim();
+      console.log("AI OUTPUT",aiOutput)
   
       // Separate the AI's regular response and the JSON reminder
       const regex = /\{[\s\S]*\}/; // Matches the JSON object
