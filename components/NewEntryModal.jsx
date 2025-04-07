@@ -54,7 +54,7 @@ export default function NewEntryModal({ isOpen, onClose, onSave, existingEntry =
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 500,
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnim, {
@@ -71,12 +71,21 @@ export default function NewEntryModal({ isOpen, onClose, onSave, existingEntry =
   }, [isOpen]);
 
   useEffect(() => {
-    if (existingEntry) {
+    if (!isOpen) {
+      // Reset all state to initial values
+      setContent('');
+      setSelectedMoods(['reflective']);
+      setTags([]);
+      setTagInput('');
+      setIsDirty(false);
+      setIsSaving(false);
+    } else if (existingEntry) {
+      // Only set existing entry data when modal opens
       setContent(existingEntry.content);
       setSelectedMoods(existingEntry.moods);
       setTags(existingEntry.tags);
     }
-  }, [existingEntry]);
+  }, [isOpen, existingEntry]);
 
   useEffect(() => {
     if (content.trim() && isDirty) {
@@ -163,6 +172,11 @@ export default function NewEntryModal({ isOpen, onClose, onSave, existingEntry =
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    // State will be reset by the useEffect when isOpen changes
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -170,12 +184,12 @@ export default function NewEntryModal({ isOpen, onClose, onSave, existingEntry =
       visible={isOpen}
       transparent={true}
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <TouchableOpacity
         style={styles.overlay}
         activeOpacity={1}
-        onPress={onClose}
+        onPress={handleClose}
       >
         <Animated.View
           style={[
@@ -201,7 +215,7 @@ export default function NewEntryModal({ isOpen, onClose, onSave, existingEntry =
                 <Text style={styles.modalTitle}>New Entry</Text>
                 <TouchableOpacity
                   style={styles.closeButton}
-                  onPress={onClose}
+                  onPress={handleClose}
                 >
                   <Feather name="x" size={16} color="rgba(255, 255, 255, 0.7)" />
                 </TouchableOpacity>

@@ -15,7 +15,7 @@ const moodColors = {
 };
 
 export default function JournalEntry({ entry, onDelete, onClick }) {
-  const formattedTime = format(entry.date, 'h:mm a');
+  const formattedTime = format(entry.createdAt.toDate(), 'h:mm a');
   const contentPreview = entry.content.length > 100 
     ? `${entry.content.substring(0, 100).trim()}...` 
     : entry.content;

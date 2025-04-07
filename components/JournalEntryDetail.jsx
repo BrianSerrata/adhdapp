@@ -49,8 +49,8 @@ export default function JournalEntryDetail({ entry, isOpen, onClose, onDelete, o
   
     if (!entry || !isOpen) return null;
   
-    const formattedDate = format(entry.date, 'EEEE, MMMM d, yyyy');
-    const formattedTime = format(entry.date, 'h:mm a');
+    const formattedDate = format(entry.createdAt.toDate(), 'EEEE, MMMM d, yyyy');
+    const formattedTime = format(entry.createdAt.toDate(), 'h:mm a');
   
     // Function to convert plain text to paragraphs
     const formatContent = (content) => {
