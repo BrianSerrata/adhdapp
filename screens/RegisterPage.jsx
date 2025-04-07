@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { connectFirestoreEmulator, doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -94,17 +95,28 @@ const RegisterPage = ({ navigation }) => {
       // Get user ID
       const userId = userCredential.user.uid;
 
-      // Save user name to Firestore
-      await setDoc(doc(db, 'users', userId), { name, email });
+      // Save user name to Firestore (add the isNewUser flag too)
+      await setDoc(doc(db, 'users', userId), { 
+        name, 
+        email,
+        createdAt: new Date().toISOString(),
+        isNewUser: true 
+      });
 
-      console.log('Registered with:', userCredential.user.email);
+      // Initialize user preferences - ADD THIS LINE
+      const prefsInitialized = await initializeUserPreferences(userId);
+      if (!prefsInitialized) {
+        console.warn('User preferences not initialized properly');
+      }
 
-      // const token = await registerForPushNotificationsAsync();
-      // if (token) {
-      //   // Save the token to Firestore
-      //   await setDoc(doc(db, 'users', userId), { notificationToken: token }, { merge: true });
-      //   console.log('Notification token saved:', token);
-      // }
+    console.log('Registered with:', userCredential.user.email);
+
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        // Save the token to Firestore
+        await setDoc(doc(db, 'users', userId), { notificationToken: token }, { merge: true });
+        console.log('Notification token saved:', token);
+      }
 
       navigation.replace('MainApp');
     } catch (error) {
@@ -112,6 +124,28 @@ const RegisterPage = ({ navigation }) => {
       Alert.alert('Registration Error', error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+
+  const initializeUserPreferences = async (userId) => {
+    try {
+      await Promise.all([
+        AsyncStorage.setItem('hasCompletedOnboarding', 'false'),
+        AsyncStorage.setItem('hasSeenRoutineBuilder', 'false'),
+        AsyncStorage.setItem('hasSeenTaskList','false'),
+        AsyncStorage.setItem('hasSeenFirstSave', 'false'),
+        AsyncStorage.setItem('hasSeenCalendarInstructions','false'),
+        AsyncStorage.setItem('hasSeenCoachOnboarding', 'false'),
+        AsyncStorage.setItem('userFirstLogin', 'true'),
+        AsyncStorage.setItem('lastLoginDate', new Date().toISOString()),
+        AsyncStorage.setItem('userId', userId)
+      ]);
+      return true;
+    } catch (error) {
+      console.error('Error initializing user preferences:', error);
+      // Don't block registration if preferences fail
+      return false;
     }
   };
 

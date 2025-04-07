@@ -11,6 +11,7 @@ import Routines from '../screens/RoutinesPage';
 import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
 import GeneralManager from '../screens/GeneralManager';
+import JournalPage from '../components/Journal';
 
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
@@ -38,6 +39,7 @@ const AnimatedTabNavigator = () => {
         <Routines />
         <LifeCoach />
         <Resources />
+        <JournalPage />
         <GeneralManager />
       </Animated.View>
 
@@ -48,6 +50,8 @@ const AnimatedTabNavigator = () => {
           { name: 'Routines', icon: 'schedule' },
           { name: 'AI Coach', icon: 'chat' },
           { name: 'Resources', icon: 'favorite' },
+          { name: 'Journal', icon: 'favorite' },
+          { name: 'Calendar', icon: 'person' },
         ].map((tab, index) => (
           <TouchableOpacity
             key={index}

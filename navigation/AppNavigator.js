@@ -14,9 +14,8 @@ import RoutineCalendar from '../components/RoutineCalendar';
 import LifeCoach from '../screens/LifeCoach';
 import Resources from '../screens/Resources';
 import GoalDetail from '../screens/GoalDetail';
-import GeneralManager from '../screens/GeneralManager';
 import Routines from '../screens/RoutinesPage';
-import RoutineBuilder from '../screens/RoutineBuilder';
+import JournalPage from '../components/Journal';
 import SplashScreen from '../components/SplashScreen';
 
 enableScreens();
@@ -175,7 +174,7 @@ const TabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Resources"
         component={(props) => (
           <AnimatedScreen>
@@ -184,6 +183,20 @@ const TabNavigator = () => {
         )}
         options={{
           tabBarLabel: 'Resources',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="favorite" size={size} color={color} />
+          ),
+        }}
+      /> */}
+      <Tab.Screen
+        name="Journal"
+        component={(props) => (
+          <AnimatedScreen>
+            <JournalPage {...props} />
+          </AnimatedScreen>
+        )}
+        options={{
+          tabBarLabel: 'Journal',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="favorite" size={size} color={color} />
           ),
@@ -213,6 +226,7 @@ const AppNavigator = () => {
       <Stack.Screen name="GoalDetail" component={GoalDetail} />
       <Stack.Screen name="Planner" component={Routines} />
       <Stack.Screen name="AI Coach" component={LifeCoach} />
+      <Stack.Screen name="Journal" component={JournalPage} />
     </Stack.Navigator>
   );
 };

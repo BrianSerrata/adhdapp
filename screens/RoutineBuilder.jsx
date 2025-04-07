@@ -16,6 +16,10 @@ import {
   Image,
   ScrollView
 } from "react-native";
+import CalendarToggle from "../components/CalendarToggle";
+import addToCalendar from "../hooks/addToCalendar";
+import Storage from '@react-native-async-storage/async-storage';
+import deleteFromCalendar from "../hooks/deleteFromCalendar";
 import {
   collection,
   addDoc,
@@ -36,6 +40,7 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 import * as Notifications from "expo-notifications";
+// import * as Speech from 'expo-speech-recognition';
 import { EXPO_PUBLIC_OPENAI_API_KEY } from "@env";
 import styles from "../styles/RoutineBuilderStyles";
 import { LinearGradient } from 'expo-linear-gradient';
@@ -49,6 +54,11 @@ import {
   trackTimePickerUsed,
 } from "../backend/apis/segment";
 import { useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import PlannerOnboarding from '../components/PlannerOnboarding';
+import TaskListOnboarding from '../components/TaskListOnboarding';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import SaveCoachOnboarding from '../components/SaveCoachOnboarding';
 
 // Days of week (0 = Sunday, 6 = Saturday)
 const DAYS_OF_WEEK = [
@@ -76,22 +86,20 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
   taskCount = 0, // Add taskCount prop to check if tasks exist
 }) {
   const placeholderPrompts = [
-    "I want to organize my closet this weekend.",
+    "I want to clean my apartment for a kickback.",
     "Help me plan a productive study session.",
     "Give me a quick and healthy dinner recipe.",
     "Give me steps to build a morning routine.",
     "I need a checklist for packing for my trip.",
-    "Help me prioritize my tasks for today.",
     "I want a brief mindfulness exercise.",
-    "I want to improve my bedtime habits.",
-    "Create a workout plan with no equipment.",
+    "I want to improve my bedtime routine.",
+    "Create a quick ab workout.",
     "How can I declutter my workspace.",
     "I want to create a budget for the next month.",
     "Help me brainstorm ideas for my project.",
     "Ways to stay focused working from home.",
     "I need steps to prepare for a job interview.",
     "I want a simple meal plan for the week.",
-    "Tips to stay consistent with journaling.",
   ];
 
   const [dynamicPlaceholder, setDynamicPlaceholder] = useState(placeholderPrompts[0]);
@@ -195,19 +203,89 @@ const RoutineBuilderInput = React.memo(function RoutineBuilderInput({
     [setUserInput]
   );
 
+  const [isListening, setIsListening] = useState(false);
+
+  const startSpeechToText = async () => {
+    try {
+      // Check if speech recognition is available
+      const isAvailable = await Speech.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert("Error", "Speech recognition is not available on this device");
+        return;
+      }
+      
+      // Request permissions if needed
+      const { granted } = await Speech.requestPermissionsAsync();
+      if (!granted) {
+        Alert.alert("Permission", "Microphone permission is required for speech recognition");
+        return;
+      }
+      
+      setIsListening(true);
+      
+      // Start listening
+      await Speech.startListeningAsync({
+        onSpeechStart: () => {
+          console.log("Speech started");
+        },
+        onSpeechEnd: () => {
+          console.log("Speech ended");
+          setIsListening(false);
+        },
+        onSpeechResults: (event) => {
+          if (event.results && event.results.length > 0) {
+            const recognizedText = event.results[0];
+            setUserInput((prev) => prev + recognizedText);
+          }
+        },
+        onSpeechError: (error) => {
+          console.error("Speech recognition error:", error);
+          setIsListening(false);
+          Alert.alert("Error", "Failed to recognize speech. Please try again.");
+        }
+      });
+    } catch (error) {
+      console.error("Speech recognition error:", error);
+      setIsListening(false);
+      Alert.alert("Error", "Failed to start speech recognition");
+    }
+  };
+  
+  const stopSpeechToText = async () => {
+    try {
+      await Speech.stopListeningAsync();
+      setIsListening(false);
+    } catch (error) {
+      console.error("Error stopping speech recognition:", error);
+    }
+  };
+
   return (
     <Animated.View style={[{ paddingHorizontal: 16 }, animatedStyle]}>
-      <TextInput
-        style={styles.goalInput}
-        placeholder={dynamicPlaceholder}
-        placeholderTextColor="#848484"
-        value={userInput}
-        onChangeText={handleTextChange}
-        multiline
-        numberOfLines={3}
-        onFocus={() => setIsInputting(true)}
-        onBlur={() => setIsInputting(false)}
-      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.goalInput}
+          placeholder={dynamicPlaceholder}
+          placeholderTextColor="#848484"
+          value={userInput}
+          onChangeText={handleTextChange}
+          multiline
+          numberOfLines={3}
+          onFocus={() => setIsInputting(true)}
+          onBlur={() => setIsInputting(false)}
+        />
+        {/* <TouchableOpacity 
+          style={styles.micButton}
+          onPress={isListening ? stopSpeechToText : startSpeechToText}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons 
+            name={isListening ? "mic" : "mic-none"} 
+            size={24} 
+            color={isListening ? "#3d5afe" : "#848484"} 
+          />
+        </TouchableOpacity> */}
+      </View>
     </Animated.View>
   );
 });
@@ -238,11 +316,16 @@ const RoutineNameModal = ({ isVisible, onClose, onConfirm, routineName, setRouti
 
 export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
   const route = useRoute();
+  const navigation = useNavigation();
+  const { addRoutineToCalendar, isAdding, error: calendarError } = addToCalendar();
+  const { deleteCalendarEvents, isDeleting, error: deleteError } = deleteFromCalendar();
   const routineGenerated = route?.params?.routineGenerated;
   const [routineGeneratedState, setRoutineGeneratedState] = useState(false);
   const [showRoutineList, setShowRoutineList] = useState(false);
   const [fetchedRoutines, setFetchedRoutines] = useState([]);
   const [routineId, setRoutineId] = useState(null);
+  const [useCalendar, setUseCalendar] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState([]);
 
   useEffect(() => {
     if (aiInput && !routineGenerated) {
@@ -363,9 +446,34 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
 
 
   const handleGenerateRoutine = async (aiInput) => {
+    
 
-    // if (!aiInput && !startTime || !endTime) {
-    //   Alert.alert("Time Not Set", "Please select both a start and end time before creating a routine.");
+
+    // if (!startTime || !endTime) {
+    //   Alert.alert(
+    //     "Times Not Set",
+    //     "Would you like to set time bounds for your task?",
+    //     [
+    //       {
+    //         text: "Set Times",
+    //         onPress: () => {
+    //           // Show time picker for start time
+    //           setSelectedTaskId(null);
+    //           setTimeField("start");
+    //           setTimePickerVisible(true);
+    //         }
+    //       },
+    //       {
+    //         text: "Continue Without Times",
+    //         onPress: () => {
+    //         }
+    //       },
+    //       {
+    //         text: "Cancel",
+    //         style: "cancel"
+    //       }
+    //     ]
+    //   );
     //   return;
     // }
 
@@ -378,6 +486,8 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
       return;
     }
     setLoading(true);
+
+    
     try {
       const response = await axios.post(
         "https://api.openai.com/v1/chat/completions",
@@ -389,47 +499,37 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
               content: `You are a helpful assistant that generates structured, single-day routines based on user goals. 
               The routine must adhere to the following rules:
 
-              // 1. **Task Specificity**: Each task must be a concrete, actionable mini-action that can be completed without further breakdown.
-                
-
-              2. **Measurable Outcomes**: Each task must have a clear completion criterion.
-
-              3. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
-              4. **Logical Flow**: Tasks must make sense together in a single day's context. For example:
-                - If the goal is fitness-related, the routine should include complementary exercises (e.g., warm-up, workout, cool-down).
-                - If the goal involves study or productivity, the routine should include time blocks for focused work, breaks, and review.
-              5. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
-              6. **Valid Time Range**: 
+              1. **Task Specificity**: If applicable, e=ach task must be a concrete, actionable mini-action that can be completed without further breakdown.
+              2. **Single-Day Schedule**: All tasks in the routine must be designed to be completed within the same day. Tasks cannot span multiple days or assume different days.
+              3. **Time Constraints**: Ensure the total duration of all tasks fits reasonably within a single day.
+              4. **Valid Time Range**: 
                 - Task times must use the 24-hour format ("HH:mm").
                 - If applicable, task times **must fall entirely** within the specified time bounds (${startTime} to ${endTime}) and have appropriate durations.
                 - Any task violating this range will be considered invalid and omitted.
-                - If no task times are specified, task times must fit within a single calendar day (e.g., 06:00 to 22:00), and have appropriate durations.
-              7. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
-              8. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
-              9. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
-              10. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
-              11. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
-              12. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
-              13. Avoid overscheduling. Include buffer times or flexibility in the routine.
-              12. **No Vague Descriptions**: Tasks cannot use broad terms like:
-                  - "Work on..."
-                  - "Focus on..."
-                  - "Practice..."
-                  - "Review..."
-                  Without specifying exactly what actions to take.
-
-              13. **Quantifiable Elements**: Where applicable, tasks should include specific:
-                  - Numbers (repetitions, duration, word count)
-                  - Materials needed
-                  - Specific sections or components to complete
-                  - Clear start and end points
-
-              14. **Self-Contained Actions**: Each task should be completable without requiring additional planning or decision-making during execution.
+                - If no task times are specified, task times must fit within a single calendar day and have appropriate durations.
+              5. **Concise and Relevant**: Avoid unnecessary tasks or filler. The routine must directly address the user's goal while remaining achievable within one day.
+              6. The routine must fit into a single day and include no more than 6-8 hours of activities, spread out across reasonable time blocks. 
+              7. Ensure there is enough time for breaks between tasks (at least 15-30 minutes between sessions).
+              8. For intense tasks (e.g., studying, exercise), limit duration to 1-2 hours per session, followed by rest or lighter activities.
+              9. The routine should be sustainable for a human, balancing productivity, self-care, and rest.
+              10. Ensure realistic start and end times (e.g., no activities starting before 5 AM or ending after 10 PM).
+              11. Avoid overscheduling. Include buffer times or flexibility in the routine.
+              12. **Self-Contained Actions**: Each task should be completable without requiring additional planning or decision-making during execution.
+              
+              ${useCalendar && calendarEvents.length > 0 ? 
+              `13. **Calendar Integration**: The user has provided their calendar events for today. You MUST work around these events and avoid scheduling tasks that conflict with them. Here are the events to consider:
+              ${calendarEvents.map(event => {
+                const start = new Date(event.startDate);
+                const end = new Date(event.endDate);
+                return `- "${event.title}" from ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} to ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+              }).join('\n')}` : ''}
               `
             },
             {
               role: "user",
-              content: `Here is my goal: ${userInput || aiInput}. Please ensure all tasks are scheduled between ${startTime} and ${endTime}.`
+              content: `Here is my goal: ${userInput || aiInput}. Please ensure all tasks are scheduled between ${startTime} and ${endTime}.
+                        If ${startTime} and/or ${endTime} are undefined, you MUST create your own reasonable times.
+                        ${useCalendar && calendarEvents.length > 0 ? 'Please work around my existing calendar events for today.' : ''}`
             }
           ],
           functions: [
@@ -485,6 +585,8 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
       const functionCall = response.data.choices[0].message.function_call;
       const routineData = JSON.parse(functionCall.arguments);
       const routine = routineData.routine;
+
+      console.log("routine data time range:",routine.timeRange)
 
       // Add IDs to each task
       const parsedTasks = routine.map((task) => ({
@@ -675,7 +777,7 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
         timestamp: serverTimestamp(),
         daysOfWeek: isRecurring ? selectedDays : [],
         isRecurring,
-        createdDate: isRecurring ? null : formattedSelectedDate,
+        createdDate: formattedSelectedDate,
       };
       let updatedRoutineId = routineId;
       if (routineId) {
@@ -704,6 +806,98 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
       } else {
         tasks.forEach((task) => scheduleRemindersForRecurringRoutine(task, selectedDays));
       }
+      
+// Modify your existing code to include first-time check
+if (!isRecurring){
+  Alert.alert(
+    "Add to Calendar",
+    "Would you like to add these tasks to your calendar?",
+    [
+      { 
+        text: "No", 
+        style: "cancel"
+      },
+      {
+        text: "Yes",
+        onPress: async () => {
+          try {
+            // Check if first-time user
+            const hasSeenCalendarInstructions = await AsyncStorage.getItem('hasSeenCalendarInstructions');
+
+            if (hasSeenCalendarInstructions == 'false') {
+              // Show detailed instructions first time
+              Alert.alert(
+                "Calendar Account Management",
+                "Tasks will be saved to your device's default calendar.\n\n" +
+                "To add or manage calendar accounts:\n" +
+                "1. Open Device Settings\n" +
+                "2. Scroll down and tap 'Apps'\n" +
+                "3. Tap 'Calendar'\n" +
+                "4. Tap 'Calendar Accounts' to view calendars\n" +
+                "5. Tap 'Add Account' to add new calendar\n\n" +
+                "Supported calendars include:\n" +
+                "• iCloud\n" +
+                "• Google\n" +
+                "• Microsoft Exchange\n" +
+                "• Other account types",
+                [
+                  { 
+                    text: "Got It", 
+                    onPress: async () => {
+                      // Mark as seen
+                      await AsyncStorage.setItem('hasSeenCalendarInstructions', 'true');
+                      
+                      // Proceed with adding to calendar
+                      const result = await addRoutineToCalendar(
+                        tasks, 
+                        formattedSelectedDate, 
+                        isRecurring, 
+                        isRecurring ? selectedDays : []
+                      );
+                      
+                      if (result.success) {
+                        // Optional: Add success handling
+                      } else {
+                        Alert.alert("Calendar Error", result.message || "Failed to add to calendar");
+                      }
+                    }
+                  },
+                  { 
+                    text: "Cancel", 
+                    style: "cancel" 
+                  }
+                ]
+              );
+            } else {
+              // Directly add to calendar if instructions were seen before
+              const result = await addRoutineToCalendar(
+                tasks, 
+                formattedSelectedDate, 
+                isRecurring, 
+                isRecurring ? selectedDays : []
+              );
+              
+              if (result.success) {
+                // Optional: Add success handling
+              } else {
+                Alert.alert("Calendar Error", result.message || "Failed to add to calendar");
+              }
+            }
+          } catch (error) {
+            console.error("Error adding to calendar:", error);
+            Alert.alert("Error", "Failed to add tasks to calendar.");
+          }
+        }
+      }
+    ]
+  );
+}
+    // After successful save, check if it's the first time
+    const hasSeenFirstSave = await AsyncStorage.getItem('hasSeenFirstSave');
+    if (hasSeenFirstSave == 'false') {
+      await AsyncStorage.setItem('hasSeenFirstSave', 'true');
+      setShowFirstSaveModal(true);
+    }
     } catch (error) {
       console.error("Error saving routine:", error);
       Alert.alert("Error", "Failed to save routine. Please try again.");
@@ -799,7 +993,6 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
   const renderHeader = () => {
     return (
       <>
-
         <View style={styles.timeInputsContainer}>
           <TouchableOpacity
             style={styles.timeButton}
@@ -1122,6 +1315,74 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
     );
   };
 
+  // Add this state near your other state declarations
+  const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
+
+  // Add this useEffect after your other useEffects
+  useEffect(() => {
+    const checkFirstTime = async () => {
+      try {
+        const hasSeenBuilder = await AsyncStorage.getItem('hasSeenRoutineBuilder');
+        if (hasSeenBuilder == 'false') {
+          setShowFirstTimeModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking first time status:', error);
+      }
+    };
+
+    checkFirstTime();
+  }, []);
+
+  // Add handler for closing the modal
+  const handleCloseFirstTimeModal = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenRoutineBuilder', 'true');
+      setShowFirstTimeModal(false);
+    } catch (error) {
+      console.error('Error saving first time status:', error);
+    }
+  };
+
+  // Add state
+  const [showPostCreationTutorial, setShowPostCreationTutorial] = useState(false);
+  // Add this useEffect to show tutorial when tasks are first added
+  useEffect(() => {
+    const checkShowTutorial = async () => {
+      try {
+        if (tasks.length > 0) {
+          const hasSeenTaskList = await AsyncStorage.getItem('hasSeenTaskList');
+          if (hasSeenTaskList=='false') {
+            setShowPostCreationTutorial(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking tutorial status:', error);
+      }
+    };
+
+    checkShowTutorial();
+  }, [tasks.length]);
+
+  // Add handler
+  const handleClosePostCreationTutorial = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenTaskList', 'true');
+      setShowPostCreationTutorial(false);
+    } catch (error) {
+      console.error('Error saving tutorial status:', error);
+    }
+  };
+
+  // Add state for the first save modal
+  const [showFirstSaveModal, setShowFirstSaveModal] = useState(false);
+
+  // Add handler for navigation
+  const handleNavigateToCoach = () => {
+    setShowFirstSaveModal(false);
+    navigation.navigate('Life Coach'); // Make sure this route exists
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -1142,7 +1403,7 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
                   YOUR ROUTINE SHAPES YOUR RESULTS.
                 </Text>
                 <Text style={styles.emptySubText}>
-                  Start by adding tasks today!
+                  Start by entering today's tasks!
                 </Text>
               </View>
               <View style={styles.emptyIconContainer}>
@@ -1162,6 +1423,13 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
             setIsInputting={setIsInputting}
             taskCount = {tasks.length}
           />
+
+          {/* <CalendarToggle 
+              isEnabled={useCalendar} 
+              onToggle={setUseCalendar}
+              onEventsLoaded={setCalendarEvents}
+          /> */}
+
           <RoutineNameModal
             isVisible={isRoutineNameModalVisible}
             onClose={() => setRoutineNameModalVisible(false)}
@@ -1185,7 +1453,15 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
             />
           </View>
 
+          <PlannerOnboarding 
+            isVisible={showFirstTimeModal}
+            onClose={handleCloseFirstTimeModal}
+          />
           
+          <TaskListOnboarding 
+            isVisible={showPostCreationTutorial}
+            onClose={handleClosePostCreationTutorial}
+          />
   
           {/* Time/Date Picker Modal - Moved outside KeyboardAvoidingView */}
           {(isTimePickerVisible || isDatePickerVisible) && (
@@ -1234,6 +1510,11 @@ export default function RoutineBuilder({ aiInput, fromLifeCoach }) {
               </View>
             </View>
           </Modal>
+          <SaveCoachOnboarding 
+            isVisible={showFirstSaveModal}
+            onClose={() => setShowFirstSaveModal(false)}
+            onNavigateToCoach={handleNavigateToCoach}
+          />
         </View>
       </TouchableWithoutFeedback>
     </SafeAreaView>

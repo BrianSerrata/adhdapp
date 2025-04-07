@@ -4,29 +4,26 @@ import {
   Text,
   TouchableOpacity,
   SafeAreaView,
+  TouchableWithoutFeedback,
   Alert,
   Platform,
-  FlatList,
   ScrollView,
-  Image,
-  LayoutAnimation,
-  UIManager,
+  TextInput
 } from "react-native";
 
-import { Calendar, CalendarList } from "react-native-calendars";
 import moment from 'moment'
 import Animated, { FadeInDown } from "react-native-reanimated";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { MaterialIcons } from "@expo/vector-icons";
-import AntDesign from '@expo/vector-icons/AntDesign';
 import ConfettiCannon from "react-native-confetti-cannon";
-import FeedbackModal from "./FeedbackModal";
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
 import ProgressBar from "./ProgressBar";
-import LogoutButton from "./LogoutButton"
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import LogoutButton from "./LogoutButton";
+import TaskAddButton from './TaskAddButton';
+import CollapsibleRoutine from "./CollapsibleRoutine";
+import OnboardingOverlay from './OnboardingOverlay';
 
 import { useNavigation } from "@react-navigation/native";
 
@@ -80,6 +77,15 @@ export default function RoutineCalendar() {
 
   // For toggling expanded tasks
   const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [collapsedRoutines, setCollapsedRoutines] = useState([]);
+
+  const handleToggleCollapse = useCallback((routineId) => {
+    setCollapsedRoutines(prev => 
+      prev.includes(routineId)
+        ? prev.filter(id => id !== routineId)
+        : [...prev, routineId]
+    );
+  }, []);
 
   // For time picker
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
@@ -351,6 +357,16 @@ useEffect(() => {
     const filteredRoutines = routines.filter((routine) => {
       const [year, month, day] = selectedDate.split("-").map(Number);
       const date = new Date(year, month - 1, day);
+
+      // Always check if the selected date is before the creation date
+      if (routine.createdDate) {
+        const createdDate = new Date(`${routine.createdDate}T00:00:00`);
+        console.log("created data:",createdDate)
+        console.log("eval is",date<createdDate)
+        if (date < createdDate) {
+          return false; // Don't show routines before their creation date
+        }
+      }
   
       // Handle non-recurring routines
       if (!routine.isRecurring && routine.createdDate === selectedDate) {
@@ -517,6 +533,13 @@ useEffect(() => {
     const [year, month, day] = selectedDate.split("-").map(Number);
     const date = new Date(year, month - 1, day);
   
+    if (routine.createdDate) {
+      const createdDate = new Date(`${routine.createdDate}T00:00:00`);
+      if (date < createdDate) {
+        return false; // Don't show routines before their creation date
+      }
+    }
+
     // Handle non-recurring routines
     if (!routine.isRecurring && routine.createdDate === selectedDate) {
       return true;
@@ -614,6 +637,39 @@ useEffect(() => {
       });
   };
 
+  const handleRemoveTask = async (routineId, taskId) => {
+    try {
+      // Key format: hiddenTasks_YYYY-MM-DD
+      const storageKey = `hiddenTasks_${selectedDate}`;
+      
+      // Get existing hidden tasks for this date
+      const existingHidden = await AsyncStorage.getItem(storageKey);
+      const hiddenTasks = existingHidden ? JSON.parse(existingHidden) : {};
+      
+      // Add this task to hidden tasks
+      if (!hiddenTasks[routineId]) {
+        hiddenTasks[routineId] = [];
+      }
+      hiddenTasks[routineId].push(taskId);
+      
+      // Save updated hidden tasks
+      await AsyncStorage.setItem(storageKey, JSON.stringify(hiddenTasks));
+      
+      // Force a re-render
+      setRoutines([...routines]);
+      
+      // // Show confirmation
+      // Alert.alert(
+      //   "Task Hidden",
+      //   "This task has been hidden for today only.",
+      //   [{ text: "OK" }]
+      // );
+    } catch (error) {
+      console.error('Error hiding task:', error);
+      Alert.alert('Error', 'Could not hide task. Please try again.');
+    }
+  };
+
   // -------------------------
   // Helper
   // -------------------------
@@ -627,9 +683,75 @@ useEffect(() => {
   };
 
   const TaskRow = ({ routine, task }) => {
+
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [localTitle, setLocalTitle] = useState(task.title);
+    const [localDescription, setLocalDescription] = useState(task.description);
+
+    const [isHidden, setIsHidden] = useState(false);
+
+  // Check if task is hidden for this date
+  useEffect(() => {
+    const checkHiddenStatus = async () => {
+      try {
+        const storageKey = `hiddenTasks_${selectedDate}`;
+        const hiddenTasks = await AsyncStorage.getItem(storageKey);
+        if (hiddenTasks) {
+          const hidden = JSON.parse(hiddenTasks);
+          setIsHidden(hidden[routine.id]?.includes(task.id));
+        }
+      } catch (error) {
+        console.error('Error checking hidden status:', error);
+      }
+    };
+
+    checkHiddenStatus();
+  }, [selectedDate, routine.id, task.id]);
+
+  // Don't render if task is hidden
+  if (isHidden) return null;
+
+    // Add this function to handle final submission
+    const handleSubmitEdit = async (field) => {
+      const updatedTasks = routine.tasks.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              [field]: field === 'title' ? localTitle : localDescription,
+            }
+          : t
+      );
+
+      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+      try {
+        await updateDoc(routineRef, { tasks: updatedTasks });
+        if (field === 'title') {
+          setIsEditingTitle(false);
+        } else {
+          setIsEditingDescription(false);
+        }
+      } catch (err) {
+        console.error(`Error updating ${field}:`, err);
+        Alert.alert("Error", `Could not update ${field}.`);
+      }
+    };
     
     // Completion logic
     const isCompleted = routine.completedDates?.[selectedDate]?.[task.id] === true;
+
+    const handleDescriptionChange = async (text) => {
+      const updatedTasks = routine.tasks.map((t) =>
+        t.id === task.id ? { ...t, description: text } : t
+      );
+      const routineRef = doc(db, "users", auth.currentUser.uid, "routines", routine.id);
+      try {
+        await updateDoc(routineRef, { tasks: updatedTasks });
+      } catch (err) {
+        console.error("Error updating description:", err);
+        Alert.alert("Error", "Could not update description.");
+      }
+    };
 
     const toggleTaskCompletion = async () => {
 
@@ -777,7 +899,17 @@ useEffect(() => {
 
         {/* Expanded Content */}
         {isExpanded && (
-          <View style={styles.expandedContent}>
+        <View style={styles.expandedContent}>
+          <TextInput
+            style={styles.titleInput}
+            value={localTitle}
+            placeholder="Task title"
+            onChangeText={setLocalTitle}
+            onBlur={() => handleSubmitEdit('title')}
+            onFocus={() => setIsEditingTitle(true)}
+            onSubmitEditing={() => handleSubmitEdit('title')}
+          />
+
             {/* Time Inputs */}
             <View style={styles.timeInputsContainer}>
               <TouchableOpacity
@@ -801,7 +933,28 @@ useEffect(() => {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.description}>{task.description}</Text>
+            {/* Editable Description */}
+            <TextInput
+            style={styles.descriptionInput}
+            value={localDescription}
+            placeholder="Task description"
+            placeholderTextColor="#848484"
+            multiline
+            numberOfLines={3}
+            onChangeText={setLocalDescription}
+            onBlur={() => handleSubmitEdit('description')}
+            onFocus={() => setIsEditingDescription(true)}
+            onSubmitEditing={() => handleSubmitEdit('description')}
+          />
+
+            {/* Remove Task Button */}
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => handleRemoveTask(routine.id, task.id)}
+            >
+              <MaterialIcons name="delete-outline" size={20} color="#FF3B30" />
+              <Text style={styles.removeButtonText}>Remove Task</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -812,25 +965,66 @@ useEffect(() => {
   // Routines for Selected Date
   // -------------------------
   const RoutinesList = () => {
-
     return routinesForSelectedDate.map((routine) => (
-      <View key={routine.id} style={styles.routineContainer}>
-        <Text style={styles.routineName}>{routine.name}</Text>
-
+      <CollapsibleRoutine 
+        key={routine.id} 
+        routine={routine}
+        selectedDate={selectedDate}
+        formatTimeForDisplay={formatTimeForDisplay}
+        collapsedRoutines={collapsedRoutines}
+        onToggleCollapse={handleToggleCollapse}
+      >
         {routine.tasks.map((task) => (
           <TaskRow key={task.id} 
            routine={routine} 
-           task={task} selectedDate={selectedDate}
-           expandedTaskId = {expandedTaskId}
-           setExpandedTaskId = {setExpandedTaskId}
+           task={task} 
+           selectedDate={selectedDate}
+           expandedTaskId={expandedTaskId}
+           setExpandedTaskId={setExpandedTaskId}
            formatTimeForDisplay={formatTimeForDisplay}
            setTimePickerVisible={setTimePickerVisible}
            triggerConfetti={triggerConfetti}
            />
         ))}
-      </View>
+      </CollapsibleRoutine>
     ));
   }; 
+
+  // Add new state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+
+  // Add useEffect to check if user needs onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const hasCompletedOnboarding = await AsyncStorage.getItem('hasCompletedOnboarding');
+        console.log("hasCompletedOnboarding",hasCompletedOnboarding)
+        if (hasCompletedOnboarding == 'false') {
+          setShowOnboarding(true);
+        }
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+      }
+    };
+
+    checkOnboarding();
+  }, []);
+
+  // Add handlers for onboarding
+  const handleNextStep = () => {
+    setOnboardingStep(2);
+  };
+
+  const handleFinishOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+      setShowOnboarding(false);
+      navigation.navigate('Routines'); // Navigate to routine creation
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -872,75 +1066,7 @@ useEffect(() => {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-        >
-
-          <FeedbackModal
-            visible={feedbackVisible}
-            setVisible={setFeedbackVisible}
-            questions={questions}
-            feedback={feedback}
-            setFeedback={setFeedback}
-            handleSubmit={handleSubmitFeedback}
-            showFeedbackIcon={true}
-          />
-
-          {/* <Animated.View
-            entering={FadeInDown.duration(1000).delay(200)}
-          >
-            <TouchableOpacity
-              style={styles.minimizeButton}
-              onPress={() => setCalendarMinimized(prev => !prev)}
-            >
-              <AntDesign
-                name={calendarMinimized ? "arrowsalt" : "shrink"}
-                size={10}
-
-                color="#fff"
-              />
-            </TouchableOpacity>
-          </Animated.View> */}
-
-          {/* <Animated.View
-            entering={FadeInDown.duration(1000).delay(200)}
-            style={styles.viewToggleContainer}
-          >
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                selectedView === 'calendar' && styles.activeToggleButton
-              ]}
-              onPress={() => setSelectedView('calendar')}
-            >
-              <Text
-                style={
-                  selectedView === 'calendar'
-                    ? styles.activeToggleText
-                    : styles.inactiveToggleText
-                }
-              >
-                Calendar
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                selectedView === 'badges' && styles.activeToggleButton
-              ]}
-              onPress={() => setSelectedView('badges')}
-            >
-              <Text
-                style={
-                  selectedView === 'badges'
-                    ? styles.activeToggleText
-                    : styles.inactiveToggleText
-                }
-              >
-                Badges
-              </Text>
-            </TouchableOpacity>
-            </Animated.View> */}
-
-
+        >          
 
           {!calendarMinimized && (
             <Animated.View
@@ -965,11 +1091,11 @@ useEffect(() => {
           <Animated.View
             entering={FadeInDown.duration(1000).delay(200)}
           >
-          <ProgressBar 
-            totalTasks={numTasks}
-            completedTasks={completedTasks}
-            streak={streak}
-          />
+            <ProgressBar 
+              totalTasks={numTasks}
+              completedTasks={completedTasks}
+              streak={streak}
+            />
           </Animated.View>
 
           {/* Routines for This Date */}
@@ -1015,6 +1141,8 @@ useEffect(() => {
 
         </ScrollView>
 
+        {/* <TaskAddButton selectedDate={selectedDate}/> */}
+
         {/* Confetti */}
         {showConfetti && (
           <ConfettiCannon
@@ -1045,6 +1173,14 @@ useEffect(() => {
         display={Platform.OS === "ios" ? "spinner" : "default"}
       />
         </ScrollView>
+        <TaskAddButton selectedDate={selectedDate}/>
+        {showOnboarding && (
+        <OnboardingOverlay
+          step={onboardingStep}
+          onNext={handleNextStep}
+          onFinish={handleFinishOnboarding}
+        />
+      )}
     </SafeAreaView>
   );
 }

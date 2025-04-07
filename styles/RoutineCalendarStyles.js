@@ -92,14 +92,14 @@ const slateStyles = StyleSheet.create({
     marginBottom: 8, // Reduced margin for tighter spacing
   },
   taskItem: {
-    backgroundColor: '#2e2e2e', // Darker shade for tasks to align with the black theme
-    borderRadius: 50, // Matches the container's rounded corners
-    marginBottom: 12, // Consistent spacing between tasks
-    shadowColor: '#000', // Subtle shadow to lift tasks slightly off the background
+    backgroundColor: "#2e2e2e",
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4, // Slight elevation for separation
+    shadowOpacity: 0.2,
+    shadowRadius: 2.84,
+    elevation: 3,
   },
   draggingTask: {
     shadowColor: '#000',
@@ -176,7 +176,7 @@ const slateStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#1F252E',
+    backgroundColor: '#242424',
     borderRadius: 8,
   },
   removeButtonText: {
@@ -368,7 +368,24 @@ const slateStyles = StyleSheet.create({
   },
   inactiveToggleText: {
     color: '#9CA3AF',
-  },  
+  },
+  descriptionInput: {
+    fontSize: 16,
+    padding: 12,
+    backgroundColor: "#242424",
+    borderRadius: 8,
+    marginBottom: 12,
+    minHeight: 80,
+    color: "#D1D5DB",
+  },
+  titleInput: {
+    fontSize: 16,
+    padding: 12,
+    backgroundColor: "#242424",
+    borderRadius: 8,
+    marginBottom: 12,
+    color: "#FFFFFF",
+  },
 });
 
 export default slateStyles;

@@ -24,18 +24,48 @@ import { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, deleteDoc, quer
 import styles from '../styles/LifeCoachStyles';
 import { EXPO_PUBLIC_OPENAI_API_KEY } from '@env';
 import Markdown from 'react-native-markdown-display';
-import FeedbackModal from '../components/FeedbackModal';
 import { TaskChatModal } from '../components/TaskChatModal';
 import * as Notifications from 'expo-notifications';
-import HTMLParser from 'react-native-html-parser';
+import CoachOnboardingModal from '../components/CoachOnboardingModal';
 
 import {
   trackMessageSent,
   trackAIResponse,
   trackConversationDuration,
-  trackCoachTabOpened} from '../backend/apis/segment';
+  trackCoachTabOpened
+} from '../backend/apis/segment';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LifeCoach = ({ navigation, route }) => {
+
+  // Add state
+const [showOnboarding, setShowOnboarding] = useState(false);
+
+// Add useEffect to check if user needs onboarding
+useEffect(() => {
+  const checkOnboarding = async () => {
+    try {
+      const hasSeenCoach = await AsyncStorage.getItem('hasSeenCoachOnboarding');
+      if (hasSeenCoach == 'false') {
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      console.error('Error checking coach onboarding status:', error);
+    }
+  };
+
+  checkOnboarding();
+}, []);
+
+// Add handler
+const handleCloseOnboarding = async () => {
+  try {
+    await AsyncStorage.setItem('hasSeenCoachOnboarding', 'true');
+    setShowOnboarding(false);
+  } catch (error) {
+    console.error('Error saving coach onboarding status:', error);
+  }
+};
 
 const SuggestionCard = ({ topic, onSelect }) => {
   return (
@@ -51,10 +81,16 @@ const SuggestionCard = ({ topic, onSelect }) => {
   const [showSuggestions, setShowSuggestions] = useState(true); // Track visibility of suggestions
 
   const topicMessages = {
-    'Schedule a Reminder': "I'd like to schedule a reminder",
-    'Create a Routine': "I'd like to create a routine",
-    'Need Help with Tasks': "I need some help with my tasks for  today",
+    'Set a reminder': "I'd like to set a reminder",
+    'Help me with my tasks': "I need help with my tasks today",
+    'Build a workout routine': "Can you help me create a workout routine?",
+    'Plan my meals': "I'd like help planning my meals",
+    'Make a study schedule': "Help me make a study schedule",
+    'Help me fix my sleep': "I want to fix my sleep schedule",
+    'Plan self-care activities': "Help me plan some self-care activities",
+    'Need a daily routine': "I need help building a daily routine",
   };
+
   
   const handleTopicSelect = (selectedTopic) => {
     const message = topicMessages[selectedTopic]; // Get the predefined message
@@ -373,22 +409,24 @@ const SuggestionCard = ({ topic, onSelect }) => {
       <View style={[styles.messageRow, isAI ? styles.aiRow : styles.userRow]}>
         <View style={[styles.messageBubble, isAI ? styles.aiBubble : styles.userBubble]}>
           {isAI ? (
-            <>
-              <Markdown style={styles.markdown}>{item.text}</Markdown>
-              {/* Render "Create Routine" button inside the bubble */}
-              {item.routinePrompt && (
-                <TouchableOpacity
-                  style={styles.createRoutineButtonInBubble}
-                  onPress={() => handleRoutineYes(item.text)}
-                >
-                  <Text style={styles.createRoutineButtonTextInBubble}>Create Routine</Text>
-                </TouchableOpacity>
-              )}
-            </>
+            <Markdown style={styles.markdown}>{item.text}</Markdown>
           ) : (
             <Text style={[styles.messageText, styles.userText]}>{item.text}</Text>
           )}
         </View>
+        
+        {isAI && (
+          <TouchableOpacity
+            style={styles.hammerIconContainer}
+            onPress={() => handleRoutineYes(item.text)}
+          >
+            <MaterialIcons 
+              name="construction" 
+              size={24} 
+              color="#3d5afe" 
+            />
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -431,7 +469,6 @@ const SuggestionCard = ({ topic, onSelect }) => {
   };
 
   const createNewConversation = async () => {
-    console.log('NEW CONVO BEING CREATED')
     const resource = route.params?.resource;
     let initialMessage;
 
@@ -601,7 +638,7 @@ const handleSend = async (message = input) => {
           trigger: reminderTime,
         });
   
-        Alert.alert('Reminder Set', `I will remind you to "${task}" at ${reminderTime.toLocaleString()}.`);
+        Alert.alert('Reminder Set', `I will remind you to "${task}" at ${reminderTime.toISOString()}.`);
   
         // Save the reminder to Firestore
         await addDoc(collection(db, 'users', auth.currentUser.uid, 'reminders'), {
@@ -658,13 +695,13 @@ const handleSend = async (message = input) => {
 
     // Get the current date
     const currentDate = new Date();
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
-    const day = String(currentDate.getDate()).padStart(2, '0');
+    // const year = currentDate.getFullYear();
+    // const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    // const day = String(currentDate.getDate()).padStart(2, '0');
 
-    const timeString = "09:00:00";
+    // const timeString = "09:00:00";
 
-    const datetimeString = `${year}-${month}-${day}T${timeString}`;
+    // const datetimeString = `${year}-${month}-${day}T${timeString}`;
 
 
 
@@ -695,7 +732,7 @@ const handleSend = async (message = input) => {
             "reminders": [
               {
                 "task": "description of the first NEW task",
-                "time": "${datetimeString}"
+                "time": "YYYY-MM-DDTHH:mm:ssZ" // ISO 8601 format with timezone
               }
             ]
           }
@@ -705,25 +742,13 @@ const handleSend = async (message = input) => {
         - IGNORE any reminder-related content from previous messages in the conversation
         - ONLY create reminders when the latest message EXPLICITLY requests them using words like "remind me", "set a reminder", "add a reminder"
         - ONLY create reminders when the user explicitly asks for them
-        - NEVER convert existing tasks into reminders automatically
-        - If discussing existing tasks, simply reference them without creating new reminders
-
-        IMPORTANT - DO NOT IGNORE: When your response includes ANY steps, sequence, habits, schedule, or process-related content, ALWAYS include this JSON at the end:
-        {"routinePrompt": true}
-
-        This includes:
-        - Brainstorming ideas for routines.
-        - Suggesting areas for improvement in daily habits.
-        - Outlining steps or tasks for a routine, even if they are not explicitly listed.
-        
-        DO NOT HESITATE TO BE LIBERAL WITH INCLUDING JSON AT THE END - ERR ON FALSE POSITIVES WHEN UNSURE
-
-        Purpose: This JSON snippet will determine whether to display a button prompting the user to create a routine from your response.
-        When to use: Include this JSON only when your response outlines steps, tasks, or habits that can be organized into a routine.
-        Formatting: Ensure the JSON snippet appears as the last part of your response, properly formatted and without introductory text like "Here's your JSON."
-        If not applicable: If your response doesn't suggest a routine, omit the JSON snippet entirely.
-
-        Ensure that the JSON object is the last part of your response and is properly formatted.
+        - Make sure to consider the current date and time in ${currentDate.toISOString()} when setting reminders
+        - When a user mentions a specific time WITHOUT a date (e.g., "at 4pm"), use TODAY'S date if the time hasn't passed yet
+        - If the specified time has already passed today, use TOMORROW'S date
+        - Always use the user's local timezone
+        - Format all times in ISO 8601 with timezone offset
+        - Current time reference: ${new Date().toISOString()}
+        - User's timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
 
 
         Important:
@@ -735,95 +760,91 @@ const handleSend = async (message = input) => {
 
         Ensure that the JSON object is the last part of your response and is properly formatted.
             
-            Core Identity:
+        Core Identity:
 
-            Warmly direct and growth-focused, leading with understanding before action
-            Uses relatable language that validates experiences while inspiring change
-            Maintains supportive standards that recognize both effort and outcomes
-            Teaches through gentle guidance, shared insights, and collaborative exploration
-            Helps people see their ADHD patterns with self-compassion and curiosity
+        Warmly direct and growth-focused, leading with understanding before action
+        Uses relatable language that validates experiences while inspiring change
+        Maintains supportive standards that recognize both effort and outcomes
+        Teaches through gentle guidance, shared insights, and collaborative exploration
+        Helps people see their ADHD patterns with self-compassion and curiosity
 
-            Knowledge Foundation:
+        Knowledge Foundation:
 
-            Deep expertise in ADHD neurobiology and how it shapes daily experiences
-            Rich understanding of evidence-based strategies that honor individual differences
-            Insight into habit formation that accounts for emotional and executive challenges
-            Holistic grasp of wellbeing factors: sleep, exercise, motivation, and mental health
-            Nuanced understanding of ADHD's impact on emotions, time perception, and focus
+        Deep expertise in ADHD neurobiology and how it shapes daily experiences
+        Rich understanding of evidence-based strategies that honor individual differences
+        Insight into habit formation that accounts for emotional and executive challenges
+        Holistic grasp of wellbeing factors: sleep, exercise, motivation, and mental health
+        Nuanced understanding of ADHD's impact on emotions, time perception, and focus
 
-            Connection Style:
+        Connection Style:
 
-            When addressing struggles:
+        When addressing struggles:
 
-            Validate the challenge and normalize the experience
-            Explain the neurological basis with warmth and clarity
-            Collaborate on finding realistic next steps
-            Frame setbacks as valuable information, not failures
-            Lead with empathy while maintaining focus on growth
-
-
-            With successes:
-
-            Celebrate wins authentically and specifically
-            Help understand why strategies resonated personally
-            Build confidence through pattern recognition
-            Set inspiring next steps that feel achievable
-            Acknowledge both effort and outcome
+        Validate the challenge and normalize the experience
+        Explain the neurological basis with warmth and clarity
+        Collaborate on finding realistic next steps
+        Frame setbacks as valuable information, not failures
+        Lead with empathy while maintaining focus on growth
 
 
-            For accountability:
+        With successes:
 
-            Check in with genuine curiosity about experiences
-            Explore what worked/didn't with compassion
-            Adjust strategies based on honest feedback
-            Transform struggles into learning with kindness
-            Maintain standards while showing understanding
+        Celebrate wins authentically and specifically
+        Help understand why strategies resonated personally
+        Build confidence through pattern recognition
+        Set inspiring next steps that feel achievable
+        Acknowledge both effort and outcome
 
 
+        For accountability:
 
-            Supportive Responses:
-
-            For overwhelm:
-            "I hear how overwhelming this feels right now. It's completely natural when everything starts feeling like too much. Let's take a breath together and break this down into something manageable. What's the first tiny step that feels doable?"
-            For procrastination:
-            "It makes perfect sense that you're struggling to start - that's such a common challenge with ADHD. Instead of fighting it, what if we tried a different approach? Maybe we could..."
-            For success:
-            "I'm genuinely excited to hear this! You've found something that really works for you. Can you tell me more about how it felt when things clicked into place? What made the difference?"
-            For setbacks:
-            "Thank you for sharing this with me. Setbacks are part of everyone's journey, and they can teach us so much about what works and doesn't work for us. Let's explore what happened with curiosity rather than judgment."
-
-            Core Principles:
+        Check in with genuine curiosity about experiences
+        Explore what worked/didn't with compassion
+        Adjust strategies based on honest feedback
+        Transform struggles into learning with kindness
+        Maintain standards while showing understanding
 
 
 
-            Growth and self-compassion go hand in hand
+        Supportive Responses:
 
+        For overwhelm:
+        "I hear how overwhelming this feels right now. It's completely natural when everything starts feeling like too much. Let's take a breath together and break this down into something manageable. What's the first tiny step that feels doable?"
+        For procrastination:
+        "It makes perfect sense that you're struggling to start - that's such a common challenge with ADHD. Instead of fighting it, what if we tried a different approach? Maybe we could..."
+        For success:
+        "I'm genuinely excited to hear this! You've found something that really works for you. Can you tell me more about how it felt when things clicked into place? What made the difference?"
+        For setbacks:
+        "Thank you for sharing this with me. Setbacks are part of everyone's journey, and they can teach us so much about what works and doesn't work for us. Let's explore what happened with curiosity rather than judgment."
 
-            Small steps lead to lasting changes
-            Each person's journey with ADHD is unique
-            Real progress starts with acceptance
-            Understanding ourselves helps us be kinder to ourselves
-            It's okay to lean on support systems
+        Core Principles:
 
-            Avoid:
+        Growth and self-compassion go hand in hand
+        Small steps lead to lasting changes
+        Each person's journey with ADHD is unique
+        Real progress starts with acceptance
+        Understanding ourselves helps us be kinder to ourselves
+        It's okay to lean on support systems
 
-            Clinical detachment or pure strategy focus
-            Pushing action without emotional readiness
-            Dismissing the emotional impact of ADHD
-            Missing opportunities for validation
-            Overlooking the need for self-compassion
-            Rigid accountability without flexibility
+        Avoid:
 
-            Remember to:
+        Clinical detachment or pure strategy focus
+        Pushing action without emotional readiness
+        Dismissing the emotional impact of ADHD
+        Missing opportunities for validation
+        Overlooking the need for self-compassion
+        Rigid accountability without flexibility
 
-            Listen actively and reflect understanding
-            Validate emotions before moving to solutions
-            Celebrate effort as much as outcomes
-            Use warm, conversational language
-            Share insights as possibilities, not prescriptions
-            Honor the whole person, not just their tasks
+        Remember to:
+
+        Listen actively and reflect understanding
+        Validate emotions before moving to solutions
+        Celebrate effort as much as outcomes
+        Use warm, conversational language
+        Share insights as possibilities, not prescriptions
+        Honor the whole person, not just their tasks
         
-        Limit responses to an appropriate and reasomable number of tokens to maintain clarity and focus, unless a routine is being created.`,
+        Limit responses to 300 tokens to maintain clarity and focus, unless a routine is being created.`,
     };
 
     const messagesForAI = [
@@ -848,7 +869,6 @@ const handleSend = async (message = input) => {
     try {
       const response = await axios.post(apiUrl, payload, { headers });
       const aiOutput = response.data.choices[0].message.content.trim();
-      console.log("AI OUTPUT",aiOutput)
   
       // Separate the AI's regular response and the JSON reminder
       const regex = /\{[\s\S]*\}/; // Matches the JSON object
@@ -864,6 +884,7 @@ const handleSend = async (message = input) => {
 
           // Extract reminders array if present
           reminders = parsedJson.reminders || null;
+          console.log("reminders",reminders)
           routinePrompt = parsedJson.routinePrompt || false;
     
           // Remove the JSON part from the AI's response
@@ -954,7 +975,7 @@ const handleSend = async (message = input) => {
               {loading && (
                 <View style={styles.loadingIndicator}>
                   <ActivityIndicator size="small" color="#3d5afe" />
-                  <Text style={styles.loadingText}>AI is typing...</Text>
+                  <Text style={styles.loadingText}>Coach is typing...</Text>
                 </View>
               )}
 
@@ -970,7 +991,15 @@ const handleSend = async (message = input) => {
                   contentContainerStyle={styles.suggestionsContainer}
                   keyboardShouldPersistTaps="handled"
                 >
-                  {['Schedule a Reminder', 'Create a Routine', 'Need Help with Tasks'].map((topic, index) => (
+                  {['Set a reminder',
+                    'Help me with my tasks',
+                    'Build a workout routine',
+                    'Plan my meals',
+                    'Make a study schedule',
+                    'Help me fix my sleep',
+                    'Plan self-care activities',
+                    'Need a daily routine',
+                  ].map((topic, index) => (
                     <SuggestionCard
                       key={index}
                       topic={topic}
@@ -1020,6 +1049,10 @@ const handleSend = async (message = input) => {
           </View>
         </View>
       </SafeAreaView>
+      <CoachOnboardingModal 
+        isVisible={showOnboarding}
+        onClose={handleCloseOnboarding}
+      />
     </View>
   );
 };

@@ -9,7 +9,10 @@ const SplashScreen = () => {
   const [isVideoReady, setIsVideoReady] = useState(false);
 
   const handleVideoFinish = () => {
-    navigation.replace('Login Page'); // Navigate to Home screen
+    setTimeout(() => {
+      navigation.replace('Login Page');
+    }, 300); // Small buffer time
+    // Navigate to Home screen
   };
 
   return (
@@ -23,6 +26,7 @@ const SplashScreen = () => {
         isLooping={false}
         onPlaybackStatusUpdate={(status) => {
           if (status.didJustFinish) {
+            console.log("Video finished, attempting navigation");
             handleVideoFinish();
           }
         }}

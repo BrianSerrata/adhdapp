@@ -264,7 +264,16 @@ const styles = StyleSheet.create({
     bottom: 90, // Positions it just above the input container
     left: 0,
     right: 0,
-  }
+  },
+  aiMessageActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+    paddingRight: 10,
+  },
+  hammerIconContainer: {
+    padding: 5,
+  },
 });
 
 export default styles;
